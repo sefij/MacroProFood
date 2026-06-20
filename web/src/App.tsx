@@ -8,6 +8,7 @@ import type {
 import { findBestCombinations } from './macro'
 import { loadData, toRestaurantsData, type LoadedData } from './data'
 import { buildClipboardToken, parseRemainingHash } from './bookmarklets'
+import { detectExtension, trackMeal as extTrackMeal } from './mfpExtension'
 import { MacroInput, type InputMode } from './components/MacroInput'
 import { RestaurantPicker } from './components/RestaurantPicker'
 import { Results } from './components/Results'
@@ -29,11 +30,22 @@ export function App () {
     const [picked, setPicked] = useState<{ restaurant: string; index: number } | null>(null)
     const [tracked, setTracked] = useState<OptimizationResult | null>(null)
     const [toast, setToast] = useState<string | null>(null)
+    const [extAvailable, setExtAvailable] = useState(false)
 
     // Load nutrition data once.
     useEffect(() => {
         loadData().then(setData).catch((e) => setLoadError(String(e)))
     }, [])
+
+    // Detect the optional browser extension (enables 1-click MFP read/write).
+    useEffect(() => {
+        detectExtension().then(setExtAvailable)
+    }, [])
+
+    const showToast = (msg: string) => {
+        setToast(msg)
+        setTimeout(() => setToast(null), 4000)
+    }
 
     // If the "Pull remaining" bookmarklet sent us macros via the hash, prefill.
     useEffect(() => {
@@ -74,16 +86,33 @@ export function App () {
         setTracked(null)
     }
 
-    const trackMeal = async (combo: OptimizationResult) => {
-        const token = buildClipboardToken(combo.totalNutrition)
-        try {
-            await navigator.clipboard.writeText(token)
-            setToast('Meal copied — open MFP and click your "Track" bookmark')
-            setTimeout(() => setToast(null), 4000)
-        } catch {
-            /* clipboard blocked — TrackPanel shows the value to copy manually */
+    // Choosing an option collapses the rest and opens the Track panel below.
+    const choose = (restaurant: string, index: number) => {
+        if (!results) return
+        const combo = results[restaurant]?.[index]
+        if (!combo) return
+        setPicked({ restaurant, index })
+        // Copy to clipboard regardless — it's the bookmarklet/manual fallback.
+        navigator.clipboard.writeText(buildClipboardToken(combo.totalNutrition)).catch(() => {})
+        if (!extAvailable) {
+            showToast('Meal copied — open MFP and click your "Track" bookmark')
         }
         setTracked(combo)
+    }
+
+    const clearChoice = () => {
+        setPicked(null)
+        setTracked(null)
+    }
+
+    // 1-click path used by TrackPanel when the extension is installed.
+    const sendToMfp = async (combo: OptimizationResult, mealName: string) => {
+        const res = await extTrackMeal(combo.totalNutrition, mealName)
+        showToast(
+            res.confirmed
+                ? `✓ Added to MyFitnessPal ${mealName}`
+                : `Sent to MFP ${mealName} — check your diary to confirm`
+        )
     }
 
     return (
@@ -100,7 +129,13 @@ export function App () {
                 </div>
             )}
 
-            <MacroInput mode={mode} onModeChange={setMode} macros={macros} onChange={setMacros} />
+            <MacroInput
+                mode={mode}
+                onModeChange={setMode}
+                macros={macros}
+                onChange={setMacros}
+                extAvailable={extAvailable}
+            />
 
             <RestaurantPicker
                 restaurants={restaurants}
@@ -120,14 +155,19 @@ export function App () {
                         results={results}
                         iconFor={iconFor}
                         selected={picked}
-                        onSelect={(restaurant, index) => setPicked({ restaurant, index })}
-                        onTrack={trackMeal}
+                        onSelect={choose}
+                        onClear={clearChoice}
                     />
                 </div>
             )}
 
             {tracked && (
-                <TrackPanel combo={tracked} onClose={() => setTracked(null)} />
+                <TrackPanel
+                    combo={tracked}
+                    onClose={clearChoice}
+                    extAvailable={extAvailable}
+                    onSend={(mealName) => sendToMfp(tracked, mealName)}
+                />
             )}
 
             {toast && <div className="toast">{toast}</div>}

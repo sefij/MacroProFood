@@ -8,6 +8,8 @@ interface Props {
     onModeChange: (m: InputMode) => void
     macros: TargetMacros
     onChange: (m: TargetMacros) => void
+    /** True when the MacPro MyFitnessPal Companion extension is installed (enables 1-click pull). */
+    extAvailable: boolean
 }
 
 const FIELDS: { key: keyof TargetMacros; label: string }[] = [
@@ -17,7 +19,7 @@ const FIELDS: { key: keyof TargetMacros; label: string }[] = [
     { key: 'fat', label: 'Fat (g)' }
 ]
 
-export function MacroInput ({ mode, onModeChange, macros, onChange }: Props) {
+export function MacroInput ({ mode, onModeChange, macros, onChange, extAvailable }: Props) {
     const set = (key: keyof TargetMacros, raw: string) => {
         const value = raw === '' ? 0 : Number(raw)
         if (Number.isNaN(value)) return
@@ -43,7 +45,9 @@ export function MacroInput ({ mode, onModeChange, macros, onChange }: Props) {
                 </button>
             </div>
 
-            {mode === 'mfp' && <ConnectMfp />}
+            {mode === 'mfp' && (
+                <ConnectMfp extAvailable={extAvailable} onMacros={onChange} />
+            )}
 
             <div className="macro-grid">
                 {FIELDS.map(({ key, label }) => (

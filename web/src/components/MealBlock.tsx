@@ -5,8 +5,9 @@ import { avgAccuracyOf } from '../macro'
 interface Props {
     combo: OptimizationResult
     selected: boolean
+    /** Render as a slim one-line row (used for the non-selected options). */
+    compact: boolean
     onSelect: () => void
-    onTrack: () => void
 }
 
 /** Collapses repeated items ("2× Fries") for a tidier list. */
@@ -23,10 +24,25 @@ function groupItems (items: OptimizationResult['items']) {
     })
 }
 
-export function MealBlock ({ combo, selected, onSelect, onTrack }: Props) {
+const prettyName = (name: string) => name.replace(/_/g, ' ')
+
+export function MealBlock ({ combo, selected, compact, onSelect }: Props) {
     const avg = avgAccuracyOf(combo)
     const { totalNutrition: t } = combo
     const grouped = groupItems(combo.items)
+
+    if (compact) {
+        const summary = grouped
+            .map((it) => `${it.qty > 1 ? `${it.qty}× ` : ''}${prettyName(it.name)}`)
+            .join(', ')
+        return (
+            <div className="meal compact" onClick={onSelect} role="button" tabIndex={0}>
+                <span className="compact-names">{summary}</span>
+                <span className="pill">{round(t.calories)} cal</span>
+                <span className="pill">{accuracyPercent(avg)}</span>
+            </div>
+        )
+    }
 
     return (
         <div
@@ -39,10 +55,8 @@ export function MealBlock ({ combo, selected, onSelect, onTrack }: Props) {
                 {grouped.map((it) => (
                     <li key={it.name}>
                         {it.qty > 1 ? `${it.qty}× ` : ''}
-                        {it.name.replace(/_/g, ' ')}
-                        <span className="sub">
-                            {' '}— {round(it.calories)} cal
-                        </span>
+                        {prettyName(it.name)}
+                        <span className="sub"> — {round(it.calories)} cal</span>
                     </li>
                 ))}
             </ul>
@@ -65,20 +79,6 @@ export function MealBlock ({ combo, selected, onSelect, onTrack }: Props) {
                     }}
                 />
             </div>
-
-            {selected && (
-                <div className="track-row">
-                    <button
-                        className="btn btn-primary"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onTrack()
-                        }}
-                    >
-                        ＋ Track this meal
-                    </button>
-                </div>
-            )}
         </div>
     )
 }
