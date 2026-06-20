@@ -1,0 +1,1304 @@
+{
+  "restaurant": "Taco Bell",
+  "key": "TACOBELL",
+  "icon": "🌮",
+  "source": "live",
+  "updatedAt": "2026-06-20T20:30:13.139Z",
+  "items": [
+    {
+      "name": "beefy melt burrito",
+      "calories": 587,
+      "protein": 21,
+      "fat": 26,
+      "carbs": 67
+    },
+    {
+      "name": "cali black beans bowl with cali ranch sauce",
+      "calories": 469,
+      "protein": 9.8,
+      "fat": 23,
+      "carbs": 55
+    },
+    {
+      "name": "cali black beans bowl with lava sauce",
+      "calories": 466,
+      "protein": 9.6,
+      "fat": 22,
+      "carbs": 55
+    },
+    {
+      "name": "cali chicken bowl with cali ranch sauce",
+      "calories": 487,
+      "protein": 16,
+      "fat": 23,
+      "carbs": 54
+    },
+    {
+      "name": "cali chicken bowl with lava sauce",
+      "calories": 484,
+      "protein": 16,
+      "fat": 23,
+      "carbs": 54
+    },
+    {
+      "name": "caramel apple empanada",
+      "calories": 255,
+      "protein": 3.2,
+      "fat": 12,
+      "carbs": 34
+    },
+    {
+      "name": "chicken bite (1)",
+      "calories": 52,
+      "protein": 2,
+      "fat": 3.7,
+      "carbs": 3
+    },
+    {
+      "name": "chicken bites (3)",
+      "calories": 156,
+      "protein": 6,
+      "fat": 11,
+      "carbs": 9
+    },
+    {
+      "name": "chicken bites (3) with nacho cheese sauce",
+      "calories": 324,
+      "protein": 7.8,
+      "fat": 26,
+      "carbs": 15
+    },
+    {
+      "name": "chicken bites (5)",
+      "calories": 260,
+      "protein": 10,
+      "fat": 18,
+      "carbs": 15
+    },
+    {
+      "name": "chicken bites (5) with nacho cheese sauce",
+      "calories": 428,
+      "protein": 12,
+      "fat": 33,
+      "carbs": 21
+    },
+    {
+      "name": "chicken bites (20)",
+      "calories": 1040,
+      "protein": 40,
+      "fat": 73,
+      "carbs": 60
+    },
+    {
+      "name": "chicken bites (20) with nacho cheese sauce (2)",
+      "calories": 1376,
+      "protein": 44,
+      "fat": 103,
+      "carbs": 72
+    },
+    {
+      "name": "firecracker chicken crunchwrap® slider",
+      "calories": 369,
+      "protein": 15,
+      "fat": 12,
+      "carbs": 49
+    },
+    {
+      "name": "grilled cheese crunchwrap - beef",
+      "calories": 614,
+      "protein": 21,
+      "fat": 30,
+      "carbs": 64
+    },
+    {
+      "name": "grilled cheese crunchwrap - black beans",
+      "calories": 572,
+      "protein": 17,
+      "fat": 25,
+      "carbs": 66
+    },
+    {
+      "name": "grilled cheese crunchwrap - chicken",
+      "calories": 590,
+      "protein": 24,
+      "fat": 26,
+      "carbs": 65
+    },
+    {
+      "name": "grilled cheese quesadilla - beef",
+      "calories": 2708,
+      "protein": 153,
+      "fat": 194,
+      "carbs": 86
+    },
+    {
+      "name": "grilled cheese quesadilla - black beans",
+      "calories": 2666,
+      "protein": 149,
+      "fat": 190,
+      "carbs": 87
+    },
+    {
+      "name": "grilled cheese quesadilla - chicken",
+      "calories": 2683,
+      "protein": 155,
+      "fat": 190,
+      "carbs": 86
+    },
+    {
+      "name": "grilled cheese volcano burrito - beef",
+      "calories": 736,
+      "protein": 23,
+      "fat": 41,
+      "carbs": 68
+    },
+    {
+      "name": "grilled cheese volcano burrito - black beans",
+      "calories": 694,
+      "protein": 19,
+      "fat": 37,
+      "carbs": 70
+    },
+    {
+      "name": "grilled cheese volcano burrito - chicken",
+      "calories": 712,
+      "protein": 25,
+      "fat": 37,
+      "carbs": 69
+    },
+    {
+      "name": "hot habanero tenders (2)",
+      "calories": 252,
+      "protein": 17,
+      "fat": 9.9,
+      "carbs": 23
+    },
+    {
+      "name": "hot habanero tenders (3)",
+      "calories": 377,
+      "protein": 26,
+      "fat": 15,
+      "carbs": 35
+    },
+    {
+      "name": "hot habanero tenders (5)",
+      "calories": 629,
+      "protein": 43,
+      "fat": 25,
+      "carbs": 59
+    },
+    {
+      "name": "large crispy chicken sharer",
+      "calories": 1272,
+      "protein": 75,
+      "fat": 74,
+      "carbs": 80
+    },
+    {
+      "name": "regular crispy chicken sharer",
+      "calories": 532,
+      "protein": 33,
+      "fat": 30,
+      "carbs": 34
+    },
+    {
+      "name": "smoky chipotle chicken crunchwrap",
+      "calories": 561,
+      "protein": 23,
+      "fat": 27,
+      "carbs": 55
+    },
+    {
+      "name": "crispy chicken soft taco",
+      "calories": 312,
+      "protein": 13,
+      "fat": 17,
+      "carbs": 25
+    },
+    {
+      "name": "crunchy taco - beef",
+      "calories": 174,
+      "protein": 8.7,
+      "fat": 9.8,
+      "carbs": 12
+    },
+    {
+      "name": "crunchy taco - black beans",
+      "calories": 132,
+      "protein": 4.7,
+      "fat": 5.7,
+      "carbs": 13
+    },
+    {
+      "name": "crunchy taco - grilled chicken",
+      "calories": 150,
+      "protein": 11,
+      "fat": 5.9,
+      "carbs": 12
+    },
+    {
+      "name": "crunchy taco supreme - beef",
+      "calories": 193,
+      "protein": 9.2,
+      "fat": 11,
+      "carbs": 13
+    },
+    {
+      "name": "crunchy taco supreme - black beans",
+      "calories": 151,
+      "protein": 5.2,
+      "fat": 6.9,
+      "carbs": 15
+    },
+    {
+      "name": "crunchy taco supreme - grilled chicken",
+      "calories": 168,
+      "protein": 12,
+      "fat": 7.1,
+      "carbs": 14
+    },
+    {
+      "name": "soft taco - beef",
+      "calories": 189,
+      "protein": 10,
+      "fat": 8.5,
+      "carbs": 17
+    },
+    {
+      "name": "soft taco - black beans",
+      "calories": 147,
+      "protein": 6.1,
+      "fat": 4.4,
+      "carbs": 19
+    },
+    {
+      "name": "soft taco - grilled chicken",
+      "calories": 165,
+      "protein": 13,
+      "fat": 4.6,
+      "carbs": 18
+    },
+    {
+      "name": "soft taco supreme - beef",
+      "calories": 208,
+      "protein": 11,
+      "fat": 9.7,
+      "carbs": 18
+    },
+    {
+      "name": "soft taco supreme - black beans",
+      "calories": 166,
+      "protein": 6.6,
+      "fat": 5.6,
+      "carbs": 20
+    },
+    {
+      "name": "soft taco supreme - grilled chicken",
+      "calories": 183,
+      "protein": 13,
+      "fat": 5.8,
+      "carbs": 19
+    },
+    {
+      "name": "7-layer burrito",
+      "calories": 452,
+      "protein": 15,
+      "fat": 15,
+      "carbs": 61
+    },
+    {
+      "name": "beefy nacho cravings burrito",
+      "calories": 392,
+      "protein": 13,
+      "fat": 16,
+      "carbs": 49
+    },
+    {
+      "name": "crispy chicken burrito",
+      "calories": 578,
+      "protein": 25,
+      "fat": 27,
+      "carbs": 58
+    },
+    {
+      "name": "double cheesy black bean cravings burrito",
+      "calories": 389,
+      "protein": 11,
+      "fat": 12,
+      "carbs": 57
+    },
+    {
+      "name": "spicy chicken cravings burrito",
+      "calories": 277,
+      "protein": 15,
+      "fat": 6.1,
+      "carbs": 40
+    },
+    {
+      "name": "volcano burrito - beef",
+      "calories": 638,
+      "protein": 17,
+      "fat": 34,
+      "carbs": 67
+    },
+    {
+      "name": "volcano burrito - black beans",
+      "calories": 596,
+      "protein": 13,
+      "fat": 30,
+      "carbs": 68
+    },
+    {
+      "name": "volcano burrito - grilled chicken",
+      "calories": 614,
+      "protein": 19,
+      "fat": 30,
+      "carbs": 67
+    },
+    {
+      "name": "baby quesadilla",
+      "calories": 530,
+      "protein": 30,
+      "fat": 34,
+      "carbs": 25
+    },
+    {
+      "name": "chalupa supreme - beef",
+      "calories": 371,
+      "protein": 14,
+      "fat": 21,
+      "carbs": 32
+    },
+    {
+      "name": "chalupa supreme - black bean",
+      "calories": 329,
+      "protein": 9.6,
+      "fat": 17,
+      "carbs": 34
+    },
+    {
+      "name": "chalupa supreme - grilled chicken",
+      "calories": 346,
+      "protein": 16,
+      "fat": 17,
+      "carbs": 33
+    },
+    {
+      "name": "cheesy gordita crunch",
+      "calories": 527,
+      "protein": 20,
+      "fat": 30,
+      "carbs": 44
+    },
+    {
+      "name": "cheesy gordita crunch - black beans",
+      "calories": 485,
+      "protein": 16,
+      "fat": 26,
+      "carbs": 46
+    },
+    {
+      "name": "cheesy gordita crunch - grilled chicken",
+      "calories": 502,
+      "protein": 23,
+      "fat": 26,
+      "carbs": 45
+    },
+    {
+      "name": "crunchwrap supreme - beef",
+      "calories": 516,
+      "protein": 16,
+      "fat": 22,
+      "carbs": 62
+    },
+    {
+      "name": "crunchwrap supreme - black beans",
+      "calories": 474,
+      "protein": 12,
+      "fat": 18,
+      "carbs": 64
+    },
+    {
+      "name": "crunchwrap supreme - grilled chicken",
+      "calories": 491,
+      "protein": 18,
+      "fat": 18,
+      "carbs": 63
+    },
+    {
+      "name": "quesadilla - beef",
+      "calories": 1919,
+      "protein": 106,
+      "fat": 134,
+      "carbs": 71
+    },
+    {
+      "name": "quesadilla - black beans",
+      "calories": 1877,
+      "protein": 102,
+      "fat": 130,
+      "carbs": 72
+    },
+    {
+      "name": "quesadilla - cheese",
+      "calories": 1849,
+      "protein": 100,
+      "fat": 130,
+      "carbs": 70
+    },
+    {
+      "name": "quesadilla - double beef",
+      "calories": 1989,
+      "protein": 112,
+      "fat": 139,
+      "carbs": 71
+    },
+    {
+      "name": "quesadilla - double black beans",
+      "calories": 1905,
+      "protein": 104,
+      "fat": 130,
+      "carbs": 74
+    },
+    {
+      "name": "quesadilla - double grilled chicken",
+      "calories": 1940,
+      "protein": 117,
+      "fat": 131,
+      "carbs": 73
+    },
+    {
+      "name": "quesadilla - grilled chicken",
+      "calories": 1895,
+      "protein": 108,
+      "fat": 130,
+      "carbs": 71
+    },
+    {
+      "name": "black beans",
+      "calories": 83,
+      "protein": 5.8,
+      "fat": 1.3,
+      "carbs": 6.5
+    },
+    {
+      "name": "crispy chicken tenders (2)",
+      "calories": 216,
+      "protein": 17,
+      "fat": 9.9,
+      "carbs": 15
+    },
+    {
+      "name": "crispy chicken tenders (3)",
+      "calories": 324,
+      "protein": 25,
+      "fat": 15,
+      "carbs": 22
+    },
+    {
+      "name": "crispy chicken tenders (3) with cali ranch sauce",
+      "calories": 475,
+      "protein": 26,
+      "fat": 30,
+      "carbs": 24
+    },
+    {
+      "name": "crispy chicken tenders (3) with creamy jalapeno sauce",
+      "calories": 429,
+      "protein": 26,
+      "fat": 24,
+      "carbs": 26
+    },
+    {
+      "name": "crispy chicken tenders (3) with lava sauce",
+      "calories": 472,
+      "protein": 26,
+      "fat": 30,
+      "carbs": 24
+    },
+    {
+      "name": "crispy chicken tenders (3) with nacho cheese sauce",
+      "calories": 408,
+      "protein": 26,
+      "fat": 22,
+      "carbs": 25
+    },
+    {
+      "name": "crispy chicken tenders (5)",
+      "calories": 540,
+      "protein": 42,
+      "fat": 25,
+      "carbs": 37
+    },
+    {
+      "name": "crispy chicken tenders (5) with cali ranch sauce",
+      "calories": 691,
+      "protein": 43,
+      "fat": 40,
+      "carbs": 39
+    },
+    {
+      "name": "crispy chicken tenders (5) with creamy jalapeno sauce",
+      "calories": 645,
+      "protein": 43,
+      "fat": 34,
+      "carbs": 41
+    },
+    {
+      "name": "crispy chicken tenders (5) with lava sauce",
+      "calories": 688,
+      "protein": 43,
+      "fat": 40,
+      "carbs": 39
+    },
+    {
+      "name": "crispy chicken tenders (5) with nacho cheese sauce",
+      "calories": 624,
+      "protein": 43,
+      "fat": 32,
+      "carbs": 40
+    },
+    {
+      "name": "dip pot - cali ranch sauce",
+      "calories": 151,
+      "protein": 1,
+      "fat": 15,
+      "carbs": 2.3
+    },
+    {
+      "name": "dip pot - nacho cheese",
+      "calories": 252,
+      "protein": 2.7,
+      "fat": 23,
+      "carbs": 9.2
+    },
+    {
+      "name": "fries bell grande",
+      "calories": 1055,
+      "protein": 21,
+      "fat": 56,
+      "carbs": 121
+    },
+    {
+      "name": "fries supreme",
+      "calories": 614,
+      "protein": 14,
+      "fat": 35,
+      "carbs": 63
+    },
+    {
+      "name": "nacho chips (large)",
+      "calories": 333,
+      "protein": 4.3,
+      "fat": 16,
+      "carbs": 46
+    },
+    {
+      "name": "nacho chips (regular)",
+      "calories": 200,
+      "protein": 2.6,
+      "fat": 9.5,
+      "carbs": 28
+    },
+    {
+      "name": "nacho chips with cheese sauce (large)",
+      "calories": 417,
+      "protein": 5.2,
+      "fat": 23,
+      "carbs": 49
+    },
+    {
+      "name": "nacho chips with cheese sauce (regular)",
+      "calories": 284,
+      "protein": 3.5,
+      "fat": 17,
+      "carbs": 31
+    },
+    {
+      "name": "nachos bell grande",
+      "calories": 768,
+      "protein": 16,
+      "fat": 48,
+      "carbs": 69
+    },
+    {
+      "name": "seasoned fries (large)",
+      "calories": 358,
+      "protein": 5.9,
+      "fat": 14,
+      "carbs": 55
+    },
+    {
+      "name": "seasoned fries (regular)",
+      "calories": 261,
+      "protein": 4.3,
+      "fat": 10,
+      "carbs": 40
+    },
+    {
+      "name": "seasoned fries (xl)",
+      "calories": 522,
+      "protein": 8.6,
+      "fat": 20,
+      "carbs": 81
+    },
+    {
+      "name": "seasoned fries with cheese sauce (large)",
+      "calories": 442,
+      "protein": 6.8,
+      "fat": 21,
+      "carbs": 58
+    },
+    {
+      "name": "seasoned fries with cheese sauce (regular)",
+      "calories": 345,
+      "protein": 5.2,
+      "fat": 18,
+      "carbs": 43
+    },
+    {
+      "name": "seasoned rice",
+      "calories": 160,
+      "protein": 3,
+      "fat": 3.1,
+      "carbs": 31
+    },
+    {
+      "name": "sour cream",
+      "calories": 49,
+      "protein": 1.5,
+      "fat": 3.6,
+      "carbs": 2.7
+    },
+    {
+      "name": "cheesy roll up",
+      "calories": 191,
+      "protein": 8.3,
+      "fat": 9.3,
+      "carbs": 18
+    },
+    {
+      "name": "cinnamon twists",
+      "calories": 172,
+      "protein": 1.7,
+      "fat": 7.9,
+      "carbs": 24
+    },
+    {
+      "name": "extra grilled chicken",
+      "calories": 45,
+      "protein": 8.4,
+      "fat": 0.6,
+      "carbs": 1.3
+    },
+    {
+      "name": "extra seasoned beef",
+      "calories": 70,
+      "protein": 5.9,
+      "fat": 4.5,
+      "carbs": 0.5
+    },
+    {
+      "name": "seasoned rice, single portion",
+      "calories": 80,
+      "protein": 1.5,
+      "fat": 1.5,
+      "carbs": 16
+    },
+    {
+      "name": "baby quesadilla meal[more info]baby quesadilla, cinnamon twists and regular fries",
+      "calories": 618,
+      "protein": 16,
+      "fat": 26,
+      "carbs": 83
+    },
+    {
+      "name": "beefy melt burrito meal with fries (large)[more info]beefy melt burrito, large fries and a large drink",
+      "calories": 948,
+      "protein": 27,
+      "fat": 40,
+      "carbs": 123
+    },
+    {
+      "name": "beefy melt burrito meal with fries (regular)[more info]beefy melt burrito, regular fries and a regular drink",
+      "calories": 850,
+      "protein": 25,
+      "fat": 36,
+      "carbs": 108
+    },
+    {
+      "name": "beefy melt burrito meal with nachos (large)[more info]beefy melt burrito, large nachos and a large drink",
+      "calories": 924,
+      "protein": 25,
+      "fat": 42,
+      "carbs": 114
+    },
+    {
+      "name": "beefy melt burrito meal with nachos (regular)[more info]beefy melt burrito, regular nachos and a regular drink",
+      "calories": 789,
+      "protein": 23,
+      "fat": 35,
+      "carbs": 95
+    },
+    {
+      "name": "cheesy gordita crunch meal with fries - beef (large)[more info]cheesy gordita crunch with seasoned beef, large fries, and a large drink",
+      "calories": 888,
+      "protein": 26,
+      "fat": 44,
+      "carbs": 99
+    },
+    {
+      "name": "cheesy gordita crunch meal with fries - beef (regular)[more info]cheesy gordita crunch with seasoned beef, regular fries, and a regular drink",
+      "calories": 790,
+      "protein": 25,
+      "fat": 40,
+      "carbs": 84
+    },
+    {
+      "name": "cheesy gordita crunch meal with fries - black beans (large)[more info]cheesy gordita crunch with black beans, large fries, and a large drink",
+      "calories": 845,
+      "protein": 22,
+      "fat": 39,
+      "carbs": 101
+    },
+    {
+      "name": "cheesy gordita crunch meal with fries - black beans (regular)[more info]cheesy gordita crunch with black beans, regular fries, and a regular drink",
+      "calories": 748,
+      "protein": 21,
+      "fat": 36,
+      "carbs": 86
+    },
+    {
+      "name": "cheesy gordita crunch meal with fries - chicken (large)[more info]cheesy gordita crunch with grilled chicken, large fries, and a large drink",
+      "calories": 863,
+      "protein": 29,
+      "fat": 40,
+      "carbs": 100
+    },
+    {
+      "name": "cheesy gordita crunch meal with fries - chicken (regular)[more info]cheesy gordita crunch with grilled chicken, regular fries, and a regular drink",
+      "calories": 766,
+      "protein": 27,
+      "fat": 36,
+      "carbs": 85
+    },
+    {
+      "name": "cheesy gordita crunch meal with nachos - beef (large)[more info]cheesy gordita crunch with seasoned beef, large nachos, and a large drink",
+      "calories": 863,
+      "protein": 25,
+      "fat": 46,
+      "carbs": 90
+    },
+    {
+      "name": "cheesy gordita crunch meal with nachos - beef (regular)[more info]cheesy gordita crunch with seasoned beef, regular nachos, and a regular drink",
+      "calories": 729,
+      "protein": 23,
+      "fat": 39,
+      "carbs": 72
+    },
+    {
+      "name": "cheesy gordita crunch meal with nachos - black beans (large)[more info]cheesy gordita crunch with black beans, large nachos, and a large drink",
+      "calories": 821,
+      "protein": 21,
+      "fat": 41,
+      "carbs": 92
+    },
+    {
+      "name": "cheesy gordita crunch meal with nachos - black beans (regular)[more info]cheesy gordita crunch with black beans, regular nachos, and a regular drink",
+      "calories": 687,
+      "protein": 19,
+      "fat": 35,
+      "carbs": 73
+    },
+    {
+      "name": "cheesy gordita crunch meal with nachos - chicken (large)[more info]cheesy gordita crunch with grilled chicken, large nachos, and a large drink",
+      "calories": 839,
+      "protein": 27,
+      "fat": 42,
+      "carbs": 91
+    },
+    {
+      "name": "cheesy gordita crunch meal with nachos - chicken (regular)[more info]cheesy gordita crunch with grilled chicken, regular nachos, and a regular drink",
+      "calories": 705,
+      "protein": 25,
+      "fat": 35,
+      "carbs": 73
+    },
+    {
+      "name": "cheesy roll up mini bell meal with fries[more info]cheesy roll up, regular fries, regular drink",
+      "calories": 454,
+      "protein": 13,
+      "fat": 19,
+      "carbs": 58
+    },
+    {
+      "name": "cheesy roll up mini bell meal with nachos[more info]cheesy roll up, regular nachos, regular drink",
+      "calories": 393,
+      "protein": 11,
+      "fat": 19,
+      "carbs": 46
+    },
+    {
+      "name": "chicken bites mini bell meal with fries[more info]3x chicken bites, regular fries, regular drink",
+      "calories": 419,
+      "protein": 10,
+      "fat": 21,
+      "carbs": 49
+    },
+    {
+      "name": "chicken bites mini bell meal with nachos[more info]3x chicken bites, regular nachos, regular drink",
+      "calories": 358,
+      "protein": 8.6,
+      "fat": 20,
+      "carbs": 37
+    },
+    {
+      "name": "cravings meal for 2[more info]two specialities* (choose from crunchwrap supreme, volcano burrito, cheese quesadilla or chicken quesadilla), two crunchy beef tacos, two seasoned regular fries with nacho cheese sauce and two portions of cinnamon twists. *two seasoned beef volcano burritos have been used in the nutritional calculation",
+      "calories": 2659,
+      "protein": 65,
+      "fat": 138,
+      "carbs": 291
+    },
+    {
+      "name": "cravings meal for 2 (per portion)[more info]one speciality* (choose from crunchwrap supreme, volcano burrito, cheese quesadilla or chicken quesadilla), one crunchy beef taco, one seasoned regular fries with nacho cheese sauce and one portion of cinnamon twists. *one seasoned beef volcano burritos have been used in the nutritional calculation",
+      "calories": 1330,
+      "protein": 32,
+      "fat": 69,
+      "carbs": 146
+    },
+    {
+      "name": "cravings meal for 3[more info]three specialities* (choose from crunchwrap supreme, volcano burrito, cheese quesadilla or chicken quesadilla), three crunchy beef tacos, three seasoned regular fries with nacho cheese sauce and three portions of cinnamon twists. *three seasoned beef volcano burritos have been used in the nutritional calculation",
+      "calories": 3989,
+      "protein": 97,
+      "fat": 207,
+      "carbs": 437
+    },
+    {
+      "name": "cravings meal for 3 (per portion)[more info]1 speciality* (choose from crunchwrap supreme, volcano burrito, cheese quesadilla or chicken quesadilla), crunchy beef taco, seasoned regular fries with nacho cheese sauce and one portion of cinnamon twists. *seasoned beef volcano burrito has been used in the nutritional calculation",
+      "calories": 1330,
+      "protein": 32,
+      "fat": 69,
+      "carbs": 146
+    },
+    {
+      "name": "dip cravings[more info]sour cream, nacho cheese sauce, jalapenos and guacamole",
+      "calories": 169,
+      "protein": 2.9,
+      "fat": 14,
+      "carbs": 7.2
+    },
+    {
+      "name": "fill up with fries (large)[more info]mini chicken quesadilla, large fries, large drinks, 5 chicken nachos",
+      "calories": 806,
+      "protein": 26,
+      "fat": 40,
+      "carbs": 89
+    },
+    {
+      "name": "fill up with fries (regular)[more info]mini chicken quesadilla, regular fries, regular drinks, 3 chicken nachos",
+      "calories": 605,
+      "protein": 20,
+      "fat": 29,
+      "carbs": 68
+    },
+    {
+      "name": "fill up with nachos (large)[more info]mini chicken quesadilla, large nachos, large drinks, 5 chicken nachos",
+      "calories": 782,
+      "protein": 24,
+      "fat": 42,
+      "carbs": 80
+    },
+    {
+      "name": "fill up with nachos (regular)[more info]mini chicken quesadilla, regular nachos, regular drinks, 3 chicken nachos",
+      "calories": 543,
+      "protein": 18,
+      "fat": 28,
+      "carbs": 55
+    },
+    {
+      "name": "grilled cheese beef crunchwrap meal with fries (large)[more info]beef grilled cheese crunchwrap, large fries, large drink",
+      "calories": 975,
+      "protein": 27,
+      "fat": 43,
+      "carbs": 119
+    },
+    {
+      "name": "grilled cheese beef crunchwrap meal with fries (regular)[more info]beef grilled cheese crunchwrap, regular fries, regular drink",
+      "calories": 878,
+      "protein": 26,
+      "fat": 40,
+      "carbs": 104
+    },
+    {
+      "name": "grilled cheese beef crunchwrap meal with nachos (large)[more info]beef grilled cheese crunchwrap, large nachos, large drink",
+      "calories": 951,
+      "protein": 26,
+      "fat": 45,
+      "carbs": 111
+    },
+    {
+      "name": "grilled cheese beef crunchwrap meal with nachos (regular)[more info]beef grilled cheese crunchwrap, regular nachos, regular drink",
+      "calories": 817,
+      "protein": 24,
+      "fat": 39,
+      "carbs": 92
+    },
+    {
+      "name": "grilled cheese beef quesadilla meal with fries (large)[more info]beef grilled cheese quesadilla, large fries, large drink",
+      "calories": 999,
+      "protein": 35,
+      "fat": 50,
+      "carbs": 101
+    },
+    {
+      "name": "grilled cheese beef quesadilla meal with fries (regular)[more info]beef grilled cheese quesadilla, regular fries, regular drink",
+      "calories": 901,
+      "protein": 34,
+      "fat": 47,
+      "carbs": 86
+    },
+    {
+      "name": "grilled cheese beef quesadilla meal with nachos (large)[more info]beef grilled cheese quesadilla, large nachos, large drink",
+      "calories": 974,
+      "protein": 34,
+      "fat": 52,
+      "carbs": 93
+    },
+    {
+      "name": "grilled cheese beef quesadilla meal with nachos (regular)[more info]beef grilled cheese quesadilla, regular nachos, regular drink",
+      "calories": 840,
+      "protein": 32,
+      "fat": 46,
+      "carbs": 74
+    },
+    {
+      "name": "grilled cheese beef volcano burrito meal with fries (large)[more info]beef grilled cheese volcano burrito, large fries, large drink",
+      "calories": 1097,
+      "protein": 29,
+      "fat": 55,
+      "carbs": 124
+    },
+    {
+      "name": "grilled cheese beef volcano burrito meal with fries (regular)[more info]beef grilled cheese volcano burrito, regular fries, regular drink",
+      "calories": 999,
+      "protein": 27,
+      "fat": 51,
+      "carbs": 109
+    },
+    {
+      "name": "grilled cheese beef volcano burrito meal with nachos (large)[more info]beef grilled cheese volcano burrito, large nachos, large drink",
+      "calories": 1073,
+      "protein": 27,
+      "fat": 57,
+      "carbs": 115
+    },
+    {
+      "name": "grilled cheese beef volcano burrito meal with nachos (regular)[more info]beef grilled cheese volcano burrito, regular nachos, regular drink",
+      "calories": 938,
+      "protein": 25,
+      "fat": 51,
+      "carbs": 96
+    },
+    {
+      "name": "grilled cheese black bean crunchwrap meal with fries (large)[more info]black bean grilled cheese crunchwrap, large fries, large drink",
+      "calories": 933,
+      "protein": 23,
+      "fat": 39,
+      "carbs": 121
+    },
+    {
+      "name": "grilled cheese black bean crunchwrap meal with fries (regular)[more info]black bean grilled cheese crunchwrap, regular fries, regular drink",
+      "calories": 836,
+      "protein": 22,
+      "fat": 36,
+      "carbs": 106
+    },
+    {
+      "name": "grilled cheese black bean crunchwrap meal with nachos (large)[more info]black bean grilled cheese crunchwrap, large nachos, large drink",
+      "calories": 909,
+      "protein": 22,
+      "fat": 41,
+      "carbs": 112
+    },
+    {
+      "name": "grilled cheese black bean crunchwrap meal with nachos (regular)[more info]black bean grilled cheese crunchwrap, regular nachos, regular drink",
+      "calories": 774,
+      "protein": 20,
+      "fat": 35,
+      "carbs": 94
+    },
+    {
+      "name": "grilled cheese black bean quesadilla meal with fries (large)[more info]black bean grilled cheese quesadilla, large fries, large drink",
+      "calories": 957,
+      "protein": 31,
+      "fat": 46,
+      "carbs": 103
+    },
+    {
+      "name": "grilled cheese black bean quesadilla meal with fries (regular)[more info]black bean grilled cheese quesadilla, regular fries, regular drink",
+      "calories": 859,
+      "protein": 30,
+      "fat": 43,
+      "carbs": 88
+    },
+    {
+      "name": "grilled cheese black bean quesadilla meal with nachos (large)[more info]black bean grilled cheese quesadilla, large nachos, large drink",
+      "calories": 932,
+      "protein": 30,
+      "fat": 48,
+      "carbs": 94
+    },
+    {
+      "name": "grilled cheese black bean quesadilla meal with nachos (regular)[more info]black bean grilled cheese quesadilla, regular nachos, regular drink",
+      "calories": 798,
+      "protein": 28,
+      "fat": 42,
+      "carbs": 76
+    },
+    {
+      "name": "grilled cheese black bean volcano burrito meal with fries (large)[more info]black bean grilled cheese volcano burrito, large fries, large drink",
+      "calories": 1055,
+      "protein": 25,
+      "fat": 51,
+      "carbs": 125
+    },
+    {
+      "name": "grilled cheese black bean volcano burrito meal with fries (regular)[more info]black bean grilled cheese volcano burrito, regular fries, regular drink",
+      "calories": 957,
+      "protein": 23,
+      "fat": 47,
+      "carbs": 110
+    },
+    {
+      "name": "grilled cheese black bean volcano burrito meal with nachos (large)[more info]black bean grilled cheese volcano burrito, large nachos, large drink",
+      "calories": 1030,
+      "protein": 23,
+      "fat": 53,
+      "carbs": 116
+    },
+    {
+      "name": "grilled cheese black bean volcano burrito meal with nachos (regular)[more info]black bean grilled cheese volcano burrito, regular nachos, regular drink",
+      "calories": 896,
+      "protein": 21,
+      "fat": 47,
+      "carbs": 98
+    },
+    {
+      "name": "grilled cheese chicken crunchwrap meal with fries (large)[more info]chicken grilled cheese crunchwrap, large fries, large drink",
+      "calories": 951,
+      "protein": 30,
+      "fat": 39,
+      "carbs": 120
+    },
+    {
+      "name": "grilled cheese chicken crunchwrap meal with fries (regular)[more info]chicken grilled cheese crunchwrap, regular fries, regular drink",
+      "calories": 853,
+      "protein": 28,
+      "fat": 36,
+      "carbs": 105
+    },
+    {
+      "name": "grilled cheese chicken crunchwrap meal with nachos (large)[more info]chicken grilled cheese crunchwrap, large nachos, large drink",
+      "calories": 926,
+      "protein": 28,
+      "fat": 41,
+      "carbs": 111
+    },
+    {
+      "name": "grilled cheese chicken crunchwrap meal with nachos (regular)[more info]chicken grilled cheese crunchwrap, regular nachos, regular drink",
+      "calories": 792,
+      "protein": 26,
+      "fat": 35,
+      "carbs": 93
+    },
+    {
+      "name": "grilled cheese chicken quesadilla meal with fries (large)[more info]chicken grilled cheese quesadilla, large fries, large drink",
+      "calories": 974,
+      "protein": 38,
+      "fat": 47,
+      "carbs": 102
+    },
+    {
+      "name": "grilled cheese chicken quesadilla meal with fries (regular)[more info]chicken grilled cheese quesadilla, regular fries, regular drink",
+      "calories": 877,
+      "protein": 36,
+      "fat": 43,
+      "carbs": 87
+    },
+    {
+      "name": "grilled cheese chicken quesadilla meal with nachos (large)[more info]chicken grilled cheese quesadilla, large nachos, large drink",
+      "calories": 950,
+      "protein": 36,
+      "fat": 49,
+      "carbs": 93
+    },
+    {
+      "name": "grilled cheese chicken quesadilla meal with nachos (regular)[more info]chicken grilled cheese quesadilla, regular nachos, regular drink",
+      "calories": 816,
+      "protein": 35,
+      "fat": 42,
+      "carbs": 75
+    },
+    {
+      "name": "grilled cheese chicken volcano burrito meal with fries (large)[more info]chicken grilled cheese volcano burrito, large fries, large drink",
+      "calories": 1072,
+      "protein": 31,
+      "fat": 51,
+      "carbs": 124
+    },
+    {
+      "name": "grilled cheese chicken volcano burrito meal with fries (regular)[more info]chicken grilled cheese volcano burrito, regular fries, regular drink",
+      "calories": 975,
+      "protein": 30,
+      "fat": 47,
+      "carbs": 109
+    },
+    {
+      "name": "grilled cheese chicken volcano burrito meal with nachos (large)[more info]chicken grilled cheese volcano burrito, large nachos, large drink",
+      "calories": 1048,
+      "protein": 29,
+      "fat": 53,
+      "carbs": 115
+    },
+    {
+      "name": "grilled cheese chicken volcano burrito meal with nachos (regular)[more info]chicken grilled cheese volcano burrito, regular nachos, regular drink",
+      "calories": 914,
+      "protein": 28,
+      "fat": 47,
+      "carbs": 97
+    },
+    {
+      "name": "quesadilla meal for two with fries bell grande[more info]2 x quesadilla with southwest grilled chicken, fries bell grande, 2 x regular drinks",
+      "calories": 1964,
+      "protein": 72,
+      "fat": 95,
+      "carbs": 207
+    },
+    {
+      "name": "quesadilla meal for two with nachos bell grande[more info]2 x quesadilla with southwest grilled chicken, nachos bell grande, 2 x regular drinks",
+      "calories": 1676,
+      "protein": 67,
+      "fat": 87,
+      "carbs": 154
+    },
+    {
+      "name": "smoky chipotle chicken crunchwrap meal with fries (large)[more info]smoky chipotle chicken crunchwrap, large fries, large drink",
+      "calories": 922,
+      "protein": 29,
+      "fat": 41,
+      "carbs": 110
+    },
+    {
+      "name": "smoky chipotle chicken crunchwrap meal with fries (regular)[more info]smoky chipotle chicken crunchwrap, regular fries, regular drink",
+      "calories": 825,
+      "protein": 27,
+      "fat": 37,
+      "carbs": 95
+    },
+    {
+      "name": "smoky chipotle chicken crunchwrap meal with nachos (large)[more info]smoky chipotle chicken crunchwrap, large nachos, large drink",
+      "calories": 898,
+      "protein": 27,
+      "fat": 43,
+      "carbs": 101
+    },
+    {
+      "name": "smoky chipotle chicken crunchwrap meal with nachos (regular)[more info]smoky chipotle chicken crunchwrap, regular nachos, regular drink",
+      "calories": 764,
+      "protein": 26,
+      "fat": 37,
+      "carbs": 83
+    },
+    {
+      "name": "tacos and burrito cravings pack[more info]4 crunchy beef tacos. 2 spicy chicken cravings burritos and 2 beefy nacho cravings burritos.",
+      "calories": 2035,
+      "protein": 89,
+      "fat": 83,
+      "carbs": 225
+    },
+    {
+      "name": "tacos and burrito cravings pack (per portion)[more info]crunchy beef taco, 0.5 spicy chicken cravings burrito, and 0.5 beefy nacho cravings burrito.",
+      "calories": 509,
+      "protein": 22,
+      "fat": 21,
+      "carbs": 56
+    },
+    {
+      "name": "taco tuesday - crunchy beef taco[more info]crunchy beef taco",
+      "calories": 174,
+      "protein": 8.7,
+      "fat": 9.8,
+      "carbs": 12
+    },
+    {
+      "name": "taco tuesday - crunchy black bean taco[more info]crunchy black bean taco",
+      "calories": 132,
+      "protein": 4.7,
+      "fat": 5.7,
+      "carbs": 13
+    },
+    {
+      "name": "taco tuesday - crunchy grilled chicken taco[more info]crunchy grilled chicken taco",
+      "calories": 150,
+      "protein": 11,
+      "fat": 5.9,
+      "carbs": 12
+    },
+    {
+      "name": "tender combo with fries - 3x crispy chicken tenders (large)[more info]3 x crispy chicken tenders, large fries and a large drink",
+      "calories": 685,
+      "protein": 31,
+      "fat": 29,
+      "carbs": 77
+    },
+    {
+      "name": "tender combo with fries - 3x crispy chicken tenders (regular)[more info]3 x crispy chicken tenders, regular fries and a regular drink",
+      "calories": 587,
+      "protein": 30,
+      "fat": 25,
+      "carbs": 62
+    },
+    {
+      "name": "tender combo with fries - 5x crispy chicken tenders (large)[more info]5 x crispy chicken tenders, large fries and a large drink",
+      "calories": 901,
+      "protein": 48,
+      "fat": 39,
+      "carbs": 92
+    },
+    {
+      "name": "tender combo with fries - 5x crispy chicken tenders (regular)[more info]5 x crispy chicken tenders, regular fries and a regular drink",
+      "calories": 803,
+      "protein": 47,
+      "fat": 35,
+      "carbs": 77
+    },
+    {
+      "name": "tender combo with nachos - 3x crispy chicken tenders (large)[more info]3 x crispy chicken tenders, large nachos and a large drink",
+      "calories": 660,
+      "protein": 30,
+      "fat": 31,
+      "carbs": 68
+    },
+    {
+      "name": "tender combo with nachos - 3x crispy chicken tenders (regular)[more info]3 x crispy chicken tenders, regular nachos and a regular drink",
+      "calories": 526,
+      "protein": 28,
+      "fat": 24,
+      "carbs": 50
+    },
+    {
+      "name": "tender combo with nachos - 5x crispy chicken tenders (large)[more info]5 x crispy chicken tenders, large nachos and a large drink",
+      "calories": 876,
+      "protein": 47,
+      "fat": 41,
+      "carbs": 83
+    },
+    {
+      "name": "tender combo with nachos - 5x crispy chicken tenders (regular)[more info]5 x crispy chicken tenders, regular nachos and a regular drink",
+      "calories": 742,
+      "protein": 45,
+      "fat": 34,
+      "carbs": 64
+    }
+  ]
+}

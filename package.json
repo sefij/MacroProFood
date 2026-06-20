@@ -17,7 +17,8 @@
   },
   "scripts": {
     "start": "yarn run build && node dist/main.js",
-    "build": "tsc"
+    "build": "tsc",
+    "build:data": "tsc && node dist/tools/build-web-data.js"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.21",

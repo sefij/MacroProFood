@@ -1,0 +1,800 @@
+{
+  "restaurant": "Popeyes",
+  "key": "POPEYES",
+  "icon": "🐔",
+  "source": "live",
+  "updatedAt": "2026-06-20T20:30:13.139Z",
+  "items": [
+    {
+      "name": "12 boneless plain",
+      "calories": 522,
+      "protein": 37.1,
+      "fat": 24.9,
+      "carbs": 38.6
+    },
+    {
+      "name": "12 cajun citrus boneless",
+      "calories": 466,
+      "protein": 46.1,
+      "fat": 20.2,
+      "carbs": 26.4
+    },
+    {
+      "name": "12 garlic parmesan boneless",
+      "calories": 964,
+      "protein": 50.6,
+      "fat": 70.5,
+      "carbs": 32.9
+    },
+    {
+      "name": "12 ghost pepper boneless",
+      "calories": 465,
+      "protein": 46.1,
+      "fat": 20.3,
+      "carbs": 25.9
+    },
+    {
+      "name": "12 honey bbq boneless",
+      "calories": 654,
+      "protein": 46.9,
+      "fat": 23.7,
+      "carbs": 63.3
+    },
+    {
+      "name": "12 hot honey boneless",
+      "calories": 674,
+      "protein": 45.9,
+      "fat": 20.2,
+      "carbs": 77.5
+    },
+    {
+      "name": "20 boneless plain",
+      "calories": 751,
+      "protein": 76.2,
+      "fat": 33.3,
+      "carbs": 39.1
+    },
+    {
+      "name": "4  boneless plain / kids nuggets",
+      "calories": 150,
+      "protein": 15.2,
+      "fat": 6.7,
+      "carbs": 7.8
+    },
+    {
+      "name": "4 cajun citrus boneless",
+      "calories": 158,
+      "protein": 15.4,
+      "fat": 6.8,
+      "carbs": 9.3
+    },
+    {
+      "name": "4 garlic parmesan boneless  ",
+      "calories": 321,
+      "protein": 16.9,
+      "fat": 23.5,
+      "carbs": 11
+    },
+    {
+      "name": "4 ghost pepper boneless ",
+      "calories": 156,
+      "protein": 15.4,
+      "fat": 6.8,
+      "carbs": 8.8
+    },
+    {
+      "name": "4 honey bbq boneless",
+      "calories": 218,
+      "protein": 15.6,
+      "fat": 7.9,
+      "carbs": 21.1
+    },
+    {
+      "name": "4 hot honey boneless",
+      "calories": 225,
+      "protein": 15.3,
+      "fat": 6.7,
+      "carbs": 25.8
+    },
+    {
+      "name": "6 boneless plain",
+      "calories": 225,
+      "protein": 22.9,
+      "fat": 10,
+      "carbs": 11.7
+    },
+    {
+      "name": "6 cajun citrus boneless",
+      "calories": 233,
+      "protein": 23,
+      "fat": 10.1,
+      "carbs": 13.2
+    },
+    {
+      "name": "6 garlic parmesan boneless ",
+      "calories": 482,
+      "protein": 25.3,
+      "fat": 35.3,
+      "carbs": 16.4
+    },
+    {
+      "name": "6 ghost pepper boneless",
+      "calories": 232,
+      "protein": 23,
+      "fat": 10.2,
+      "carbs": 12.9
+    },
+    {
+      "name": "6 honey bbq boneless",
+      "calories": 327,
+      "protein": 23.4,
+      "fat": 11.9,
+      "carbs": 31.6
+    },
+    {
+      "name": "6 hot honey boneless",
+      "calories": 337,
+      "protein": 23,
+      "fat": 10.1,
+      "carbs": 38.7
+    },
+    {
+      "name": "8 boneless plain",
+      "calories": 301,
+      "protein": 30.5,
+      "fat": 13.3,
+      "carbs": 15.6
+    },
+    {
+      "name": "8 cajun citrus boneless",
+      "calories": 311,
+      "protein": 30.7,
+      "fat": 13.5,
+      "carbs": 17.7
+    },
+    {
+      "name": "8 garlic parmesan boneless ",
+      "calories": 643,
+      "protein": 33.7,
+      "fat": 47,
+      "carbs": 21.9
+    },
+    {
+      "name": "8 ghost pepper boneless",
+      "calories": 310,
+      "protein": 30.7,
+      "fat": 13.6,
+      "carbs": 17.3
+    },
+    {
+      "name": "8 honey bbq boneless",
+      "calories": 436,
+      "protein": 31.3,
+      "fat": 15.8,
+      "carbs": 42.2
+    },
+    {
+      "name": "8 hot honey boneless",
+      "calories": 449,
+      "protein": 30.6,
+      "fat": 13.5,
+      "carbs": 51.6
+    },
+    {
+      "name": "bacon roll - plain ",
+      "calories": 346,
+      "protein": 18.7,
+      "fat": 16.5,
+      "carbs": 29.4
+    },
+    {
+      "name": "bacon roll with hp sauce ",
+      "calories": 358,
+      "protein": 18.8,
+      "fat": 16.5,
+      "carbs": 32.2
+    },
+    {
+      "name": "big breakfast roll with chicken breakfast patty & hp sauce",
+      "calories": 415,
+      "protein": 23.5,
+      "fat": 19.8,
+      "carbs": 36.8
+    },
+    {
+      "name": "big breakfast wrap with chicken breakfast patty & hp sauce",
+      "calories": 629,
+      "protein": 31.3,
+      "fat": 34.9,
+      "carbs": 48.3
+    },
+    {
+      "name": "big cajun roll",
+      "calories": 629,
+      "protein": 27,
+      "fat": 33.6,
+      "carbs": 52.6
+    },
+    {
+      "name": "big cajun roll with chicken sausage",
+      "calories": 555,
+      "protein": 25.1,
+      "fat": 28.4,
+      "carbs": 49.8
+    },
+    {
+      "name": "big cajun wrap",
+      "calories": 701,
+      "protein": 33,
+      "fat": 39.6,
+      "carbs": 51.6
+    },
+    {
+      "name": "big cajun wrap with chicken breakfast patty",
+      "calories": 637,
+      "protein": 31.4,
+      "fat": 35.2,
+      "carbs": 49.6
+    },
+    {
+      "name": "breakfast roll with chicken breakfast patty & hp sauce",
+      "calories": 315,
+      "protein": 13.7,
+      "fat": 13.4,
+      "carbs": 35.9
+    },
+    {
+      "name": "cajun hash brown ",
+      "calories": 115,
+      "protein": 1.6,
+      "fat": 6.4,
+      "carbs": 12
+    },
+    {
+      "name": "double sausage, egg & cheese roll *selected restaurants only",
+      "calories": 528,
+      "protein": 31.2,
+      "fat": 29.4,
+      "carbs": 37.7
+    },
+    {
+      "name": "double sausage, egg & cheese roll with brown sauce*selected restaurants only",
+      "calories": 540,
+      "protein": 31.3,
+      "fat": 29.5,
+      "carbs": 40.5
+    },
+    {
+      "name": "egg & cheese roll *selected restaurants only",
+      "calories": 314,
+      "protein": 15.7,
+      "fat": 14.1,
+      "carbs": 30.2
+    },
+    {
+      "name": "hash brown ",
+      "calories": 106,
+      "protein": 1.2,
+      "fat": 6.2,
+      "carbs": 10.7
+    },
+    {
+      "name": "12 cajun citrus hot wings",
+      "calories": 1234,
+      "protein": 96.8,
+      "fat": 73.6,
+      "carbs": 46.2
+    },
+    {
+      "name": "12 garlic parmesan hot wings",
+      "calories": 1990,
+      "protein": 103.8,
+      "fat": 149.3,
+      "carbs": 57.4
+    },
+    {
+      "name": "12 ghost pepper hot wings",
+      "calories": 1233,
+      "protein": 96.9,
+      "fat": 73.8,
+      "carbs": 45.6
+    },
+    {
+      "name": "12 honey bbq hot wings ",
+      "calories": 1523,
+      "protein": 98.3,
+      "fat": 79,
+      "carbs": 103
+    },
+    {
+      "name": "12 hot honey wings",
+      "calories": 1554,
+      "protein": 96.8,
+      "fat": 73.8,
+      "carbs": 124.2
+    },
+    {
+      "name": "12 hot wings",
+      "calories": 1219,
+      "protein": 96.5,
+      "fat": 73.4,
+      "carbs": 43.2
+    },
+    {
+      "name": "2 hot wings",
+      "calories": 203,
+      "protein": 16.1,
+      "fat": 12.2,
+      "carbs": 7.2
+    },
+    {
+      "name": "20 hot wings",
+      "calories": 2032,
+      "protein": 160.8,
+      "fat": 122.4,
+      "carbs": 72
+    },
+    {
+      "name": "3 hot wings",
+      "calories": 305,
+      "protein": 24.1,
+      "fat": 18.4,
+      "carbs": 10.8
+    },
+    {
+      "name": "6 cajun citrus hot wings",
+      "calories": 617,
+      "protein": 48.4,
+      "fat": 36.8,
+      "carbs": 23.1
+    },
+    {
+      "name": "6 garlic parmesan hot wings",
+      "calories": 995,
+      "protein": 51.9,
+      "fat": 74.6,
+      "carbs": 28.7
+    },
+    {
+      "name": "6 ghost pepper hot wings",
+      "calories": 617,
+      "protein": 48.4,
+      "fat": 36.9,
+      "carbs": 22.8
+    },
+    {
+      "name": "6 honey bbq hot wings",
+      "calories": 762,
+      "protein": 49.1,
+      "fat": 39.5,
+      "carbs": 51.5
+    },
+    {
+      "name": "6 hot honey wings",
+      "calories": 777,
+      "protein": 48.4,
+      "fat": 36.9,
+      "carbs": 62.1
+    },
+    {
+      "name": "6 hot wings",
+      "calories": 610,
+      "protein": 48.2,
+      "fat": 36.7,
+      "carbs": 21.6
+    },
+    {
+      "name": "8 cajun citrus hot wings",
+      "calories": 823,
+      "protein": 64.6,
+      "fat": 49.1,
+      "carbs": 30.9
+    },
+    {
+      "name": "8 garlic parmesan hot wings",
+      "calories": 1326,
+      "protein": 69.2,
+      "fat": 99.5,
+      "carbs": 38.2
+    },
+    {
+      "name": "8 ghost pepper hot wings",
+      "calories": 823,
+      "protein": 64.6,
+      "fat": 49.2,
+      "carbs": 30.5
+    },
+    {
+      "name": "8 honey bbq hot wings",
+      "calories": 1016,
+      "protein": 65.5,
+      "fat": 52.7,
+      "carbs": 68.7
+    },
+    {
+      "name": "8 hot honey wings ",
+      "calories": 1036,
+      "protein": 64.6,
+      "fat": 49.2,
+      "carbs": 82.8
+    },
+    {
+      "name": "8 hot wings",
+      "calories": 813,
+      "protein": 64.3,
+      "fat": 49,
+      "carbs": 28.8
+    },
+    {
+      "name": "chicken sandwich classic ",
+      "calories": 603,
+      "protein": 35.2,
+      "fat": 32.2,
+      "carbs": 41.7
+    },
+    {
+      "name": "chicken sandwich deluxe classic",
+      "calories": 683,
+      "protein": 39.9,
+      "fat": 38.1,
+      "carbs": 43.5
+    },
+    {
+      "name": "chicken sandwich deluxe spicy",
+      "calories": 685,
+      "protein": 39.9,
+      "fat": 38.1,
+      "carbs": 43.8
+    },
+    {
+      "name": "chicken sandwich spicy",
+      "calories": 605,
+      "protein": 35.2,
+      "fat": 32.2,
+      "carbs": 42
+    },
+    {
+      "name": "classic superstack sandwich",
+      "calories": 779,
+      "protein": 40.6,
+      "fat": 44.1,
+      "carbs": 52.9
+    },
+    {
+      "name": "deluxe superstack sandwich",
+      "calories": 790,
+      "protein": 41,
+      "fat": 44.4,
+      "carbs": 54.2
+    },
+    {
+      "name": "honey bbq sandwich",
+      "calories": 718,
+      "protein": 40.5,
+      "fat": 33.3,
+      "carbs": 61.8
+    },
+    {
+      "name": "honey bbq superstack sandwich",
+      "calories": 825,
+      "protein": 41.6,
+      "fat": 39.6,
+      "carbs": 72.5
+    },
+    {
+      "name": "hot honey sandwich",
+      "calories": 592,
+      "protein": 39.2,
+      "fat": 23.4,
+      "carbs": 54.6
+    },
+    {
+      "name": "hot honey superstack sandwich",
+      "calories": 698,
+      "protein": 40.4,
+      "fat": 29.6,
+      "carbs": 65.3
+    },
+    {
+      "name": "kids sandwich honey bbq ",
+      "calories": 210,
+      "protein": 10.9,
+      "fat": 6.6,
+      "carbs": 25.2
+    },
+    {
+      "name": "kids sandwich mayo",
+      "calories": 246,
+      "protein": 11,
+      "fat": 11.5,
+      "carbs": 23.1
+    },
+    {
+      "name": "kids sandwich plain",
+      "calories": 196,
+      "protein": 10.9,
+      "fat": 6.3,
+      "carbs": 22.5
+    },
+    {
+      "name": "red bean creole vegan sandwich",
+      "calories": 591,
+      "protein": 15.2,
+      "fat": 33.3,
+      "carbs": 58
+    },
+    {
+      "name": "spicy deluxe superstack sandwich",
+      "calories": 792,
+      "protein": 41.1,
+      "fat": 44.3,
+      "carbs": 54.5
+    },
+    {
+      "name": "spicy superstack sandwich",
+      "calories": 781,
+      "protein": 40.6,
+      "fat": 44,
+      "carbs": 53.2
+    },
+    {
+      "name": "the chicken cruncher",
+      "calories": 333,
+      "protein": 13.4,
+      "fat": 16.3,
+      "carbs": 32.8
+    },
+    {
+      "name": "the double stack ",
+      "calories": 876,
+      "protein": 64.2,
+      "fat": 45.2,
+      "carbs": 51.7
+    },
+    {
+      "name": "the spicy double stack ",
+      "calories": 878,
+      "protein": 64.2,
+      "fat": 45.2,
+      "carbs": 52
+    },
+    {
+      "name": "biscuit",
+      "calories": 217,
+      "protein": 5.8,
+      "fat": 10.8,
+      "carbs": 22.9
+    },
+    {
+      "name": "biscuit & gravy",
+      "calories": 274,
+      "protein": 6.8,
+      "fat": 11.9,
+      "carbs": 33.7
+    },
+    {
+      "name": "biscuit & honey",
+      "calories": 308,
+      "protein": 5.9,
+      "fat": 13.8,
+      "carbs": 38.9
+    },
+    {
+      "name": "biscuit & hot honey",
+      "calories": 311,
+      "protein": 5.9,
+      "fat": 14,
+      "carbs": 39.4
+    },
+    {
+      "name": "biscuit & nutella ",
+      "calories": 324,
+      "protein": 6.7,
+      "fat": 18.4,
+      "carbs": 31.5
+    },
+    {
+      "name": "cajun fries large",
+      "calories": 388,
+      "protein": 5.8,
+      "fat": 19.3,
+      "carbs": 50.5
+    },
+    {
+      "name": "cajun fries reg",
+      "calories": 305,
+      "protein": 4.4,
+      "fat": 15.4,
+      "carbs": 39.6
+    },
+    {
+      "name": "cheesy fries",
+      "calories": 573,
+      "protein": 10.2,
+      "fat": 29.9,
+      "carbs": 70
+    },
+    {
+      "name": "double chocolate cookie",
+      "calories": 411,
+      "protein": 4.9,
+      "fat": 20.7,
+      "carbs": 50.1
+    },
+    {
+      "name": "fries large ",
+      "calories": 370,
+      "protein": 5,
+      "fat": 19,
+      "carbs": 47.9
+    },
+    {
+      "name": "fries reg",
+      "calories": 296,
+      "protein": 4,
+      "fat": 15.2,
+      "carbs": 38.3
+    },
+    {
+      "name": "honey bbq loaded fries",
+      "calories": 722,
+      "protein": 11,
+      "fat": 36.8,
+      "carbs": 91
+    },
+    {
+      "name": "mac & cheese",
+      "calories": 245,
+      "protein": 11,
+      "fat": 8.8,
+      "carbs": 27.9
+    },
+    {
+      "name": "mash & gravy ",
+      "calories": 429,
+      "protein": 3.4,
+      "fat": 30.8,
+      "carbs": 34.9
+    },
+    {
+      "name": "milk chocolate cookie",
+      "calories": 417,
+      "protein": 4.9,
+      "fat": 21.5,
+      "carbs": 50.1
+    },
+    {
+      "name": "small fries",
+      "calories": 258,
+      "protein": 3.5,
+      "fat": 13.2,
+      "carbs": 33.3
+    },
+    {
+      "name": "1 piece signature louisiana chicken",
+      "calories": 364,
+      "protein": 27.7,
+      "fat": 21.6,
+      "carbs": 14.6
+    },
+    {
+      "name": "2 piece signature louisiana chicken",
+      "calories": 728,
+      "protein": 55.4,
+      "fat": 43.1,
+      "carbs": 29.1
+    },
+    {
+      "name": "3 piece signature louisiana chicken",
+      "calories": 1092,
+      "protein": 83.2,
+      "fat": 64.7,
+      "carbs": 43.7
+    },
+    {
+      "name": "6 piece signature louisiana chicken",
+      "calories": 2184,
+      "protein": 166.3,
+      "fat": 129.4,
+      "carbs": 87.4
+    },
+    {
+      "name": "classic chicken wrap",
+      "calories": 487,
+      "protein": 22.6,
+      "fat": 24.8,
+      "carbs": 43.4
+    },
+    {
+      "name": "classic savin' wrap / kids wrap",
+      "calories": 270,
+      "protein": 11.9,
+      "fat": 13.3,
+      "carbs": 25
+    },
+    {
+      "name": "honey bbq chicken wrap",
+      "calories": 422,
+      "protein": 22.6,
+      "fat": 15,
+      "carbs": 48.9
+    },
+    {
+      "name": "ranch chicken wrap ",
+      "calories": 494,
+      "protein": 22.5,
+      "fat": 25.5,
+      "carbs": 43.6
+    },
+    {
+      "name": "spicy chicken wrap ",
+      "calories": 489,
+      "protein": 22.6,
+      "fat": 24.7,
+      "carbs": 43.6
+    },
+    {
+      "name": "spicy savin' wrap",
+      "calories": 270,
+      "protein": 11.9,
+      "fat": 13.3,
+      "carbs": 25.1
+    },
+    {
+      "name": "1 classic tender",
+      "calories": 118,
+      "protein": 10.4,
+      "fat": 5.9,
+      "carbs": 6.4
+    },
+    {
+      "name": "1 spicy tender",
+      "calories": 116,
+      "protein": 12.6,
+      "fat": 5.2,
+      "carbs": 5.1
+    },
+    {
+      "name": "2 classic tenders / kids tenders",
+      "calories": 236,
+      "protein": 20.8,
+      "fat": 11.9,
+      "carbs": 12.8
+    },
+    {
+      "name": "2 spicy tenders",
+      "calories": 232,
+      "protein": 25.2,
+      "fat": 10.3,
+      "carbs": 10.2
+    },
+    {
+      "name": "3 classic tenders",
+      "calories": 355,
+      "protein": 31.1,
+      "fat": 17.8,
+      "carbs": 19.3
+    },
+    {
+      "name": "3 spicy tenders",
+      "calories": 347,
+      "protein": 37.8,
+      "fat": 15.5,
+      "carbs": 15.3
+    },
+    {
+      "name": "5 classic tenders",
+      "calories": 591,
+      "protein": 51.9,
+      "fat": 29.7,
+      "carbs": 32.1
+    },
+    {
+      "name": "5 spicy tenders",
+      "calories": 579,
+      "protein": 63,
+      "fat": 25.8,
+      "carbs": 25.5
+    }
+  ]
+}
