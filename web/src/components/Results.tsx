@@ -60,7 +60,9 @@ export function Results ({ results, iconFor, selected, onSelect, onClear }: Prop
                                 key={i}
                                 combo={combo}
                                 selected={isSelected}
-                                compact={!!selected && !isSelected}
+                                // Once a pick is made every option collapses to a slim row;
+                                // the chosen meal is edited in the Track panel below.
+                                compact={!!selected}
                                 onSelect={() => onSelect(restaurant, i)}
                             />
                         )

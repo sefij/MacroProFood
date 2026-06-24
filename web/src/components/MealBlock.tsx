@@ -36,7 +36,13 @@ export function MealBlock ({ combo, selected, compact, onSelect }: Props) {
             .map((it) => `${it.qty > 1 ? `${it.qty}× ` : ''}${prettyName(it.name)}`)
             .join(', ')
         return (
-            <div className="meal compact" onClick={onSelect} role="button" tabIndex={0}>
+            <div
+                className={`meal compact${selected ? ' picked' : ''}`}
+                onClick={onSelect}
+                role="button"
+                tabIndex={0}
+            >
+                {selected && <span className="picked-dot">✓</span>}
                 <span className="compact-names">{summary}</span>
                 <span className="pill">{round(t.calories)} cal</span>
                 <span className="pill">{accuracyPercent(avg)}</span>

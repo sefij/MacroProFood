@@ -250,6 +250,12 @@ header.hero p {
     opacity: 0.75;
 }
 .meal.compact:hover { opacity: 1; border-color: var(--muted); }
+.meal.compact.picked {
+    opacity: 1;
+    border-color: var(--accent);
+    background: #2a2114;
+}
+.meal.compact.picked .picked-dot { color: var(--accent); font-weight: 700; }
 .meal.compact .compact-names {
     flex: 1;
     min-width: 0;
@@ -306,6 +312,68 @@ header.hero p {
     border-radius: 11px;
 }
 .mfp-connected .btn-primary { margin-top: 10px; }
+
+/* Editable meal item list (Track panel) */
+.meal-items {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    overflow: hidden;
+}
+.meal-item + .meal-item { border-top: 1px solid var(--border); }
+.meal-item label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.meal-item input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex: none;
+}
+.meal-item .mi-name { flex: 1; min-width: 0; }
+.meal-item .mi-cal { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.meal-item .mi-tag {
+    margin-left: 8px;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 1px 7px;
+}
+.meal-item.off .mi-name { text-decoration: line-through; color: var(--muted); }
+.meal-item.off .mi-cal { text-decoration: line-through; }
+
+/* Swap suggestions */
+.swaps { margin-bottom: 12px; }
+.swap-list { margin-top: 10px; }
+.swap-list p { margin: 0 0 8px; }
+.swap-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin: 0 8px 8px 0;
+    padding: 8px 12px;
+    background: var(--surface-2);
+    border: 1px dashed var(--accent);
+    border-radius: 10px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.86rem;
+    text-align: left;
+}
+.swap-chip:hover { background: #2a2114; }
+.swap-chip .sub { color: var(--muted); font-size: 0.74rem; }
 
 .meal-select {
     display: flex;

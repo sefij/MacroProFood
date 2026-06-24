@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type {
+    MenuItem,
     OptimizationResult,
     OptimizationResults,
     RestaurantIndexEntry,
@@ -15,6 +16,16 @@ import { Results } from './components/Results'
 import { TrackPanel } from './components/TrackPanel'
 
 const EMPTY: TargetMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }
+
+// Swap-suggestion tuning. The optimizer never exceeds its target, so to give
+// swaps "room for overage" we inflate the freed-up macros before searching:
+//   - OVERAGE: how far past the gap a suggestion may reach (1.5 = up to +50%).
+//   - MIN_HEADROOM: a per-macro floor (fraction of the original target) so
+//     options still surface even when one macro is already near target.
+//   - MAX_SUGGESTIONS: how many distinct items to offer.
+const SWAP_OVERAGE = 1.5
+const SWAP_MIN_HEADROOM = 0.2
+const SWAP_MAX_SUGGESTIONS = 10
 
 export function App () {
     const [data, setData] = useState<LoadedData | null>(null)
@@ -105,14 +116,46 @@ export function App () {
         setTracked(null)
     }
 
-    // 1-click path used by TrackPanel when the extension is installed.
-    const sendToMfp = async (combo: OptimizationResult, mealName: string) => {
-        const res = await extTrackMeal(combo.totalNutrition, mealName)
+    // 1-click path used by TrackPanel when the extension is installed. Receives
+    // the (possibly edited) meal totals rather than the original combo.
+    const sendToMfp = async (nutrition: OptimizationResult['totalNutrition'], mealName: string) => {
+        const res = await extTrackMeal(nutrition, mealName)
         showToast(
             res.confirmed
                 ? `✓ Added to MyFitnessPal ${mealName}`
                 : `Sent to MFP ${mealName} — check your diary to confirm`
         )
+    }
+
+    // Items from the picked restaurant that best fit `remaining`, surfaced in the
+    // Track panel as swap suggestions when the user removes items from the meal.
+    const suggestSwaps = (remaining: TargetMacros): MenuItem[] => {
+        if (!data || !picked) return []
+        const key = restaurants.find((r) => r.restaurant === picked.restaurant)?.key
+        if (!key) return []
+        const restData = toRestaurantsData(data.snapshots, [key])
+        // Inflate the gap so suggestions get headroom past the freed-up macros.
+        const pad = (rem: number, target: number) =>
+            Math.max(rem * SWAP_OVERAGE, target * SWAP_MIN_HEADROOM)
+        const widened: TargetMacros = {
+            calories: pad(remaining.calories, macros.calories),
+            protein: pad(remaining.protein, macros.protein),
+            fat: pad(remaining.fat, macros.fat),
+            carbs: pad(remaining.carbs, macros.carbs)
+        }
+        const combos = findBestCombinations(restData, widened, 3, SWAP_MAX_SUGGESTIONS)[
+            picked.restaurant
+        ] ?? []
+        const seen = new Set<string>()
+        const out: MenuItem[] = []
+        for (const combo of combos) {
+            for (const it of combo.items) {
+                if (seen.has(it.name)) continue
+                seen.add(it.name)
+                out.push(it)
+            }
+        }
+        return out.slice(0, SWAP_MAX_SUGGESTIONS)
     }
 
     return (
@@ -164,9 +207,11 @@ export function App () {
             {tracked && (
                 <TrackPanel
                     combo={tracked}
+                    targets={macros}
                     onClose={clearChoice}
                     extAvailable={extAvailable}
-                    onSend={(mealName) => sendToMfp(tracked, mealName)}
+                    onSend={(nutrition, mealName) => sendToMfp(nutrition, mealName)}
+                    suggest={suggestSwaps}
                 />
             )}
 
