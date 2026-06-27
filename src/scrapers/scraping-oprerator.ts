@@ -4,6 +4,7 @@ import { WendysScraper } from './Wendys/scraper'
 import { PopeyesScraper } from './Popeyes/scraper'
 import { SubwayScraper } from './Subway/scraper'
 import { TacoBellScraper } from './TacoBell/scraper'
+import { WagamamaScraper } from './Wagamama/scraper'
 import { RestaurantData, RestaurantsData, SourceScraper } from '../types'
 import { withCache } from '../cache'
 import { RestaurantKey, isScraperDisabled } from '../config'
@@ -53,9 +54,8 @@ export class ScrapingOperator {
     }
 
     async scrapeKFC (): Promise<RestaurantData> {
-        // KFC reads from local JSON — no cache needed
         return this.scrapeIfEnabled('KFC', 'KFC', () =>
-            this.runScraper(new KFCScraper()))
+            this.cached('kfc', () => this.runScraper(new KFCScraper())))
     }
 
     async scrapeWendys (): Promise<RestaurantData> {
@@ -80,6 +80,11 @@ export class ScrapingOperator {
             this.cached('tacobell', () => this.runScraper(new TacoBellScraper())))
     }
 
+    async scrapeWagamama (): Promise<RestaurantData> {
+        return this.scrapeIfEnabled('WAGAMAMA', 'Wagamama', () =>
+            this.cached('wagamama', () => this.runScraper(new WagamamaScraper())))
+    }
+
     async scrapeAll (): Promise<RestaurantsData> {
         const startTime = performance.now()
 
@@ -91,14 +96,16 @@ export class ScrapingOperator {
             wendysResults,
             mcdonaldsResults,
             subwayResults,
-            tacoBellResults
+            tacoBellResults,
+            wagamamaResults
         ] = await Promise.all([
             this.scrapePopeyes(),
             this.scrapeKFC(),
             this.scrapeWendys(),
             this.scrapeMcdonalds(),
             this.scrapeSubway(),
-            this.scrapeTacoBell()
+            this.scrapeTacoBell(),
+            this.scrapeWagamama()
         ])
 
         this.restaurants.Popeyes = popeyesResults
@@ -107,6 +114,7 @@ export class ScrapingOperator {
         this.restaurants.McDonalds = mcdonaldsResults
         this.restaurants.Subway = subwayResults
         this.restaurants.TacoBell = tacoBellResults
+        this.restaurants.Wagamama = wagamamaResults
 
         // Save data to files for debugging and caching
         for (const [restaurant, data] of Object.entries(this.restaurants)) {
@@ -150,6 +158,8 @@ export class ScrapingOperator {
             case 'taco bell':
             case 'taco-bell':
                 return this.scrapeTacoBell()
+            case 'wagamama':
+                return this.scrapeWagamama()
             default:
                 console.log(chalk.red(`\n❌ Unknown restaurant: ${restaurant}`))
                 return

@@ -6,10 +6,10 @@
  * which the React app fetches at runtime.
  *
  * Each file carries an `updatedAt` timestamp:
- *  - snapshot restaurants (KFC / Wendy's / Subway) use the hand-captured date
+ *  - snapshot restaurants (Wendy's / Subway) use the hand-captured date
  *    exported from their `store.ts`;
- *  - live restaurants (Popeyes / McDonald's / Taco Bell) are stamped with the
- *    scrape run time, but only when the scrape actually returned items (so a
+ *  - live restaurants (KFC / Popeyes / McDonald's / Taco Bell) are stamped with
+ *    the scrape run time, but only when the scrape actually returned items (so a
  *    failed scrape never masquerades as "fresh").
  *
  * Usage: `yarn build:data` (compiles, then runs `dist/tools/build-web-data.js`).
@@ -30,7 +30,6 @@ import {
     SnapshotSource
 } from '../core/types'
 
-import { updatedAt as kfcUpdatedAt } from '../scrapers/KFC/store'
 import { updatedAt as wendysUpdatedAt } from '../scrapers/Wendys/store'
 import { updatedAt as subwayUpdatedAt } from '../scrapers/Subway/store'
 
@@ -51,7 +50,8 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'McDonalds', key: 'MCDONALDS', restaurant: "McDonald's", icon: '🍟', source: 'live' },
     { scrapeKey: 'Popeyes', key: 'POPEYES', restaurant: 'Popeyes', icon: '🐔', source: 'live' },
     { scrapeKey: 'TacoBell', key: 'TACOBELL', restaurant: 'Taco Bell', icon: '🌮', source: 'live' },
-    { scrapeKey: 'KFC', key: 'KFC', restaurant: 'KFC', icon: '🍗', source: 'snapshot', snapshotDate: kfcUpdatedAt },
+    { scrapeKey: 'Wagamama', key: 'WAGAMAMA', restaurant: 'Wagamama', icon: '🍜', source: 'live' },
+    { scrapeKey: 'KFC', key: 'KFC', restaurant: 'KFC', icon: '🍗', source: 'live' },
     { scrapeKey: 'Wendys', key: 'WENDYS', restaurant: "Wendy's", icon: '🍔', source: 'snapshot', snapshotDate: wendysUpdatedAt },
     { scrapeKey: 'Subway', key: 'SUBWAY', restaurant: 'Subway', icon: '🥪', source: 'snapshot', snapshotDate: subwayUpdatedAt }
 ]

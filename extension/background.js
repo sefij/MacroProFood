@@ -13,7 +13,24 @@
  * The injected functions mirror the DOM heuristics in src/mfp/client.ts.
  */
 
-const DIARY_URL = 'https://www.myfitnesspal.com/food/diary'
+const DIARY_PATH = 'https://www.myfitnesspal.com/food/diary'
+
+/** Local-time YYYY-MM-DD, matching MFP's `?date=` diary param. */
+function todayStr () {
+    const d = new Date()
+    const p = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+/** Diary URL pinned to today, so we never read or write a stale (e.g. yesterday's) date. */
+function diaryUrl () {
+    return `${DIARY_PATH}?date=${todayStr()}`
+}
+
+/** True if a tab URL is already pointing at today's dated diary. */
+function isOnToday (url) {
+    return new RegExp(`[?&]date=${todayStr()}(?:&|$)`).test(url || '')
+}
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     handle(msg)
@@ -50,21 +67,24 @@ function waitForTabComplete (tabId) {
 }
 
 /**
- * Returns a tab sitting on the MFP food diary. Reuses an existing diary tab,
- * navigates an existing MFP tab to the diary, or opens a fresh background tab.
+ * Returns a tab sitting on *today's* MFP food diary. Reuses an existing diary
+ * tab only when it's already showing today (otherwise an open tab left on a
+ * previous day would feed us yesterday's "Remaining" row); navigates an existing
+ * MFP tab to today's diary, or opens a fresh background tab.
  * `createdTabId` is set when we opened the tab ourselves (so callers can clean up).
  */
 async function getDiaryTab () {
+    const url = diaryUrl()
     const existing = await findMfpTab()
-    if (existing && /\/food\/diary/.test(existing.url || '')) {
+    if (existing && /\/food\/diary/.test(existing.url || '') && isOnToday(existing.url)) {
         return { tabId: existing.id, createdTabId: null }
     }
     if (existing) {
-        await chrome.tabs.update(existing.id, { url: DIARY_URL })
+        await chrome.tabs.update(existing.id, { url })
         await waitForTabComplete(existing.id)
         return { tabId: existing.id, createdTabId: null }
     }
-    const tab = await chrome.tabs.create({ url: DIARY_URL, active: false })
+    const tab = await chrome.tabs.create({ url, active: false })
     await waitForTabComplete(tab.id)
     return { tabId: tab.id, createdTabId: tab.id }
 }

@@ -1,0 +1,779 @@
+{
+  "restaurant": "Wagamama",
+  "key": "WAGAMAMA",
+  "icon": "🍜",
+  "source": "live",
+  "updatedAt": "2026-06-27T20:16:24.691Z",
+  "items": [
+    {
+      "name": "buldak fire wings",
+      "calories": 780,
+      "protein": 68.6,
+      "fat": 42.2,
+      "carbs": 31.4
+    },
+    {
+      "name": "buldak bibimbap",
+      "calories": 1012,
+      "protein": 38.8,
+      "fat": 46.1,
+      "carbs": 109
+    },
+    {
+      "name": "katsu chicken wrap",
+      "calories": 481,
+      "protein": 29.8,
+      "fat": 21.3,
+      "carbs": 41.2
+    },
+    {
+      "name": "yasai ramen wrap",
+      "calories": 466,
+      "protein": 23.8,
+      "fat": 14.6,
+      "carbs": 59
+    },
+    {
+      "name": "miso k-chicken lunch box",
+      "calories": 739,
+      "protein": 29.8,
+      "fat": 23.7,
+      "carbs": 100.9
+    },
+    {
+      "name": "miso cauliflower lunch box",
+      "calories": 800,
+      "protein": 13.7,
+      "fat": 30,
+      "carbs": 117.4
+    },
+    {
+      "name": "nasi goreng lunch box",
+      "calories": 765,
+      "protein": 37.3,
+      "fat": 25.3,
+      "carbs": 95.8
+    },
+    {
+      "name": "spicy smashed cucumber",
+      "calories": 224,
+      "protein": 3.2,
+      "fat": 15.9,
+      "carbs": 14.9
+    },
+    {
+      "name": "edamame with salt",
+      "calories": 280,
+      "protein": 24,
+      "fat": 13.2,
+      "carbs": 9.2
+    },
+    {
+      "name": "edamame with chilli + garlic salt",
+      "calories": 287,
+      "protein": 24.3,
+      "fat": 13.3,
+      "carbs": 10.2
+    },
+    {
+      "name": "koko 'prawn' crackers",
+      "calories": 255,
+      "protein": 2.3,
+      "fat": 10.2,
+      "carbs": 35.6
+    },
+    {
+      "name": "wok-fried greens",
+      "calories": 163,
+      "protein": 4.1,
+      "fat": 10.4,
+      "carbs": 11.6
+    },
+    {
+      "name": "duck",
+      "calories": 313,
+      "protein": 11.1,
+      "fat": 12.2,
+      "carbs": 39.3
+    },
+    {
+      "name": "beef brisket + kimchee",
+      "calories": 231,
+      "protein": 9,
+      "fat": 10,
+      "carbs": 26.4
+    },
+    {
+      "name": "chicken",
+      "calories": 195,
+      "protein": 8.2,
+      "fat": 9.6,
+      "carbs": 19.9
+    },
+    {
+      "name": "yasai | vegetable",
+      "calories": 208,
+      "protein": 3.9,
+      "fat": 8.2,
+      "carbs": 30.9
+    },
+    {
+      "name": "gochujang tamarind pork ribs",
+      "calories": 599,
+      "protein": 30.7,
+      "fat": 36.2,
+      "carbs": 35.5
+    },
+    {
+      "name": "gochujang tamarind corn ribs",
+      "calories": 467,
+      "protein": 12.6,
+      "fat": 14.2,
+      "carbs": 64.5
+    },
+    {
+      "name": "hot honey fried chicken | yuzu",
+      "calories": 785,
+      "protein": 36.4,
+      "fat": 45.6,
+      "carbs": 54.2
+    },
+    {
+      "name": "hot honey fried chicken | teriyaki",
+      "calories": 806,
+      "protein": 36.8,
+      "fat": 44.9,
+      "carbs": 62
+    },
+    {
+      "name": "hot honey fried chicken | firecracker",
+      "calories": 842,
+      "protein": 35.4,
+      "fat": 50.8,
+      "carbs": 59.4
+    },
+    {
+      "name": "chilli squid",
+      "calories": 411,
+      "protein": 14.4,
+      "fat": 25.3,
+      "carbs": 28.9
+    },
+    {
+      "name": "ebi katsu",
+      "calories": 284,
+      "protein": 8.8,
+      "fat": 14.6,
+      "carbs": 29.3
+    },
+    {
+      "name": "lollipop prawn kushiyaki",
+      "calories": 184,
+      "protein": 13.5,
+      "fat": 7.3,
+      "carbs": 14.3
+    },
+    {
+      "name": "bang bang cauliflower",
+      "calories": 447,
+      "protein": 3.5,
+      "fat": 31.1,
+      "carbs": 37.6
+    },
+    {
+      "name": "korean fried chicken",
+      "calories": 729,
+      "protein": 18.6,
+      "fat": 26.5,
+      "carbs": 99.1
+    },
+    {
+      "name": "tonkatsu pork",
+      "calories": 797,
+      "protein": 21.9,
+      "fat": 40.3,
+      "carbs": 85.1
+    },
+    {
+      "name": "Korean barbecue brisket",
+      "calories": 524,
+      "protein": 17.3,
+      "fat": 21.6,
+      "carbs": 63.9
+    },
+    {
+      "name": "oyster + shiitake mushrooms",
+      "calories": 577,
+      "protein": 15.4,
+      "fat": 27.6,
+      "carbs": 65.6
+    },
+    {
+      "name": "Hoisin pulled duck",
+      "calories": 626,
+      "protein": 19.2,
+      "fat": 31.2,
+      "carbs": 65.8
+    },
+    {
+      "name": "chicken katsu curry",
+      "calories": 988,
+      "protein": 43.9,
+      "fat": 41.8,
+      "carbs": 110
+    },
+    {
+      "name": "yasai katsu curry",
+      "calories": 1223,
+      "protein": 21.5,
+      "fat": 55.3,
+      "carbs": 159.3
+    },
+    {
+      "name": "hot chicken katsu curry",
+      "calories": 1115,
+      "protein": 45,
+      "fat": 51.6,
+      "carbs": 117.9
+    },
+    {
+      "name": "hot yasai katsu curry",
+      "calories": 1350,
+      "protein": 22.5,
+      "fat": 65.2,
+      "carbs": 167.3
+    },
+    {
+      "name": "prawn raisukaree",
+      "calories": 1022,
+      "protein": 27.6,
+      "fat": 42.1,
+      "carbs": 131.1
+    },
+    {
+      "name": "chicken raisukaree",
+      "calories": 1092,
+      "protein": 38.4,
+      "fat": 45.2,
+      "carbs": 131.2
+    },
+    {
+      "name": "tofu raisukaree",
+      "calories": 1135,
+      "protein": 28.6,
+      "fat": 53.4,
+      "carbs": 133.1
+    },
+    {
+      "name": "prawn firecracker",
+      "calories": 1139,
+      "protein": 28.2,
+      "fat": 38.7,
+      "carbs": 156
+    },
+    {
+      "name": "chicken firecracker",
+      "calories": 1239,
+      "protein": 44.4,
+      "fat": 42.8,
+      "carbs": 156
+    },
+    {
+      "name": "tofu firecracker",
+      "calories": 1252,
+      "protein": 29.1,
+      "fat": 50.1,
+      "carbs": 157.9
+    },
+    {
+      "name": "chicken + prawn turmeric rice bowl",
+      "calories": 677,
+      "protein": 32.4,
+      "fat": 34.1,
+      "carbs": 57.4
+    },
+    {
+      "name": "gochujang salmon rice bowl (may contain small bones)",
+      "calories": 786,
+      "protein": 36.3,
+      "fat": 39.4,
+      "carbs": 69.7
+    },
+    {
+      "name": "Beef brisket teriyaki donburi",
+      "calories": 818,
+      "protein": 37.1,
+      "fat": 26.1,
+      "carbs": 110.3
+    },
+    {
+      "name": "Chicken thigh teriyaki donburi",
+      "calories": 808,
+      "protein": 40,
+      "fat": 24.6,
+      "carbs": 108.2
+    },
+    {
+      "name": "grilled duck donburi",
+      "calories": 1085,
+      "protein": 53.9,
+      "fat": 43.8,
+      "carbs": 119.9
+    },
+    {
+      "name": "pulled shiitake donburi",
+      "calories": 956,
+      "protein": 29.8,
+      "fat": 32.6,
+      "carbs": 136
+    },
+    {
+      "name": "signature seafood ramen (may contain small bones)",
+      "calories": 1027,
+      "protein": 61.5,
+      "fat": 41.3,
+      "carbs": 98.5
+    },
+    {
+      "name": "tantanmen beef brisket ramen",
+      "calories": 713,
+      "protein": 36.5,
+      "fat": 29.5,
+      "carbs": 74.7
+    },
+    {
+      "name": "grilled chicken ramen",
+      "calories": 494,
+      "protein": 28.4,
+      "fat": 10.4,
+      "carbs": 71.7
+    },
+    {
+      "name": "chilli chicken ramen",
+      "calories": 541,
+      "protein": 37.3,
+      "fat": 5.4,
+      "carbs": 86.1
+    },
+    {
+      "name": "kare burosu ramen",
+      "calories": 706,
+      "protein": 30,
+      "fat": 21.9,
+      "carbs": 94.8
+    },
+    {
+      "name": "gochujang pork belly ramen",
+      "calories": 1007,
+      "protein": 31.2,
+      "fat": 52.9,
+      "carbs": 99.4
+    },
+    {
+      "name": "saku saku duck soba",
+      "calories": 933,
+      "protein": 46.5,
+      "fat": 43.4,
+      "carbs": 88.3
+    },
+    {
+      "name": "katsu udon",
+      "calories": 848,
+      "protein": 21,
+      "fat": 37.8,
+      "carbs": 101.2
+    },
+    {
+      "name": "chicken + prawn yaki soba",
+      "calories": 789,
+      "protein": 34,
+      "fat": 37.1,
+      "carbs": 73.3
+    },
+    {
+      "name": "yasai yaki soba | mushroom",
+      "calories": 768,
+      "protein": 28.2,
+      "fat": 34.6,
+      "carbs": 80.5
+    },
+    {
+      "name": "yasai yaki soba | rice noodles",
+      "calories": 348,
+      "protein": 9.3,
+      "fat": 13.4,
+      "carbs": 46.8
+    },
+    {
+      "name": "yasai yaki soba | udon",
+      "calories": 638,
+      "protein": 22.6,
+      "fat": 18.4,
+      "carbs": 87.1
+    },
+    {
+      "name": "steak teriyaki soba",
+      "calories": 864,
+      "protein": 49.5,
+      "fat": 35.8,
+      "carbs": 84.9
+    },
+    {
+      "name": "salmon teriyaki soba",
+      "calories": 994,
+      "protein": 45.5,
+      "fat": 52.7,
+      "carbs": 83.3
+    },
+    {
+      "name": "chicken teriyaki soba",
+      "calories": 769,
+      "protein": 37.8,
+      "fat": 31,
+      "carbs": 83.4
+    },
+    {
+      "name": "chicken + prawn yaki udon",
+      "calories": 714,
+      "protein": 36.9,
+      "fat": 25.5,
+      "carbs": 78.2
+    },
+    {
+      "name": "katsu pickles",
+      "calories": 5,
+      "protein": 0.1,
+      "fat": 0.1,
+      "carbs": 1
+    },
+    {
+      "name": "tea-stained egg",
+      "calories": 69,
+      "protein": 7.7,
+      "fat": 3.4,
+      "carbs": 2
+    },
+    {
+      "name": "kimchee",
+      "calories": 11,
+      "protein": 0.8,
+      "fat": 0.4,
+      "carbs": 1.6
+    },
+    {
+      "name": "chillies",
+      "calories": 8,
+      "protein": 0.4,
+      "fat": 0.1,
+      "carbs": 1.6
+    },
+    {
+      "name": "katsu curry sauce",
+      "calories": 227,
+      "protein": 2.9,
+      "fat": 16.7,
+      "carbs": 17.2
+    },
+    {
+      "name": "hot katsu sauce",
+      "calories": 351,
+      "protein": 4,
+      "fat": 26.3,
+      "carbs": 24.9
+    },
+    {
+      "name": "firecracker sauce",
+      "calories": 269,
+      "protein": 1.9,
+      "fat": 13.1,
+      "carbs": 37.5
+    },
+    {
+      "name": "raisukaree sauce",
+      "calories": 310,
+      "protein": 3.7,
+      "fat": 26.3,
+      "carbs": 15.3
+    },
+    {
+      "name": "amai sauce",
+      "calories": 69,
+      "protein": 0.8,
+      "fat": 0,
+      "carbs": 16.4
+    },
+    {
+      "name": "ube + cherry bao nut",
+      "calories": 533,
+      "protein": 4.7,
+      "fat": 16.9,
+      "carbs": 88.8
+    },
+    {
+      "name": "matcha + chocolate bao nut",
+      "calories": 454,
+      "protein": 5.4,
+      "fat": 17,
+      "carbs": 67.6
+    },
+    {
+      "name": "miso caramel + toffee bao nut",
+      "calories": 468,
+      "protein": 4.7,
+      "fat": 18.6,
+      "carbs": 68
+    },
+    {
+      "name": "white chocolate + ginger cheesecake",
+      "calories": 487,
+      "protein": 4.9,
+      "fat": 29.9,
+      "carbs": 48.8
+    },
+    {
+      "name": "banana katsu",
+      "calories": 327,
+      "protein": 15.3,
+      "fat": 15.4,
+      "carbs": 29.7
+    },
+    {
+      "name": "smoked chocolate caramel cake",
+      "calories": 492,
+      "protein": 6.2,
+      "fat": 28,
+      "carbs": 53.1
+    },
+    {
+      "name": "miso caramel banana bread",
+      "calories": 469,
+      "protein": 6.4,
+      "fat": 21.4,
+      "carbs": 63.6
+    },
+    {
+      "name": "miso caramel ice cream",
+      "calories": 418,
+      "protein": 2,
+      "fat": 17.4,
+      "carbs": 58.8
+    },
+    {
+      "name": "coconut reika ice cream",
+      "calories": 409,
+      "protein": 2.3,
+      "fat": 19,
+      "carbs": 58.2
+    },
+    {
+      "name": "popcorn affogato",
+      "calories": 225,
+      "protein": 4.8,
+      "fat": 9.8,
+      "carbs": 29.1
+    },
+    {
+      "name": "chocolate brownie",
+      "calories": 422,
+      "protein": 4.9,
+      "fat": 24.3,
+      "carbs": 44.9
+    },
+    {
+      "name": "lemon yuzu muffin",
+      "calories": 452,
+      "protein": 4.6,
+      "fat": 18.1,
+      "carbs": 66.8
+    },
+    {
+      "name": "chicken katsu with katsu curry sauce",
+      "calories": 426,
+      "protein": 21.8,
+      "fat": 14.3,
+      "carbs": 53.1
+    },
+    {
+      "name": "chicken katsu with amai sauce",
+      "calories": 404,
+      "protein": 21.5,
+      "fat": 10.1,
+      "carbs": 57.2
+    },
+    {
+      "name": "yasai katsu with katsu curry sauce",
+      "calories": 548,
+      "protein": 10.9,
+      "fat": 21,
+      "carbs": 78.7
+    },
+    {
+      "name": "yasai katsu with amai sauce",
+      "calories": 524,
+      "protein": 10.6,
+      "fat": 16.7,
+      "carbs": 82.7
+    },
+    {
+      "name": "chicken ramen",
+      "calories": 365,
+      "protein": 28.1,
+      "fat": 10.7,
+      "carbs": 39.3
+    },
+    {
+      "name": "yasai ramen",
+      "calories": 324,
+      "protein": 13.3,
+      "fat": 11.8,
+      "carbs": 41.3
+    },
+    {
+      "name": "yasai ramen | rice noodles",
+      "calories": 302,
+      "protein": 10.7,
+      "fat": 9.1,
+      "carbs": 44.7
+    },
+    {
+      "name": "yasai ramen | udon noodles",
+      "calories": 302,
+      "protein": 10.6,
+      "fat": 6.6,
+      "carbs": 51.5
+    },
+    {
+      "name": "chicken yaki soba",
+      "calories": 399,
+      "protein": 17.6,
+      "fat": 17.1,
+      "carbs": 42.7
+    },
+    {
+      "name": "yasai yaki soba",
+      "calories": 409,
+      "protein": 15.6,
+      "fat": 18.8,
+      "carbs": 43.4
+    },
+    {
+      "name": "yasai yaki soba | udon noodles",
+      "calories": 337,
+      "protein": 12.1,
+      "fat": 10.2,
+      "carbs": 46.7
+    },
+    {
+      "name": "chicken cha han",
+      "calories": 392,
+      "protein": 15.9,
+      "fat": 11.4,
+      "carbs": 55.6
+    },
+    {
+      "name": "yasai cha han",
+      "calories": 363,
+      "protein": 10.2,
+      "fat": 10.4,
+      "carbs": 56.3
+    },
+    {
+      "name": "vanilla pod ice cream with toffee sauce",
+      "calories": 145,
+      "protein": 2.8,
+      "fat": 7.3,
+      "carbs": 16.8
+    },
+    {
+      "name": "vanilla pod ice cream with passion fruit sauce",
+      "calories": 138,
+      "protein": 2.8,
+      "fat": 7,
+      "carbs": 15.8
+    },
+    {
+      "name": "vanilla pod ice cream with chocolate sauce",
+      "calories": 144,
+      "protein": 3,
+      "fat": 7.1,
+      "carbs": 16.8
+    },
+    {
+      "name": "mini brownie bite",
+      "calories": 213,
+      "protein": 2.4,
+      "fat": 12.1,
+      "carbs": 22.9
+    },
+    {
+      "name": "tropical fruit ice lolly",
+      "calories": 21,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 5
+    },
+    {
+      "name": "edamame with chilli garlic salt",
+      "calories": 287,
+      "protein": 24.3,
+      "fat": 13.3,
+      "carbs": 10.2
+    },
+    {
+      "name": "prawn raisukaree curry",
+      "calories": 1022,
+      "protein": 27.6,
+      "fat": 42.1,
+      "carbs": 131.1
+    },
+    {
+      "name": "chicken raisukaree curry",
+      "calories": 1092,
+      "protein": 38.4,
+      "fat": 45.2,
+      "carbs": 131.2
+    },
+    {
+      "name": "tofu raisukaree curry",
+      "calories": 1135,
+      "protein": 28.6,
+      "fat": 53.4,
+      "carbs": 133.1
+    },
+    {
+      "name": "grilled duck",
+      "calories": 1129,
+      "protein": 53.9,
+      "fat": 48.7,
+      "carbs": 119.9
+    },
+    {
+      "name": "beef brisket teriyaki",
+      "calories": 818,
+      "protein": 37.1,
+      "fat": 26.1,
+      "carbs": 110.3
+    },
+    {
+      "name": "chicken teriyaki",
+      "calories": 807,
+      "protein": 39.9,
+      "fat": 24.6,
+      "carbs": 107.8
+    },
+    {
+      "name": "miso caramel ice cream gf",
+      "calories": 418,
+      "protein": 2,
+      "fat": 17.4,
+      "carbs": 58.8
+    },
+    {
+      "name": "coconut reika ice cream gf",
+      "calories": 409,
+      "protein": 2.3,
+      "fat": 19,
+      "carbs": 58.2
+    }
+  ]
+}

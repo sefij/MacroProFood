@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-20T20:30:13.139Z",
+  "generatedAt": "2026-06-27T19:54:20.188Z",
   "restaurants": [
     {
       "restaurant": "McDonald's",
       "key": "MCDONALDS",
       "icon": "🍟",
       "source": "live",
-      "updatedAt": "2026-06-20T20:30:13.139Z",
+      "updatedAt": "2026-06-27T19:54:20.188Z",
       "itemCount": 45
     },
     {
@@ -14,24 +14,24 @@
       "key": "POPEYES",
       "icon": "🐔",
       "source": "live",
-      "updatedAt": "2026-06-20T20:30:13.139Z",
-      "itemCount": 113
+      "updatedAt": "2026-06-27T19:54:20.188Z",
+      "itemCount": 118
     },
     {
       "restaurant": "Taco Bell",
       "key": "TACOBELL",
       "icon": "🌮",
       "source": "live",
-      "updatedAt": "2026-06-20T20:30:13.139Z",
+      "updatedAt": "2026-06-27T19:54:20.188Z",
       "itemCount": 185
     },
     {
       "restaurant": "KFC",
       "key": "KFC",
       "icon": "🍗",
-      "source": "snapshot",
-      "updatedAt": "2025-09-01T00:00:00.000Z",
-      "itemCount": 44
+      "source": "live",
+      "updatedAt": "2026-06-27T19:56:41.377Z",
+      "itemCount": 83
     },
     {
       "restaurant": "Wendy's",
@@ -48,6 +48,14 @@
       "source": "snapshot",
       "updatedAt": "2025-09-01T00:00:00.000Z",
       "itemCount": 135
+    },
+    {
+      "restaurant": "Wagamama",
+      "key": "WAGAMAMA",
+      "icon": "🍜",
+      "source": "live",
+      "updatedAt": "2026-06-27T20:16:24.691Z",
+      "itemCount": 110
     }
   ]
 }
