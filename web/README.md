@@ -45,29 +45,32 @@ yarn build:data            # writes web/public/data/*.json
 
 # then run the app
 cd web
-npm install
-npm run dev                # http://localhost:5173
+yarn
+yarn dev                   # http://localhost:5173
 ```
 
 ## Build
 
 ```bash
 cd web
-npm run build              # outputs web/dist
-npm run preview            # serve the production build locally
+yarn build                 # outputs web/dist
+yarn preview               # serve the production build locally
 ```
 
-## Deploy to Cloudflare Pages (free)
+## Deploy to Cloudflare (free)
 
-Connect the repo in the Cloudflare dashboard (Workers & Pages → Create → Pages →
-Connect to Git) with:
+The app builds from `web/`, which is pinned to Yarn 1 (`packageManager` in
+[`package.json`](package.json)) so Cloudflare doesn't upgrade it to Yarn 4 and
+choke on the classic lockfile. Connect the repo in the Cloudflare dashboard with:
 
 | Setting | Value |
 | --- | --- |
-| Build command | `cd web && npm install && npm run build` |
-| Build output directory | `web/dist` |
-| Root directory | repository root (leave default) |
+| Root directory (path) | `web` |
+| Build command | `yarn install --frozen-lockfile && yarn build` |
+| Build output directory | `dist` |
+| Deploy command (Workers flow only) | `npx wrangler deploy` |
 
-No environment variables or Functions are required — the app is fully static. Every
-push to the default branch (including the scheduled data-refresh commits) triggers a
-new deploy.
+The Workers flow uses [`wrangler.jsonc`](wrangler.jsonc) to serve `dist` as static
+assets; the classic Pages flow just needs the build command + output directory. No
+environment variables or Functions are required — the app is fully static. Every push
+to the production branch (including the scheduled data-refresh commits) redeploys.
