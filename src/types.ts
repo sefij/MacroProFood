@@ -1,5 +1,10 @@
 import chalk from 'chalk'
 import { Browser, chromium } from 'playwright'
+import { RestaurantData } from './core/types'
+
+// Re-export the pure data types from the dependency-free core module so that
+// existing `import { ... } from './types'` call sites keep working unchanged.
+export * from './core/types'
 
 export abstract class SourceScraper {
     protected browser: Browser | null = null
@@ -78,45 +83,6 @@ export class JsonScraper<
     }
 }
 
-export interface NutritionData {
-    calories: number
-    protein: number
-    fat: number
-    carbs: number
-    ProteinTCalRatio: number
-    CarbToCalRatio: number
-}
-
-export interface MenuItem {
-    restaurant: string
-    name: string
-    calories: number
-    protein: number
-    fat: number
-    carbs: number
-}
-
-export interface RestaurantData {
-    [itemName: string]: NutritionData
-}
-
-export interface RestaurantsData {
-    [restaurantName: string]: RestaurantData | undefined
-}
-
-export interface OptimizationResult {
-    items: MenuItem[]
-    totalNutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>
-    accuracy: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>
-}
-
-export interface OptimizationResults {
-    [restaurantName: string]: OptimizationResult[]
-}
-
-export interface TargetMacros {
-    calories: number
-    protein: number
-    fat: number
-    carbs: number
-}
+// NutritionData, MenuItem, RestaurantData, RestaurantsData, OptimizationResult,
+// OptimizationResults and TargetMacros now live in ./core/types and are
+// re-exported above via `export * from './core/types'`.

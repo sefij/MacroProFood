@@ -66,6 +66,7 @@ export type RestaurantKey =
     | 'MCDONALDS'
     | 'SUBWAY'
     | 'TACOBELL'
+    | 'WAGAMAMA'
 
 /**
  * Returns `true` when `DISABLE_<RESTAURANT>` is set to a truthy value.

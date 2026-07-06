@@ -1,0 +1,954 @@
+{
+  "restaurant": "Subway",
+  "key": "SUBWAY",
+  "icon": "🥪",
+  "source": "snapshot",
+  "updatedAt": "2025-09-01T00:00:00.000Z",
+  "items": [
+    {
+      "name": "Sub_Bacon",
+      "calories": 306,
+      "protein": 16,
+      "fat": 11,
+      "carbs": 37
+    },
+    {
+      "name": "Sub_Poached_Egg_and_Cheese",
+      "calories": 294,
+      "protein": 16,
+      "fat": 9.1,
+      "carbs": 37
+    },
+    {
+      "name": "Sub_Lincolnshire_Sausage",
+      "calories": 353,
+      "protein": 16,
+      "fat": 15,
+      "carbs": 39
+    },
+    {
+      "name": "Sub_Poached_Egg_and_Guacamole",
+      "calories": 380,
+      "protein": 23,
+      "fat": 19,
+      "carbs": 39
+    },
+    {
+      "name": "Sub_Lincolnshire_Sausage_and_Bacon",
+      "calories": 446,
+      "protein": 22,
+      "fat": 21,
+      "carbs": 43
+    },
+    {
+      "name": "Sub_Big_Breakwich",
+      "calories": 599,
+      "protein": 30,
+      "fat": 30,
+      "carbs": 55
+    },
+    {
+      "name": "Sub_Big_Bombay",
+      "calories": 565,
+      "protein": 30,
+      "fat": 14,
+      "carbs": 80
+    },
+    {
+      "name": "Sub_Chicken_Breast",
+      "calories": 340,
+      "protein": 26,
+      "fat": 6.8,
+      "carbs": 42
+    },
+    {
+      "name": "Sub_Chicken_Tikka",
+      "calories": 345,
+      "protein": 28,
+      "fat": 7.1,
+      "carbs": 43
+    },
+    {
+      "name": "Sub_Furious_Chicken",
+      "calories": 520,
+      "protein": 26,
+      "fat": 24,
+      "carbs": 49
+    },
+    {
+      "name": "Sub_Rotisserie_Style_Chicken",
+      "calories": 310,
+      "protein": 22,
+      "fat": 7.6,
+      "carbs": 38
+    },
+    {
+      "name": "Sub_Tex_Mexan",
+      "calories": 386,
+      "protein": 26,
+      "fat": 23,
+      "carbs": 18
+    },
+    {
+      "name": "Sub_Honey_Mustard_BBQ_Chicken_And_Bacon",
+      "calories": 430,
+      "protein": 28,
+      "fat": 15,
+      "carbs": 44
+    },
+    {
+      "name": "Sub_Rotisserie_Style_Chicken_and_Guacamole",
+      "calories": 469,
+      "protein": 26,
+      "fat": 25,
+      "carbs": 43
+    },
+    {
+      "name": "Sub_Meatball_Marinara_Pork_And_Beef_Meatballs",
+      "calories": 447,
+      "protein": 23,
+      "fat": 16,
+      "carbs": 51
+    },
+    {
+      "name": "Sub_Philly_Steak",
+      "calories": 297,
+      "protein": 18,
+      "fat": 3.6,
+      "carbs": 48
+    },
+    {
+      "name": "Sub_The_Baller",
+      "calories": 531,
+      "protein": 25,
+      "fat": 25,
+      "carbs": 56
+    },
+    {
+      "name": "Sub_Taco_Beef",
+      "calories": 353,
+      "protein": 15,
+      "fat": 12,
+      "carbs": 44
+    },
+    {
+      "name": "Sub_Mexicana_Beef_Crunch",
+      "calories": 525,
+      "protein": 19,
+      "fat": 29,
+      "carbs": 54
+    },
+    {
+      "name": "Sub_Garlic_Cheesesteak",
+      "calories": 539,
+      "protein": 24,
+      "fat": 27,
+      "carbs": 51
+    },
+    {
+      "name": "Sub_Legendary_Teriyaki",
+      "calories": 440,
+      "protein": 29,
+      "fat": 13,
+      "carbs": 50
+    },
+    {
+      "name": "Sub_Ham",
+      "calories": 324,
+      "protein": 21,
+      "fat": 7.9,
+      "carbs": 42
+    },
+    {
+      "name": "Sub_Turkey",
+      "calories": 312,
+      "protein": 22,
+      "fat": 6.6,
+      "carbs": 41
+    },
+    {
+      "name": "Sub_Ham_and_Turkey",
+      "calories": 327,
+      "protein": 23,
+      "fat": 7.4,
+      "carbs": 42
+    },
+    {
+      "name": "Sub_Spicy_Italian",
+      "calories": 498,
+      "protein": 22,
+      "fat": 27,
+      "carbs": 43
+    },
+    {
+      "name": "Sub_Italian_B.M.T",
+      "calories": 386,
+      "protein": 20,
+      "fat": 16,
+      "carbs": 41
+    },
+    {
+      "name": "Sub_Notorious_B.M.T",
+      "calories": 479,
+      "protein": 23,
+      "fat": 25,
+      "carbs": 41
+    },
+    {
+      "name": "Sub_Veggie_Delite",
+      "calories": 227,
+      "protein": 8.3,
+      "fat": 2.4,
+      "carbs": 42
+    },
+    {
+      "name": "Sub_Cheese_and_Guacamole",
+      "calories": 310,
+      "protein": 10,
+      "fat": 17,
+      "carbs": 38
+    },
+    {
+      "name": "Sub_Tuna_Mayonaise",
+      "calories": 400,
+      "protein": 22,
+      "fat": 16,
+      "carbs": 43
+    },
+    {
+      "name": "Sub_Ulitmate_Festive",
+      "calories": 449,
+      "protein": 26,
+      "fat": 16,
+      "carbs": 49
+    },
+    {
+      "name": "Toastie_Honey_Mustard_Deli_Toastie",
+      "calories": 362,
+      "protein": 21,
+      "fat": 12,
+      "carbs": 41
+    },
+    {
+      "name": "Toastie_Bacon_and_Cheese_Toastie",
+      "calories": 487,
+      "protein": 27,
+      "fat": 24,
+      "carbs": 43
+    },
+    {
+      "name": "Toastie_Big_Cheesesteak_Toastie",
+      "calories": 458,
+      "protein": 26,
+      "fat": 18,
+      "carbs": 48
+    },
+    {
+      "name": "Toastie_Triple_Cheese",
+      "calories": 345,
+      "protein": 14,
+      "fat": 13,
+      "carbs": 44
+    },
+    {
+      "name": "Toastie_BBQ_Chicken_And_Bacon_Toastie",
+      "calories": 410,
+      "protein": 27,
+      "fat": 14,
+      "carbs": 43
+    },
+    {
+      "name": "Super_Sub_Nacho_Chicken",
+      "calories": 423,
+      "protein": 18,
+      "fat": 17,
+      "carbs": 49
+    },
+    {
+      "name": "Super_Sub_Ham_and_Cheese",
+      "calories": 380,
+      "protein": 20,
+      "fat": 16,
+      "carbs": 39
+    },
+    {
+      "name": "Super_Sub_BLT",
+      "calories": 317,
+      "protein": 14,
+      "fat": 13,
+      "carbs": 38
+    },
+    {
+      "name": "Wrap_Big_Breakwich",
+      "calories": 685,
+      "protein": 29,
+      "fat": 33,
+      "carbs": 67
+    },
+    {
+      "name": "Wrap_Big_Bombay",
+      "calories": 500,
+      "protein": 29,
+      "fat": 17,
+      "carbs": 55
+    },
+    {
+      "name": "Wrap_Chicken_Breast",
+      "calories": 410,
+      "protein": 25,
+      "fat": 10,
+      "carbs": 51
+    },
+    {
+      "name": "Wrap_Chicken_Tikka",
+      "calories": 414,
+      "protein": 27,
+      "fat": 11,
+      "carbs": 51
+    },
+    {
+      "name": "Wrap_Furious_Chicken",
+      "calories": 606,
+      "protein": 25,
+      "fat": 27,
+      "carbs": 61
+    },
+    {
+      "name": "Wrap_Rotisserie_Style_Chicken",
+      "calories": 354,
+      "protein": 19,
+      "fat": 7.7,
+      "carbs": 49
+    },
+    {
+      "name": "Wrap_Tex_Mexan",
+      "calories": 582,
+      "protein": 31,
+      "fat": 22,
+      "carbs": 62
+    },
+    {
+      "name": "Wrap_The_Baller",
+      "calories": 650,
+      "protein": 27,
+      "fat": 32,
+      "carbs": 68
+    },
+    {
+      "name": "Wrap_Honey_Mustard_BBQ_Chicken_And_Bacon",
+      "calories": 516,
+      "protein": 28,
+      "fat": 19,
+      "carbs": 56
+    },
+    {
+      "name": "Wrap_Rotisserie_Style_Chicken_and_Guacamole",
+      "calories": 555,
+      "protein": 25,
+      "fat": 29,
+      "carbs": 55
+    },
+    {
+      "name": "Wrap_Meatball_Marinara_Pork_And_Beef_Meatballs",
+      "calories": 474,
+      "protein": 20,
+      "fat": 16,
+      "carbs": 59
+    },
+    {
+      "name": "Wrap_Philly_Steak",
+      "calories": 367,
+      "protein": 17,
+      "fat": 7.1,
+      "carbs": 57
+    },
+    {
+      "name": "Wrap_Taco_Beef",
+      "calories": 439,
+      "protein": 15,
+      "fat": 16,
+      "carbs": 56
+    },
+    {
+      "name": "Wrap_Mexicana_Beef_Crunch",
+      "calories": 610,
+      "protein": 19,
+      "fat": 33,
+      "carbs": 66
+    },
+    {
+      "name": "Wrap_Garlic_Cheesesteak",
+      "calories": 624,
+      "protein": 23,
+      "fat": 30,
+      "carbs": 63
+    },
+    {
+      "name": "Wrap_Ham",
+      "calories": 393,
+      "protein": 20,
+      "fat": 11,
+      "carbs": 51
+    },
+    {
+      "name": "Wrap_Turkey",
+      "calories": 381,
+      "protein": 21,
+      "fat": 10,
+      "carbs": 50
+    },
+    {
+      "name": "Wrap_Ham_and_Turkey",
+      "calories": 415,
+      "protein": 26,
+      "fat": 11,
+      "carbs": 50
+    },
+    {
+      "name": "Wrap_Spicy_Italian",
+      "calories": 568,
+      "protein": 21,
+      "fat": 30,
+      "carbs": 51
+    },
+    {
+      "name": "Wrap_Italian_B.M.T",
+      "calories": 498,
+      "protein": 22,
+      "fat": 23,
+      "carbs": 50
+    },
+    {
+      "name": "Wrap_Notorious_B.M.T",
+      "calories": 613,
+      "protein": 25,
+      "fat": 33,
+      "carbs": 53
+    },
+    {
+      "name": "Wrap_Legendary_Teriyaki",
+      "calories": 526,
+      "protein": 29,
+      "fat": 17,
+      "carbs": 62
+    },
+    {
+      "name": "Wrap_Veggie_Delite",
+      "calories": 339,
+      "protein": 9.9,
+      "fat": 9.4,
+      "carbs": 51
+    },
+    {
+      "name": "Wrap_Cheese_and_Guacamole",
+      "calories": 396,
+      "protein": 9.7,
+      "fat": 21,
+      "carbs": 50
+    },
+    {
+      "name": "Wrap_Tuna_Mayonaise",
+      "calories": 427,
+      "protein": 19,
+      "fat": 16,
+      "carbs": 51
+    },
+    {
+      "name": "Wrap_Ulitmate_Festive",
+      "calories": 516,
+      "protein": 25,
+      "fat": 19,
+      "carbs": 57
+    },
+    {
+      "name": "Salad_Chicken_Breast",
+      "calories": 148,
+      "protein": 20,
+      "fat": 4.7,
+      "carbs": 5.3
+    },
+    {
+      "name": "Salad_Chicken_Tikka",
+      "calories": 152,
+      "protein": 22,
+      "fat": 5.1,
+      "carbs": 5.6
+    },
+    {
+      "name": "Salad_Big_Bombay",
+      "calories": 282,
+      "protein": 24,
+      "fat": 15,
+      "carbs": 13
+    },
+    {
+      "name": "Salad_Furious_Chicken",
+      "calories": 437,
+      "protein": 20,
+      "fat": 31,
+      "carbs": 17
+    },
+    {
+      "name": "Salad_Rotisserie_Style_Chicken",
+      "calories": 92,
+      "protein": 14,
+      "fat": 2.1,
+      "carbs": 3.5
+    },
+    {
+      "name": "Salad_Tex_Mexan",
+      "calories": 386,
+      "protein": 26,
+      "fat": 23,
+      "carbs": 18
+    },
+    {
+      "name": "Salad_Honey_Mustard_BBQ_Chicken_And_Bacon",
+      "calories": 263,
+      "protein": 22,
+      "fat": 13,
+      "carbs": 12
+    },
+    {
+      "name": "Salad_Rotisserie_Style_Chicken_and_Guacamole",
+      "calories": 299,
+      "protein": 20,
+      "fat": 23,
+      "carbs": 10
+    },
+    {
+      "name": "Salad_Meatball_Marinara_Pork_And_Beef_Meatballs",
+      "calories": 215,
+      "protein": 14,
+      "fat": 11,
+      "carbs": 14
+    },
+    {
+      "name": "Salad_Philly_Steak",
+      "calories": 107,
+      "protein": 12,
+      "fat": 1.5,
+      "carbs": 11
+    },
+    {
+      "name": "Salad_The_Baller",
+      "calories": 428,
+      "protein": 22,
+      "fat": 29,
+      "carbs": 25
+    },
+    {
+      "name": "Salad_Taco_Beef",
+      "calories": 172,
+      "protein": 9.3,
+      "fat": 10,
+      "carbs": 9.7
+    },
+    {
+      "name": "Salad_Mexicana_Beef_Crunch",
+      "calories": 401,
+      "protein": 13,
+      "fat": 33,
+      "carbs": 21
+    },
+    {
+      "name": "Salad_Garlic_Cheesesteak",
+      "calories": 493,
+      "protein": 18,
+      "fat": 38,
+      "carbs": 20
+    },
+    {
+      "name": "Salad_Legendary_Teriyaki",
+      "calories": 314,
+      "protein": 23,
+      "fat": 14,
+      "carbs": 21
+    },
+    {
+      "name": "Salad_Ham",
+      "calories": 89,
+      "protein": 12,
+      "fat": 2.3,
+      "carbs": 4.8
+    },
+    {
+      "name": "Salad_Turkey",
+      "calories": 119,
+      "protein": 15,
+      "fat": 4.5,
+      "carbs": 4.4
+    },
+    {
+      "name": "Salad_Ham_and_Turkey",
+      "calories": 135,
+      "protein": 17,
+      "fat": 5.3,
+      "carbs": 4.9
+    },
+    {
+      "name": "Salad_Spicy_Italian",
+      "calories": 306,
+      "protein": 16,
+      "fat": 25,
+      "carbs": 5.9
+    },
+    {
+      "name": "Salad_Italian_B.M.T",
+      "calories": 234,
+      "protein": 16,
+      "fat": 17,
+      "carbs": 3.8
+    },
+    {
+      "name": "Salad_Notorious_B.M.T",
+      "calories": 396,
+      "protein": 19,
+      "fat": 31,
+      "carbs": 9.3
+    },
+    {
+      "name": "Salad_Veggie_Delite",
+      "calories": 240,
+      "protein": 10,
+      "fat": 7.6,
+      "carbs": 28
+    },
+    {
+      "name": "Salad_Cheese_and_Guacamole",
+      "calories": 131,
+      "protein": 4.1,
+      "fat": 15,
+      "carbs": 3.6
+    },
+    {
+      "name": "Salad_Tuna_Mayonaise",
+      "calories": 166,
+      "protein": 13,
+      "fat": 10,
+      "carbs": 5.9
+    },
+    {
+      "name": "Salad_Ulitmate_Festive",
+      "calories": 268,
+      "protein": 19,
+      "fat": 14,
+      "carbs": 15
+    },
+    {
+      "name": "Spud_Butter_And_Cheese324",
+      "calories": 17,
+      "protein": 0.7,
+      "fat": 9.9,
+      "carbs": 2
+    },
+    {
+      "name": "Spud_Baked_Beans_And_Cheese",
+      "calories": 522,
+      "protein": 21,
+      "fat": 17,
+      "carbs": 69
+    },
+    {
+      "name": "Spud_Philly_Cheese_Steak_And_Cheese",
+      "calories": 499,
+      "protein": 25,
+      "fat": 18,
+      "carbs": 59
+    },
+    {
+      "name": "Spud_Tuna_Mayo_And_Cheese",
+      "calories": 558,
+      "protein": 26,
+      "fat": 27,
+      "carbs": 54
+    },
+    {
+      "name": "Spud_B.M.T_And_Cheese",
+      "calories": 561,
+      "protein": 27,
+      "fat": 27,
+      "carbs": 53
+    },
+    {
+      "name": "Spud_Big_Breakwich",
+      "calories": 738,
+      "protein": 32,
+      "fat": 37,
+      "carbs": 69
+    },
+    {
+      "name": "Spud_Chicken_Breast_And_Cheese",
+      "calories": 498,
+      "protein": 30,
+      "fat": 18,
+      "carbs": 53
+    },
+    {
+      "name": "Spud_Rotisserie_Style_Chicken_And_Cheese",
+      "calories": 484,
+      "protein": 27,
+      "fat": 19,
+      "carbs": 51
+    },
+    {
+      "name": "Spud_Rotisserie_Style_Chicken_with_Guac",
+      "calories": 601,
+      "protein": 28,
+      "fat": 33,
+      "carbs": 57
+    },
+    {
+      "name": "Spud_Furious_Chicken",
+      "calories": 704,
+      "protein": 28,
+      "fat": 36,
+      "carbs": 64
+    },
+    {
+      "name": "Spud_Garlic_Cheese_Steak",
+      "calories": 667,
+      "protein": 26,
+      "fat": 34,
+      "carbs": 64
+    },
+    {
+      "name": "Spud_Ham_And_Cheese",
+      "calories": 481,
+      "protein": 25,
+      "fat": 19,
+      "carbs": 53
+    },
+    {
+      "name": "Spud_Ham_Turkey_And_Cheese",
+      "calories": 485,
+      "protein": 27,
+      "fat": 18,
+      "carbs": 52
+    },
+    {
+      "name": "Spud_BBQ_Honey_Mustard_Chicken_And_Bacon",
+      "calories": 577,
+      "protein": 30,
+      "fat": 23,
+      "carbs": 60
+    },
+    {
+      "name": "Spud_Meatball_Marinara_And_Cheese",
+      "calories": 606,
+      "protein": 27,
+      "fat": 27,
+      "carbs": 61
+    },
+    {
+      "name": "Spud_Mexican_Beef",
+      "calories": 656,
+      "protein": 21,
+      "fat": 37,
+      "carbs": 67
+    },
+    {
+      "name": "Spud_Spicy_Italian_And_Cheese",
+      "calories": 656,
+      "protein": 26,
+      "fat": 37,
+      "carbs": 53
+    },
+    {
+      "name": "Spud_Chicken_Tikka_And_Cheese",
+      "calories": 502,
+      "protein": 32,
+      "fat": 18,
+      "carbs": 53
+    },
+    {
+      "name": "Spud_Taco_Beef_And_Cheese",
+      "calories": 524,
+      "protein": 20,
+      "fat": 23,
+      "carbs": 58
+    },
+    {
+      "name": "Spud_Tex_Mexan",
+      "calories": 620,
+      "protein": 32,
+      "fat": 26,
+      "carbs": 63
+    },
+    {
+      "name": "Spud_Turkey_And_Cheese",
+      "calories": 469,
+      "protein": 26,
+      "fat": 18,
+      "carbs": 52
+    },
+    {
+      "name": "Spud_Avocado_And_Cheese",
+      "calories": 437,
+      "protein": 15,
+      "fat": 23,
+      "carbs": 52
+    },
+    {
+      "name": "Spud_Coleslaw_And_Chese",
+      "calories": 577,
+      "protein": 15,
+      "fat": 31,
+      "carbs": 58
+    },
+    {
+      "name": "Spud_Veggie_Delite",
+      "calories": 428,
+      "protein": 15,
+      "fat": 17,
+      "carbs": 54
+    },
+    {
+      "name": "Spud_Ulitmate_Festive",
+      "calories": 611,
+      "protein": 30,
+      "fat": 27,
+      "carbs": 60
+    },
+    {
+      "name": "Side_Waffle_Fries_Regular",
+      "calories": 184,
+      "protein": 2.8,
+      "fat": 8.2,
+      "carbs": 23
+    },
+    {
+      "name": "Side_Waffle_Fries_Large",
+      "calories": 276,
+      "protein": 4.2,
+      "fat": 12,
+      "carbs": 34
+    },
+    {
+      "name": "Side_Hash_Browns_6_pieces",
+      "calories": 184,
+      "protein": 2.4,
+      "fat": 11,
+      "carbs": 22
+    },
+    {
+      "name": "Side_Nacho_Chicken_Bites_6_Pieces",
+      "calories": 270,
+      "protein": 16,
+      "fat": 13,
+      "carbs": 21
+    },
+    {
+      "name": "Side_Nacho_Chicken_Bites_9_Pieces",
+      "calories": 405,
+      "protein": 24,
+      "fat": 19,
+      "carbs": 32
+    },
+    {
+      "name": "Side_Doritos_Lightly_Salted_Nachos",
+      "calories": 590,
+      "protein": 19,
+      "fat": 30,
+      "carbs": 60
+    },
+    {
+      "name": "Side_Doritos_Tangy_Cheese_Nachos",
+      "calories": 615,
+      "protein": 19,
+      "fat": 34,
+      "carbs": 55
+    },
+    {
+      "name": "Side_Doritos_Chilli_Heat_Wave_Nachos",
+      "calories": 611,
+      "protein": 19,
+      "fat": 34,
+      "carbs": 57
+    },
+    {
+      "name": "Side_Doritos_Lightly_Salted_Nachos_Sharer",
+      "calories": 868,
+      "protein": 28,
+      "fat": 45,
+      "carbs": 87
+    },
+    {
+      "name": "Side_Doritos_Tangy_Cheese_Nachos_Sharer",
+      "calories": 907,
+      "protein": 28,
+      "fat": 51,
+      "carbs": 79
+    },
+    {
+      "name": "Side_Doritos_Chilli_Heat_Wave_Nachos_Sharer",
+      "calories": 901,
+      "protein": 28,
+      "fat": 51,
+      "carbs": 82
+    },
+    {
+      "name": "Side_Footlong_Cheesy_Garlic_Slice",
+      "calories": 308,
+      "protein": 16,
+      "fat": 18,
+      "carbs": 20
+    },
+    {
+      "name": "Side_Footlong_Pepperoni_Slice",
+      "calories": 353,
+      "protein": 18,
+      "fat": 21,
+      "carbs": 25
+    },
+    {
+      "name": "Side_Footlong_Margherita_Slice",
+      "calories": 296,
+      "protein": 17,
+      "fat": 15,
+      "carbs": 25
+    },
+    {
+      "name": "Side_Chipotle_Cheesy_Bites",
+      "calories": 145,
+      "protein": 9.8,
+      "fat": 14,
+      "carbs": 16
+    },
+    {
+      "name": "Side_Footlong_Dipper_Triple_Cheese",
+      "calories": 450,
+      "protein": 18,
+      "fat": 20,
+      "carbs": 50
+    },
+    {
+      "name": "Side_Footlong_Dipper_Pepperoni",
+      "calories": 433,
+      "protein": 15,
+      "fat": 19,
+      "carbs": 49
+    },
+    {
+      "name": "Side_Footlong_Dipper_Taco_Beef",
+      "calories": 430,
+      "protein": 15,
+      "fat": 17,
+      "carbs": 53
+    },
+    {
+      "name": "Side_Footlong_Dipper_Turkey_And_Stuffing",
+      "calories": 467,
+      "protein": 19,
+      "fat": 19,
+      "carbs": 53
+    },
+    {
+      "name": "Side_Sage_and_Onion_Stuffing",
+      "calories": 70,
+      "protein": 0.4,
+      "fat": 5.4,
+      "carbs": 4.2
+    }
+  ]
+}

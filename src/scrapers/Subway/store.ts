@@ -1,6 +1,12 @@
 // Snapshot of the Subway UK menu, captured by hand. This is a point-in-time
 // copy: it can (and will) go stale as Subway changes its menu or reformulates
 // items. Re-capture from Subway's published nutrition data to refresh.
+//
+// `updatedAt` is the date this snapshot was last hand-captured. Bump it (ISO
+// YYYY-MM-DD) whenever you refresh the data below — the web app reads it to
+// show a "last updated / stale" badge.
+export const updatedAt = '2025-09-01'
+
 export default [
     {
         name: 'Sub_Bacon',
