@@ -1,0 +1,11 @@
+{
+  // Deploys the MacroPro web app as a static site on Cloudflare Workers
+  // (Workers Static Assets). There is no server-side Worker code — the app is
+  // fully static and the macro optimizer runs in the browser — so this only
+  // points Wrangler at the Vite build output.
+  "name": "macropro",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "web/dist"
+  }
+}
