@@ -1,5 +1,5 @@
 {
-  "name": "macpro",
+  "name": "macropro",
   "version": "1.0.0",
   "description": "Scrape UK fast-food nutrition data and find meal combinations matching your target macros, with MyFitnessPal integration.",
   "main": "dist/main.js",

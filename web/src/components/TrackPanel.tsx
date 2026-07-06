@@ -44,7 +44,7 @@ interface Props {
     /** The macro targets this meal was optimized against — used to size swap suggestions. */
     targets: TargetMacros
     onClose: () => void
-    /** True when the MacPro MyFitnessPal Companion extension is installed (enables 1-click send). */
+    /** True when the MacroPro MyFitnessPal Companion extension is installed (enables 1-click send). */
     extAvailable: boolean
     /** Sends the (possibly edited) meal to MFP via the extension. Rejects on failure. */
     onSend: (nutrition: Nutrition, mealName: string) => Promise<void>

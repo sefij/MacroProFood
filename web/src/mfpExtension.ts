@@ -1,5 +1,5 @@
 /**
- * Client for the optional MacPro MyFitnessPal Companion extension (see /extension).
+ * Client for the optional MacroPro MyFitnessPal Companion extension (see /extension).
  *
  * When installed, the extension injects a bridge content script into this app's
  * pages; we talk to it purely over `window.postMessage`, so the app needs no

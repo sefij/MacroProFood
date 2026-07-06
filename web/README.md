@@ -1,6 +1,6 @@
 # MacroPro 🍔 (web app)
 
-*A super-simple, neat front-end for the MacPro macro optimizer — hostable free on
+*A super-simple, neat front-end for the MacroPro macro optimizer — hostable free on
 Cloudflare Pages.*
 
 Enter your remaining macros (or pull them from MyFitnessPal), pick the restaurants

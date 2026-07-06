@@ -8,7 +8,7 @@ interface Props {
     onModeChange: (m: InputMode) => void
     macros: TargetMacros
     onChange: (m: TargetMacros) => void
-    /** True when the MacPro MyFitnessPal Companion extension is installed (enables 1-click pull). */
+    /** True when the MacroPro MyFitnessPal Companion extension is installed (enables 1-click pull). */
     extAvailable: boolean
 }
 

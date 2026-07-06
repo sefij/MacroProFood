@@ -1,4 +1,4 @@
-# MacPro MyFitnessPal Companion (browser extension)
+# MacroPro MyFitnessPal Companion (browser extension)
 
 A tiny Manifest V3 extension that lets the MacroPro web app read your **remaining
 macros** and fill a **Quick Add** meal using your *existing* MyFitnessPal login —

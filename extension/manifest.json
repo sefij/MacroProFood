@@ -1,8 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "MacPro MyFitnessPal Companion",
+  "name": "MacroPro MyFitnessPal Companion",
   "version": "0.1.0",
   "description": "Pull your remaining macros and log meals from MacroPro using your existing MyFitnessPal session. No password is ever stored.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "permissions": ["scripting", "tabs"],
   "host_permissions": ["https://*.myfitnesspal.com/*"],
   "background": {
@@ -22,6 +28,12 @@
     }
   ],
   "action": {
-    "default_title": "MacPro MyFitnessPal Companion"
+    "default_title": "MacroPro MyFitnessPal Companion",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   }
 }

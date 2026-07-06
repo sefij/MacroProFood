@@ -4,7 +4,7 @@ import { pullRemainingBookmarklet } from '../bookmarklets'
 import { pullRemaining } from '../mfpExtension'
 
 interface Props {
-    /** True when the MacPro MyFitnessPal Companion extension is installed. */
+    /** True when the MacroPro MyFitnessPal Companion extension is installed. */
     extAvailable: boolean
     /** Called with the macros pulled from MyFitnessPal. */
     onMacros: (m: TargetMacros) => void
@@ -53,7 +53,7 @@ export function ConnectMfp ({ extAvailable, onMacros }: Props) {
         <details className="mfp" open>
             <summary>How "From MyFitnessPal" works (no password needed)</summary>
             <p className="small muted">
-                Install the <b>MacPro MyFitnessPal Companion</b> extension for one-click sync, or drag this
+                Install the <b>MacroPro MyFitnessPal Companion</b> extension for one-click sync, or drag this
                 bookmarklet to your bookmarks bar once. On your MFP food diary, click it —
                 it reads your <b>Remaining</b> row and sends just those four numbers back here.
             </p>

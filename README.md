@@ -1,4 +1,4 @@
-# MacPro 🍔
+# MacroPro 🍔
 
 *Macros, pro.*
 
@@ -27,8 +27,8 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/MacPro.git
-cd MacPro
+git clone https://github.com/<your-username>/MacroPro.git
+cd MacroPro
 yarn install
 # Playwright needs a browser for the live scrapers / MyFitnessPal:
 yarn playwright install chromium
