@@ -13,7 +13,9 @@
       "matches": [
         "http://localhost:5173/*",
         "http://127.0.0.1:5173/*",
-        "https://*.pages.dev/*"
+        "https://macropro.sefijant.workers.dev/*",
+        "https://macropro.food/*",
+        "https://*.macropro.food/*"
       ],
       "js": ["bridge.js"],
       "run_at": "document_start"
