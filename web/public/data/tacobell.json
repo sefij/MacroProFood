@@ -3,42 +3,49 @@
   "key": "TACOBELL",
   "icon": "🌮",
   "source": "live",
-  "updatedAt": "2026-06-27T19:54:20.188Z",
+  "updatedAt": "2026-07-06T20:36:01.701Z",
   "items": [
+    {
+      "name": "bbq habanero burrito - beef",
+      "calories": 421,
+      "protein": 13,
+      "fat": 20,
+      "carbs": 45
+    },
+    {
+      "name": "bbq habanero burrito - black beans",
+      "calories": 379,
+      "protein": 9,
+      "fat": 16,
+      "carbs": 46
+    },
+    {
+      "name": "bbq habanero burrito - chicken",
+      "calories": 396,
+      "protein": 15,
+      "fat": 16,
+      "carbs": 45
+    },
+    {
+      "name": "bbq habanero tenders (3)",
+      "calories": 338,
+      "protein": 25,
+      "fat": 15,
+      "carbs": 25
+    },
+    {
+      "name": "bbq habanero tenders (5)",
+      "calories": 568,
+      "protein": 42,
+      "fat": 25,
+      "carbs": 43
+    },
     {
       "name": "beefy melt burrito",
       "calories": 587,
       "protein": 21,
       "fat": 26,
       "carbs": 67
-    },
-    {
-      "name": "cali black beans bowl with cali ranch sauce",
-      "calories": 469,
-      "protein": 9.8,
-      "fat": 23,
-      "carbs": 55
-    },
-    {
-      "name": "cali black beans bowl with lava sauce",
-      "calories": 466,
-      "protein": 9.6,
-      "fat": 22,
-      "carbs": 55
-    },
-    {
-      "name": "cali chicken bowl with cali ranch sauce",
-      "calories": 487,
-      "protein": 16,
-      "fat": 23,
-      "carbs": 54
-    },
-    {
-      "name": "cali chicken bowl with lava sauce",
-      "calories": 484,
-      "protein": 16,
-      "fat": 23,
-      "carbs": 54
     },
     {
       "name": "caramel apple empanada",
@@ -95,13 +102,6 @@
       "protein": 44,
       "fat": 103,
       "carbs": 72
-    },
-    {
-      "name": "firecracker chicken crunchwrap® slider",
-      "calories": 369,
-      "protein": 15,
-      "fat": 12,
-      "carbs": 49
     },
     {
       "name": "grilled cheese crunchwrap - beef",
@@ -167,27 +167,6 @@
       "carbs": 69
     },
     {
-      "name": "hot habanero tenders (2)",
-      "calories": 252,
-      "protein": 17,
-      "fat": 9.9,
-      "carbs": 23
-    },
-    {
-      "name": "hot habanero tenders (3)",
-      "calories": 377,
-      "protein": 26,
-      "fat": 15,
-      "carbs": 35
-    },
-    {
-      "name": "hot habanero tenders (5)",
-      "calories": 629,
-      "protein": 43,
-      "fat": 25,
-      "carbs": 59
-    },
-    {
       "name": "large crispy chicken sharer",
       "calories": 1272,
       "protein": 75,
@@ -195,18 +174,18 @@
       "carbs": 80
     },
     {
+      "name": "loaded protein bowl",
+      "calories": 234,
+      "protein": 21,
+      "fat": 6.1,
+      "carbs": 22
+    },
+    {
       "name": "regular crispy chicken sharer",
       "calories": 532,
       "protein": 33,
       "fat": 30,
       "carbs": 34
-    },
-    {
-      "name": "smoky chipotle chicken crunchwrap",
-      "calories": 561,
-      "protein": 23,
-      "fat": 27,
-      "carbs": 55
     },
     {
       "name": "crispy chicken soft taco",
@@ -713,6 +692,90 @@
       "carbs": 83
     },
     {
+      "name": "bbq habanero beef burrito meal with fries (large)[more info]beef bbq habanero burrito, large fries, large drink",
+      "calories": 782,
+      "protein": 19,
+      "fat": 34,
+      "carbs": 100
+    },
+    {
+      "name": "bbq habanero beef burrito meal with fries (regular)[more info]beef bbq habanero burrito, regular fries, regular drink",
+      "calories": 684,
+      "protein": 17,
+      "fat": 30,
+      "carbs": 85
+    },
+    {
+      "name": "bbq habanero beef burrito meal with nachos (large)[more info]beef bbq habanero burrito, large nachos, large drink",
+      "calories": 757,
+      "protein": 17,
+      "fat": 36,
+      "carbs": 91
+    },
+    {
+      "name": "bbq habanero beef burrito meal with nachos (regular)[more info]beef bbq habanero burrito, regular nachos, regular drink",
+      "calories": 623,
+      "protein": 16,
+      "fat": 30,
+      "carbs": 72
+    },
+    {
+      "name": "bbq habanero black bean burrito meal with fries (large)[more info]black bean bbq habanero burrito, large fries, large drink",
+      "calories": 739,
+      "protein": 15,
+      "fat": 30,
+      "carbs": 101
+    },
+    {
+      "name": "bbq habanero black bean burrito meal with fries (regular)[more info]black bean bbq habanero burrito, regular fries, regular drink",
+      "calories": 642,
+      "protein": 13,
+      "fat": 26,
+      "carbs": 87
+    },
+    {
+      "name": "bbq habanero black bean burrito meal with nachos (large)[more info]black bean bbq habanero burrito, large nachos, large drink",
+      "calories": 715,
+      "protein": 13,
+      "fat": 32,
+      "carbs": 93
+    },
+    {
+      "name": "bbq habanero black bean burrito meal with nachos (regular)[more info]black bean bbq habanero burrito, regular nachos, regular drink",
+      "calories": 581,
+      "protein": 12,
+      "fat": 26,
+      "carbs": 74
+    },
+    {
+      "name": "bbq habanero chicken burrito meal with fries (large)[more info]chicken bbq habanero burrito, large fries, large drink",
+      "calories": 757,
+      "protein": 21,
+      "fat": 30,
+      "carbs": 101
+    },
+    {
+      "name": "bbq habanero chicken burrito meal with fries (regular)[more info]chicken bbq habanero burrito, regular fries, regular drink",
+      "calories": 660,
+      "protein": 20,
+      "fat": 27,
+      "carbs": 86
+    },
+    {
+      "name": "bbq habanero chicken burrito meal with nachos (large)[more info]chicken bbq habanero burrito, large nachos, large drink",
+      "calories": 733,
+      "protein": 20,
+      "fat": 32,
+      "carbs": 92
+    },
+    {
+      "name": "bbq habanero chicken burrito meal with nachos (regular)[more info]chicken bbq habanero burrito, regular nachos, regular drink",
+      "calories": 599,
+      "protein": 18,
+      "fat": 26,
+      "carbs": 73
+    },
+    {
       "name": "beefy melt burrito meal with fries (large)[more info]beefy melt burrito, large fries and a large drink",
       "calories": 948,
       "protein": 27,
@@ -879,6 +942,13 @@
       "protein": 32,
       "fat": 69,
       "carbs": 146
+    },
+    {
+      "name": "crispy chicken for 2[more info]2x cripsy chicken burrito, chicken nachos, 2x regular fries",
+      "calories": 1938,
+      "protein": 69,
+      "fat": 92,
+      "carbs": 212
     },
     {
       "name": "dip cravings[more info]sour cream, nacho cheese sauce, jalapenos and guacamole",
@@ -1168,6 +1238,27 @@
       "carbs": 97
     },
     {
+      "name": "match day for 4 - beef[more info]4x beef volcano burrito, 2x fries supreme, 4x regular drink",
+      "calories": 3623,
+      "protein": 94,
+      "fat": 189,
+      "carbs": 387
+    },
+    {
+      "name": "match day for 4 - black beans[more info]4x black bean volcano burrito, 2x fries supreme, 4x regular drink",
+      "calories": 3454,
+      "protein": 78,
+      "fat": 172,
+      "carbs": 393
+    },
+    {
+      "name": "match day for 4 - chicken[more info]4x chicken volcano burrito, 2x fries supreme, 4x regular drink",
+      "calories": 3525,
+      "protein": 104,
+      "fat": 173,
+      "carbs": 390
+    },
+    {
       "name": "quesadilla meal for two with fries bell grande[more info]2 x quesadilla with southwest grilled chicken, fries bell grande, 2 x regular drinks",
       "calories": 1964,
       "protein": 72,
@@ -1180,34 +1271,6 @@
       "protein": 67,
       "fat": 87,
       "carbs": 154
-    },
-    {
-      "name": "smoky chipotle chicken crunchwrap meal with fries (large)[more info]smoky chipotle chicken crunchwrap, large fries, large drink",
-      "calories": 922,
-      "protein": 29,
-      "fat": 41,
-      "carbs": 110
-    },
-    {
-      "name": "smoky chipotle chicken crunchwrap meal with fries (regular)[more info]smoky chipotle chicken crunchwrap, regular fries, regular drink",
-      "calories": 825,
-      "protein": 27,
-      "fat": 37,
-      "carbs": 95
-    },
-    {
-      "name": "smoky chipotle chicken crunchwrap meal with nachos (large)[more info]smoky chipotle chicken crunchwrap, large nachos, large drink",
-      "calories": 898,
-      "protein": 27,
-      "fat": 43,
-      "carbs": 101
-    },
-    {
-      "name": "smoky chipotle chicken crunchwrap meal with nachos (regular)[more info]smoky chipotle chicken crunchwrap, regular nachos, regular drink",
-      "calories": 764,
-      "protein": 26,
-      "fat": 37,
-      "carbs": 83
     },
     {
       "name": "tacos and burrito cravings pack[more info]4 crunchy beef tacos. 2 spicy chicken cravings burritos and 2 beefy nacho cravings burritos.",
@@ -1299,6 +1362,13 @@
       "protein": 45,
       "fat": 34,
       "carbs": 64
+    },
+    {
+      "name": "£9 bundle for 2[more info]2x beefy melt burritos, 2x regular drink",
+      "calories": 1179,
+      "protein": 41,
+      "fat": 52,
+      "carbs": 135
     }
   ]
 }

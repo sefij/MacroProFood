@@ -3,7 +3,7 @@
   "key": "WAGAMAMA",
   "icon": "🍜",
   "source": "live",
-  "updatedAt": "2026-06-27T20:16:24.691Z",
+  "updatedAt": "2026-07-06T20:36:01.701Z",
   "items": [
     {
       "name": "buldak fire wings",
@@ -21,10 +21,10 @@
     },
     {
       "name": "katsu chicken wrap",
-      "calories": 481,
+      "calories": 519,
       "protein": 29.8,
       "fat": 21.3,
-      "carbs": 41.2
+      "carbs": 50.2
     },
     {
       "name": "yasai ramen wrap",
@@ -196,10 +196,10 @@
     },
     {
       "name": "Korean barbecue brisket",
-      "calories": 524,
+      "calories": 521,
       "protein": 17.3,
       "fat": 21.6,
-      "carbs": 63.9
+      "carbs": 63.4
     },
     {
       "name": "oyster + shiitake mushrooms",
@@ -308,16 +308,16 @@
     },
     {
       "name": "Chicken thigh teriyaki donburi",
-      "calories": 808,
-      "protein": 40,
+      "calories": 807,
+      "protein": 39.9,
       "fat": 24.6,
-      "carbs": 108.2
+      "carbs": 107.8
     },
     {
       "name": "grilled duck donburi",
-      "calories": 1085,
+      "calories": 1129,
       "protein": 53.9,
-      "fat": 43.8,
+      "fat": 48.7,
       "carbs": 119.9
     },
     {
