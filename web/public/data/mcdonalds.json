@@ -3,36 +3,8 @@
   "key": "MCDONALDS",
   "icon": "🍟",
   "source": "live",
-  "updatedAt": "2026-07-06T20:36:01.701Z",
+  "updatedAt": "2026-07-07T09:18:51.150Z",
   "items": [
-    {
-      "name": "Crispy Sweet Chilli Chicken Wrap",
-      "calories": 453,
-      "protein": 21,
-      "fat": 16,
-      "carbs": 53
-    },
-    {
-      "name": "Crispy Tikka Chicken Wrap",
-      "calories": 455,
-      "protein": 21,
-      "fat": 18,
-      "carbs": 50
-    },
-    {
-      "name": "Crispy BBQ & Bacon Wrap",
-      "calories": 477,
-      "protein": 23,
-      "fat": 18,
-      "carbs": 54
-    },
-    {
-      "name": "Crunchy Cheese Bites Sharebox®",
-      "calories": 482,
-      "protein": 23,
-      "fat": 28,
-      "carbs": 35
-    },
     {
       "name": "The McDonald's Chicken Sharebox®",
       "calories": 1193,
@@ -48,60 +20,11 @@
       "carbs": 66
     },
     {
-      "name": "20 Chicken McNuggets® Sharebox®",
-      "calories": 869,
-      "protein": 50,
-      "fat": 43,
-      "carbs": 68
-    },
-    {
-      "name": "Galaxy® Chocolate McFlurry®",
-      "calories": 359,
-      "protein": 6.2,
-      "fat": 14,
-      "carbs": 51
-    },
-    {
-      "name": "Oreo® McFlurry®",
-      "calories": 260,
-      "protein": 5.2,
-      "fat": 9,
-      "carbs": 39
-    },
-    {
-      "name": "Smarties® McFlurry®",
-      "calories": 273,
-      "protein": 5.2,
-      "fat": 10,
-      "carbs": 40
-    },
-    {
-      "name": "Galaxy® Salted Caramel McFlurry®",
-      "calories": 355,
-      "protein": 5.9,
-      "fat": 12,
-      "carbs": 54
-    },
-    {
-      "name": "Sugar Donut",
-      "calories": 197,
-      "protein": 3.5,
-      "fat": 11,
-      "carbs": 21
-    },
-    {
-      "name": "Mixed Berry Muffin",
-      "calories": 298,
-      "protein": 5,
-      "fat": 7.6,
-      "carbs": 48
-    },
-    {
-      "name": "Chocolate Brownie",
-      "calories": 278,
-      "protein": 3.2,
-      "fat": 16,
-      "carbs": 29
+      "name": "Crunchy Cheese Bites Sharebox®",
+      "calories": 482,
+      "protein": 23,
+      "fat": 28,
+      "carbs": 35
     },
     {
       "name": "Crunchy Cheese Bites",
@@ -111,11 +34,18 @@
       "carbs": 12
     },
     {
-      "name": "Apple Pie",
-      "calories": 243,
-      "protein": 2.3,
-      "fat": 14,
-      "carbs": 27
+      "name": "20 Chicken McNuggets® Sharebox®",
+      "calories": 869,
+      "protein": 50,
+      "fat": 43,
+      "carbs": 68
+    },
+    {
+      "name": "McDonald's Fries",
+      "calories": 337,
+      "protein": 3.3,
+      "fat": 17,
+      "carbs": 42
     },
     {
       "name": "Melon Chunks",
@@ -125,11 +55,60 @@
       "carbs": 3.4
     },
     {
-      "name": "McDonald's Fries",
-      "calories": 337,
-      "protein": 3.3,
-      "fat": 17,
-      "carbs": 42
+      "name": "Galaxy® Salted Caramel McFlurry®",
+      "calories": 355,
+      "protein": 5.9,
+      "fat": 12,
+      "carbs": 54
+    },
+    {
+      "name": "Galaxy® Chocolate McFlurry®",
+      "calories": 359,
+      "protein": 6.2,
+      "fat": 14,
+      "carbs": 51
+    },
+    {
+      "name": "Smarties® McFlurry®",
+      "calories": 273,
+      "protein": 5.2,
+      "fat": 10,
+      "carbs": 40
+    },
+    {
+      "name": "Oreo® McFlurry®",
+      "calories": 260,
+      "protein": 5.2,
+      "fat": 9,
+      "carbs": 39
+    },
+    {
+      "name": "Sugar Donut",
+      "calories": 197,
+      "protein": 3.5,
+      "fat": 11,
+      "carbs": 21
+    },
+    {
+      "name": "Chocolate Brownie",
+      "calories": 278,
+      "protein": 3.2,
+      "fat": 16,
+      "carbs": 29
+    },
+    {
+      "name": "Mixed Berry Muffin",
+      "calories": 298,
+      "protein": 5,
+      "fat": 7.6,
+      "carbs": 48
+    },
+    {
+      "name": "Apple Pie",
+      "calories": 243,
+      "protein": 2.3,
+      "fat": 14,
+      "carbs": 27
     },
     {
       "name": "9 Piece Chicken McNuggets®",
@@ -146,18 +125,32 @@
       "carbs": 21
     },
     {
+      "name": "Crispy Tikka Chicken Wrap",
+      "calories": 455,
+      "protein": 21,
+      "fat": 18,
+      "carbs": 50
+    },
+    {
+      "name": "Crispy BBQ & Bacon Wrap",
+      "calories": 477,
+      "protein": 23,
+      "fat": 18,
+      "carbs": 54
+    },
+    {
+      "name": "Crispy Sweet Chilli Chicken Wrap",
+      "calories": 453,
+      "protein": 21,
+      "fat": 16,
+      "carbs": 53
+    },
+    {
       "name": "Sweet Carolina BBQ Stack",
       "calories": 878,
       "protein": 57,
       "fat": 51,
       "carbs": 47
-    },
-    {
-      "name": "Mexican Chipotle Chicken",
-      "calories": 579,
-      "protein": 29,
-      "fat": 24,
-      "carbs": 62
     },
     {
       "name": "Big Arch®",
@@ -174,6 +167,13 @@
       "carbs": 41
     },
     {
+      "name": "Mexican Chipotle Chicken",
+      "calories": 579,
+      "protein": 29,
+      "fat": 24,
+      "carbs": 62
+    },
+    {
       "name": "Quarter Pounder™ with Cheese",
       "calories": 514,
       "protein": 31,
@@ -188,18 +188,18 @@
       "carbs": 36
     },
     {
-      "name": "Cheeseburger",
-      "calories": 303,
-      "protein": 16,
-      "fat": 13,
-      "carbs": 30
-    },
-    {
       "name": "Double Cheeseburger",
       "calories": 452,
       "protein": 27,
       "fat": 24,
       "carbs": 31
+    },
+    {
+      "name": "Cheeseburger",
+      "calories": 303,
+      "protein": 16,
+      "fat": 13,
+      "carbs": 30
     },
     {
       "name": "Hamburger",
@@ -223,11 +223,11 @@
       "carbs": 55
     },
     {
-      "name": "Mayo Chicken",
-      "calories": 282,
-      "protein": 12,
-      "fat": 9.4,
-      "carbs": 36
+      "name": "Spicy McCrispy®",
+      "calories": 486,
+      "protein": 26,
+      "fat": 18,
+      "carbs": 53
     },
     {
       "name": "McChicken® Sandwich",
@@ -237,11 +237,18 @@
       "carbs": 41
     },
     {
-      "name": "Spicy McCrispy®",
-      "calories": 486,
-      "protein": 26,
-      "fat": 18,
-      "carbs": 53
+      "name": "Mayo Chicken",
+      "calories": 282,
+      "protein": 12,
+      "fat": 9.4,
+      "carbs": 36
+    },
+    {
+      "name": "McDonald's Fries Small",
+      "calories": 237,
+      "protein": 2.3,
+      "fat": 12,
+      "carbs": 29
     },
     {
       "name": "McPlant®",
@@ -251,11 +258,18 @@
       "carbs": 40
     },
     {
-      "name": "McDonald's Fries Small",
-      "calories": 237,
-      "protein": 2.3,
-      "fat": 12,
-      "carbs": 29
+      "name": "Americano",
+      "calories": 6,
+      "protein": 0.6,
+      "fat": 0,
+      "carbs": 0.8
+    },
+    {
+      "name": "Sprite® Zero Small",
+      "calories": 3,
+      "protein": 0.1,
+      "fat": 0,
+      "carbs": 0
     },
     {
       "name": "Coca-Cola® Zero Sugar Small",
@@ -279,18 +293,11 @@
       "carbs": 0
     },
     {
-      "name": "Americano",
-      "calories": 6,
-      "protein": 0.6,
+      "name": "Oasis® Summer Fruits Small",
+      "calories": 7,
+      "protein": 0,
       "fat": 0,
-      "carbs": 0.8
-    },
-    {
-      "name": "Sprite® Zero Small",
-      "calories": 3,
-      "protein": 0.1,
-      "fat": 0,
-      "carbs": 0
+      "carbs": 1.2
     },
     {
       "name": "IRN-BRU® Small",
@@ -305,13 +312,6 @@
       "protein": 0,
       "fat": 0,
       "carbs": 27
-    },
-    {
-      "name": "Oasis® Summer Fruits Small",
-      "calories": 7,
-      "protein": 0,
-      "fat": 0,
-      "carbs": 1.2
     },
     {
       "name": "Oreo® McFlurry® Mini",

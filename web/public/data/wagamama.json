@@ -3,7 +3,7 @@
   "key": "WAGAMAMA",
   "icon": "🍜",
   "source": "live",
-  "updatedAt": "2026-07-06T20:36:01.701Z",
+  "updatedAt": "2026-07-07T09:18:51.150Z",
   "items": [
     {
       "name": "buldak fire wings",
@@ -21,10 +21,10 @@
     },
     {
       "name": "katsu chicken wrap",
-      "calories": 519,
+      "calories": 507,
       "protein": 29.8,
       "fat": 21.3,
-      "carbs": 50.2
+      "carbs": 47.4
     },
     {
       "name": "yasai ramen wrap",
