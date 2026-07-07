@@ -11,4 +11,9 @@ mfp-error-*.png
 
 *_nutrition.json
 
+# Nutrition snapshots now live in Cloudflare R2 (see web/wrangler.jsonc). The
+# scraper writes them here locally and the CI job uploads them to R2; they are
+# no longer committed or shipped in the bundle.
+web/public/data/
+
 MacroProCompanion.zip
