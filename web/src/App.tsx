@@ -221,6 +221,8 @@ export function App () {
                 Nutrition data is community-captured and may be out of date — always
                 double-check against the restaurant. Macros and credentials never leave
                 your browser.
+                <br />
+                <a href="/privacy.html">Privacy Policy</a>
             </footer>
         </div>
     )

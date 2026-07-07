@@ -437,3 +437,6 @@ footer.foot {
     font-size: 0.78rem;
     margin-top: 24px;
 }
+footer.foot a { color: var(--accent-2); text-decoration: none; }
+footer.foot a:hover { text-decoration: underline; }
+footer.foot br { line-height: 2; }

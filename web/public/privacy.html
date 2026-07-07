@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index,follow" />
+    <title>Privacy Policy · MacroPro</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍔</text></svg>"
+    />
+    <style>
+      :root {
+        --bg: #0f1115;
+        --surface: #181b22;
+        --border: #2a2f3a;
+        --text: #e7e9ee;
+        --muted: #99a0ad;
+        --accent: #ff7a45;
+        --accent-2: #ffb088;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: radial-gradient(1200px 600px at 50% -10%, #1b1f2a 0%, var(--bg) 60%);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 40px 20px 96px;
+      }
+      .home { color: var(--accent-2); text-decoration: none; font-size: 0.9rem; }
+      .home:hover { text-decoration: underline; }
+      h1 { font-size: 1.9rem; letter-spacing: -0.02em; margin: 22px 0 4px; }
+      .updated { color: var(--muted); font-size: 0.85rem; margin: 0 0 28px; }
+      h2 {
+        font-size: 1.1rem;
+        margin: 32px 0 10px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+      p, li { color: var(--text); }
+      .lead {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px 18px;
+      }
+      .lead strong { color: var(--accent-2); }
+      ul { padding-left: 20px; }
+      li { margin-bottom: 6px; }
+      code {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-size: 0.85em;
+      }
+      a { color: var(--accent-2); }
+      .muted { color: var(--muted); }
+      footer { margin-top: 40px; color: var(--muted); font-size: 0.82rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="home" href="/">← Back to MacroPro</a>
+      <h1>🍔 MacroPro — Privacy Policy</h1>
+      <p class="updated">Last updated: 7 July 2026</p>
+
+      <p class="lead">
+        <strong>The short version:</strong> MacroPro has no accounts and no backend that
+        stores your data. The macros you enter stay in your browser, and the optional
+        browser extension works only through your own, already-signed-in MyFitnessPal
+        session. We never see or store your MyFitnessPal password, and we don't collect,
+        track, or sell any personal information.
+      </p>
+
+      <h2>Who this covers</h2>
+      <p>
+        This policy applies to the MacroPro web app at
+        <a href="https://www.macropro.food/">macropro.food</a> and the optional
+        <em>MacroPro MyFitnessPal Companion</em> browser extension.
+      </p>
+
+      <h2>What we don't collect</h2>
+      <ul>
+        <li>No sign-up, no user accounts, no profiles.</li>
+        <li>No servers that receive or store the macros, meals, or restaurants you choose.</li>
+        <li>No analytics, advertising, or tracking cookies.</li>
+        <li>No selling or sharing of data with third parties — because we don't collect it.</li>
+      </ul>
+
+      <h2>Macros you enter</h2>
+      <p>
+        Target macros you type (or pull from MyFitnessPal) are processed entirely in your
+        browser to compute meal suggestions. They are not sent to any MacroPro server. When
+        you choose to log a meal, the macro totals may be placed on your clipboard or passed
+        to your MyFitnessPal tab so they can be filled into MyFitnessPal — never to us.
+      </p>
+
+      <h2>Nutrition data</h2>
+      <p>
+        Restaurant nutrition figures are pre-generated static files the app downloads to run
+        the optimizer in your browser. They contain no personal data and are the same for
+        every visitor.
+      </p>
+
+      <h2>MyFitnessPal integration</h2>
+      <p>
+        MyFitnessPal has no public API for this, so MacroPro connects two ways, both of which
+        run inside your own browser using your existing MyFitnessPal login:
+      </p>
+      <ul>
+        <li>
+          <strong>Bookmarklets</strong> — small snippets you run on your open MyFitnessPal
+          tab that read your "Remaining" macros or fill the Quick Add form.
+        </li>
+        <li>
+          <strong>Browser extension</strong> (optional) — does the same in one click.
+        </li>
+      </ul>
+      <p>
+        In both cases your MyFitnessPal session cookies and password never leave your browser
+        and are never transmitted to MacroPro. MacroPro stores none of it.
+      </p>
+
+      <h2>Browser extension permissions</h2>
+      <p>The extension requests only what these two actions need, and uses them for nothing else:</p>
+      <ul>
+        <li>
+          <code>host_permissions</code> for <code>myfitnesspal.com</code> — to read your
+          diary's "Remaining" row and to fill/submit the Quick Add form on your own session.
+        </li>
+        <li>
+          <code>scripting</code> — to inject the small reader/filler script into your open
+          MyFitnessPal tab. It runs only on the MacroPro app pages and on myfitnesspal.com.
+        </li>
+        <li>
+          <code>tabs</code> — to find your existing MyFitnessPal tab (or open the food diary)
+          so actions run on the right page.
+        </li>
+      </ul>
+      <p>
+        The extension collects no data, sets no cookies, and sends nothing to any server. It
+        acts only when you click a button in MacroPro.
+      </p>
+
+      <h2>Hosting</h2>
+      <p>
+        The site is served as static files by Cloudflare, which may process standard request
+        metadata (such as IP address) to deliver and protect the site, per Cloudflare's own
+        policies. MacroPro does not add any tracking on top of this.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If this policy changes, the "Last updated" date above will change. Material changes
+        will be reflected on this page.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about privacy? Email
+        <a href="mailto:privacy@macropro.food">privacy@macropro.food</a>.
+      </p>
+
+      <footer>MacroPro is a free, open project. Macros and credentials never leave your browser.</footer>
+    </main>
+  </body>
+</html>
