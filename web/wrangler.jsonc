@@ -1,11 +1,22 @@
 {
-  // Deploys the MacroPro web app as a static site on Cloudflare Workers
-  // (Workers Static Assets). There is no server-side Worker code — the app is
-  // fully static and the macro optimizer runs in the browser — so this only
-  // points Wrangler at the Vite build output.
+  // Deploys the MacroPro web app on Cloudflare Workers. The React app itself is
+  // fully static (the macro optimizer runs in the browser), served via Workers
+  // Static Assets from the Vite build output. The one piece of server code is a
+  // thin Worker (worker/index.ts) that serves the nutrition snapshots under
+  // /data/* from an R2 bucket instead of shipping them in the bundle — see
+  // .github/workflows/refresh-data.yml, which repopulates that bucket weekly.
   "name": "macropro",
   "compatibility_date": "2025-06-01",
+  "main": "worker/index.ts",
   "assets": {
-    "directory": "dist"
-  }
+    "directory": "dist",
+    "binding": "ASSETS",
+    // Always hit the Worker first for /data/* so the R2-backed snapshots win
+    // even if a stale copy ever lands in dist. Everything else is served
+    // straight from static assets.
+    "run_worker_first": ["/data/*"]
+  },
+  "r2_buckets": [
+    { "binding": "STORAGE_NAME", "bucket_name": "macropro-data" }
+  ]
 }

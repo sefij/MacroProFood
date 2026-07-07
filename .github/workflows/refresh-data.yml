@@ -1,8 +1,13 @@
 name: Refresh nutrition data
 
 # Runs the Playwright scrapers (which can't run on Cloudflare) on a schedule and
-# commits the regenerated snapshots in web/public/data. Those JSON files are what
-# the static web app serves, and their `updatedAt` drives the freshness badges.
+# uploads the regenerated snapshots to the Cloudflare R2 bucket that the web app
+# serves from (via web/worker/index.ts). The JSON files are no longer committed;
+# R2 is the source of truth and their `updatedAt` drives the freshness badges.
+#
+# Required repo secrets:
+#   CLOUDFLARE_API_TOKEN   — token with R2 read/write on the account
+#   CLOUDFLARE_ACCOUNT_ID  — the Cloudflare account id
 
 on:
   schedule:
@@ -10,11 +15,17 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: refresh-data
   cancel-in-progress: false
+
+env:
+  R2_BUCKET: macropro-data
+  DATA_DIR: web/public/data
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
 jobs:
   refresh:
@@ -33,17 +44,29 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # Pull the current snapshots down so build:data can preserve prior
+      # timestamps/items when a live scrape returns nothing (see
+      # resolveUpdatedAt / readExisting in build-web-data.ts). Missing objects
+      # (e.g. the very first run) are ignored.
+      - name: Seed existing snapshots from R2
+        run: |
+          mkdir -p "$DATA_DIR"
+          for key in index mcdonalds popeyes tacobell wagamama kfc wendys subway; do
+            npx wrangler r2 object get "$R2_BUCKET/$key.json" \
+              --file "$DATA_DIR/$key.json" --remote || true
+          done
+
       - name: Build nutrition data
         run: yarn build:data
 
-      - name: Commit refreshed data
+      - name: Upload snapshots to R2
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add web/public/data
-          if git diff --cached --quiet; then
-            echo "No data changes to commit."
-          else
-            git commit -m "chore(data): refresh nutrition snapshots"
-            git push
-          fi
+          shopt -s nullglob
+          for file in "$DATA_DIR"/*.json; do
+            key="$(basename "$file")"
+            echo "Uploading $key"
+            npx wrangler r2 object put "$R2_BUCKET/$key" \
+              --file "$file" \
+              --content-type "application/json" \
+              --remote
+          done
