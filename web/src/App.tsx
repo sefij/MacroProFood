@@ -27,7 +27,10 @@ const SWAP_OVERAGE = 1.5
 const SWAP_MIN_HEADROOM = 0.2
 const SWAP_MAX_SUGGESTIONS = 10
 
-export function App () {
+const COFFEE_URL = 'https://buymeacoffee.com/sefij'
+const SUGGEST_URL = 'https://github.com/sefij/MacroProFood/issues/new'
+
+export function App() {
     const [data, setData] = useState<LoadedData | null>(null)
     const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -38,14 +41,19 @@ export function App () {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
 
     const [results, setResults] = useState<OptimizationResults | null>(null)
-    const [picked, setPicked] = useState<{ restaurant: string; index: number } | null>(null)
+    const [picked, setPicked] = useState<{
+        restaurant: string
+        index: number
+    } | null>(null)
     const [tracked, setTracked] = useState<OptimizationResult | null>(null)
     const [toast, setToast] = useState<string | null>(null)
     const [extAvailable, setExtAvailable] = useState(false)
 
     // Load nutrition data once.
     useEffect(() => {
-        loadData().then(setData).catch((e) => setLoadError(String(e)))
+        loadData()
+            .then(setData)
+            .catch((e) => setLoadError(String(e)))
     }, [])
 
     // Detect the optional browser extension (enables 1-click MFP read/write).
@@ -64,7 +72,11 @@ export function App () {
         if (parsed) {
             setMode('mfp')
             setMacros(parsed)
-            history.replaceState(null, '', window.location.pathname + window.location.search)
+            history.replaceState(
+                null,
+                '',
+                window.location.pathname + window.location.search
+            )
         }
     }, [])
 
@@ -86,7 +98,9 @@ export function App () {
     }
 
     const hasMacros = macros.calories > 0
-    const activeKeys = useAll ? availableKeys : availableKeys.filter((k) => selectedKeys.has(k))
+    const activeKeys = useAll
+        ? availableKeys
+        : availableKeys.filter((k) => selectedKeys.has(k))
     const canCompute = hasMacros && activeKeys.length > 0 && !!data
 
     const compute = () => {
@@ -104,7 +118,9 @@ export function App () {
         if (!combo) return
         setPicked({ restaurant, index })
         // Copy to clipboard regardless — it's the bookmarklet/manual fallback.
-        navigator.clipboard.writeText(buildClipboardToken(combo.totalNutrition)).catch(() => {})
+        navigator.clipboard
+            .writeText(buildClipboardToken(combo.totalNutrition))
+            .catch(() => {})
         if (!extAvailable) {
             showToast('Meal copied — open MFP and click your "Track" bookmark')
         }
@@ -118,7 +134,10 @@ export function App () {
 
     // 1-click path used by TrackPanel when the extension is installed. Receives
     // the (possibly edited) meal totals rather than the original combo.
-    const sendToMfp = async (nutrition: OptimizationResult['totalNutrition'], mealName: string) => {
+    const sendToMfp = async (
+        nutrition: OptimizationResult['totalNutrition'],
+        mealName: string
+    ) => {
         const res = await extTrackMeal(nutrition, mealName)
         showToast(
             res.confirmed
@@ -131,7 +150,9 @@ export function App () {
     // Track panel as swap suggestions when the user removes items from the meal.
     const suggestSwaps = (remaining: TargetMacros): MenuItem[] => {
         if (!data || !picked) return []
-        const key = restaurants.find((r) => r.restaurant === picked.restaurant)?.key
+        const key = restaurants.find(
+            (r) => r.restaurant === picked.restaurant
+        )?.key
         if (!key) return []
         const restData = toRestaurantsData(data.snapshots, [key])
         // Inflate the gap so suggestions get headroom past the freed-up macros.
@@ -143,9 +164,10 @@ export function App () {
             fat: pad(remaining.fat, macros.fat),
             carbs: pad(remaining.carbs, macros.carbs)
         }
-        const combos = findBestCombinations(restData, widened, 3, SWAP_MAX_SUGGESTIONS)[
-            picked.restaurant
-        ] ?? []
+        const combos =
+            findBestCombinations(restData, widened, 3, SWAP_MAX_SUGGESTIONS)[
+                picked.restaurant
+            ] ?? []
         const seen = new Set<string>()
         const out: MenuItem[] = []
         for (const combo of combos) {
@@ -188,7 +210,11 @@ export function App () {
                 onUseAll={setUseAll}
             />
 
-            <button className="btn btn-primary" disabled={!canCompute} onClick={compute}>
+            <button
+                className="btn btn-primary"
+                disabled={!canCompute}
+                onClick={compute}
+            >
                 {hasMacros ? 'Find meals' : 'Enter your calories first'}
             </button>
 
@@ -210,7 +236,9 @@ export function App () {
                     targets={macros}
                     onClose={clearChoice}
                     extAvailable={extAvailable}
-                    onSend={(nutrition, mealName) => sendToMfp(nutrition, mealName)}
+                    onSend={(nutrition, mealName) =>
+                        sendToMfp(nutrition, mealName)
+                    }
                     suggest={suggestSwaps}
                 />
             )}
@@ -218,11 +246,27 @@ export function App () {
             {toast && <div className="toast">{toast}</div>}
 
             <footer className="foot">
-                Nutrition data is community-captured and may be out of date — always
-                double-check against the restaurant. Macros and credentials never leave
-                your browser.
+                Nutrition data is community-captured and may be out of date —
+                always double-check against the restaurant. Macros and
+                credentials never leave your browser.
                 <br />
-                <a href="/privacy.html">Privacy Policy</a>
+                <span className="foot-links">
+                    <a href="/privacy.html">Privacy Policy</a>
+                    <a
+                        href={SUGGEST_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Suggest a restaurant
+                    </a>
+                    <a
+                        href={COFFEE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        ☕ Buy me a coffee
+                    </a>
+                </span>
             </footer>
         </div>
     )
