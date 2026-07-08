@@ -440,3 +440,16 @@ footer.foot {
 footer.foot a { color: var(--accent-2); text-decoration: none; }
 footer.foot a:hover { text-decoration: underline; }
 footer.foot br { line-height: 2; }
+.foot-links {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 14px;
+    margin-top: 12px;
+}
+/* Bullet separators between links (not before the first). */
+.foot-links a + a::before {
+    content: '·';
+    margin-right: 14px;
+    color: var(--muted);
+}
