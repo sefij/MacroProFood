@@ -39,6 +39,62 @@ function sumNutrition (items: MenuItem[]): Nutrition {
     )
 }
 
+/** The four values a user copies one-by-one into MyFitnessPal by hand. */
+const COPY_FIELDS: { key: keyof Nutrition; label: string; decimals: number }[] = [
+    { key: 'calories', label: 'Calories', decimals: 0 },
+    { key: 'protein', label: 'Protein (g)', decimals: 1 },
+    { key: 'carbs', label: 'Carbs (g)', decimals: 1 },
+    { key: 'fat', label: 'Fat (g)', decimals: 1 }
+]
+
+/**
+ * The meal totals as individually copyable tiles — the manual-entry path for
+ * users without the extension: tap a value to copy just that number, then paste
+ * it into the matching MyFitnessPal field.
+ */
+function CopyableTotals ({ total }: { total: Nutrition }) {
+    const [copied, setCopied] = useState<keyof Nutrition | null>(null)
+
+    const copy = (key: keyof Nutrition, value: string) => {
+        navigator.clipboard
+            .writeText(value)
+            .then(() => {
+                setCopied(key)
+                setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500)
+            })
+            .catch(() => {})
+    }
+
+    return (
+        <div className="copy-totals">
+            <p className="small muted">
+                No extension? Tap a value to copy it, then paste into the matching
+                MyFitnessPal field.
+            </p>
+            <div className="copy-grid">
+                {COPY_FIELDS.map(({ key, label, decimals }) => {
+                    const value = String(round(total[key], decimals))
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            className={`copy-cell${copied === key ? ' copied' : ''}`}
+                            onClick={() => copy(key, value)}
+                            title={`Copy ${label}`}
+                        >
+                            <span className="cc-label">{label}</span>
+                            <span className="cc-value">{value}</span>
+                            <span className="cc-hint">
+                                {copied === key ? 'Copied ✓' : '⧉ Tap to copy'}
+                            </span>
+                        </button>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
 interface Props {
     combo: OptimizationResult
     /** The macro targets this meal was optimized against — used to size swap suggestions. */
@@ -178,16 +234,15 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
                 </div>
             )}
 
-            <p className="small muted">
-                This meal:{' '}
-                <b>
-                    {round(total.calories)} cal · {round(total.protein, 1)}p ·{' '}
-                    {round(total.carbs, 1)}c · {round(total.fat, 1)}f
-                </b>
-            </p>
-
             {extAvailable ? (
                 <>
+                    <p className="small muted">
+                        This meal:{' '}
+                        <b>
+                            {round(total.calories)} cal · {round(total.protein, 1)}p ·{' '}
+                            {round(total.carbs, 1)}c · {round(total.fat, 1)}f
+                        </b>
+                    </p>
                     <div className="meal-select">
                         <label htmlFor="meal-name">Log under</label>
                         <select
@@ -214,7 +269,9 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
                     </p>
                 </>
             ) : (
-                <details className="mfp" open>
+                <>
+                    <CopyableTotals total={total} />
+                    <details className="mfp">
                     <summary>One-time setup &amp; how to log it</summary>
                     {/* eslint-disable-next-line react/jsx-no-script-url */}
                     <a className="bookmarklet" href={href} onClick={(e) => e.preventDefault()}>
@@ -229,7 +286,8 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
                     <p className="small muted">
                         Clipboard blocked? Paste this when prompted: <code>{token}</code>
                     </p>
-                </details>
+                    </details>
+                </>
             )}
         </section>
     )

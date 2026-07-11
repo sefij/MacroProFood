@@ -87,6 +87,12 @@ header.hero p {
     color: #1a1206;
     font-weight: 600;
 }
+.segmented button.locked {
+    opacity: 0.55;
+}
+.segmented button.locked:hover {
+    opacity: 0.8;
+}
 
 /* Macro inputs */
 .macro-grid {
@@ -312,6 +318,60 @@ header.hero p {
     border-radius: 11px;
 }
 .mfp-connected .btn-primary { margin-top: 10px; }
+
+/* Screenshot (OCR) input */
+.screenshot-input {
+    margin-top: 14px;
+    padding: 14px;
+    background: var(--surface-2);
+    border: 1px dashed var(--border);
+    border-radius: 11px;
+    text-align: center;
+}
+.screenshot-input .btn { width: 100%; }
+.screenshot-input p { margin: 10px 0 0; }
+.screenshot-warnings {
+    text-align: left;
+    margin: 8px 0 0;
+    padding-left: 18px;
+}
+
+/* Copyable meal totals (manual MFP entry, no extension) */
+.copy-totals { margin: 4px 0 14px; }
+.copy-totals > p { margin: 0 0 10px; }
+.copy-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+.copy-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 12px 8px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 11px;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.copy-cell:hover { border-color: var(--accent); }
+.copy-cell.copied { border-color: var(--good); background: #14261a; }
+.cc-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+}
+.cc-value { font-size: 1.25rem; font-weight: 700; color: var(--accent-2); }
+.cc-hint { font-size: 0.64rem; color: var(--muted); }
+.copy-cell.copied .cc-hint { color: var(--good); }
+
+@media (max-width: 460px) {
+    .copy-grid { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* Editable meal item list (Track panel) */
 .meal-items {
