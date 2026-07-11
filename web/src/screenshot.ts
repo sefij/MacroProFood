@@ -104,7 +104,15 @@ export function parseMacros (text: string): ScreenshotResult {
         (l) => /\bremaining\b/.test(l) && numbersIn(l).length >= 4
     )
     if (remaining) {
-        const order = detectColumnOrder(lines) ?? [...COLUMN_KEYS]
+        // Trust an OCR'd header only when it names all four macros — MFP's small
+        // header text frequently loses a column word (e.g. "Fat"), which would
+        // otherwise misalign every column after it. Otherwise fall back to MFP's
+        // canonical column order and map the values by position.
+        const detected = detectColumnOrder(lines)
+        const order =
+            detected && TARGET_KEYS.every((k) => detected.includes(k as ColumnKey))
+                ? detected
+                : [...COLUMN_KEYS]
         const values = numbersIn(remaining)
         order.forEach((key, i) => {
             if (i < values.length && (TARGET_KEYS as string[]).includes(key)) {
@@ -244,6 +252,6 @@ export async function extractMacrosFromImage (
             }
         }
     })
-    if (import.meta.env.DEV) console.debug('[screenshot OCR]\n' + data.text)
+    if (import.meta.env.DEV) console.log('[screenshot OCR]\n' + data.text)
     return parseMacros(data.text)
 }
