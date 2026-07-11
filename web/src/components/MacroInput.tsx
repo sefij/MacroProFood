@@ -1,7 +1,8 @@
 import type { TargetMacros } from '../macro'
 import { ConnectMfp } from './ConnectMfp'
+import { ScreenshotInput } from './ScreenshotInput'
 
-export type InputMode = 'manual' | 'mfp'
+export type InputMode = 'manual' | 'mfp' | 'screenshot'
 
 interface Props {
     mode: InputMode
@@ -18,6 +19,10 @@ const FIELDS: { key: keyof TargetMacros; label: string }[] = [
     { key: 'carbs', label: 'Carbs (g)' },
     { key: 'fat', label: 'Fat (g)' }
 ]
+
+// Chrome Web Store listing for the MacroPro MyFitnessPal Companion extension.
+const EXTENSION_URL =
+    'https://chromewebstore.google.com/detail/kmdghdedmhabhnhehomcfeknegcjgmbd?utm_source=item-share-cb'
 
 export function MacroInput ({ mode, onModeChange, macros, onChange, extAvailable }: Props) {
     const set = (key: keyof TargetMacros, raw: string) => {
@@ -38,15 +43,40 @@ export function MacroInput ({ mode, onModeChange, macros, onChange, extAvailable
                     ✍️ Enter manually
                 </button>
                 <button
-                    className={mode === 'mfp' ? 'active' : ''}
-                    onClick={() => onModeChange('mfp')}
+                    className={`${mode === 'mfp' ? 'active' : ''}${
+                        extAvailable ? '' : ' locked'
+                    }`}
+                    onClick={() =>
+                        extAvailable
+                            ? onModeChange('mfp')
+                            : window.open(
+                                  EXTENSION_URL,
+                                  '_blank',
+                                  'noopener,noreferrer'
+                              )
+                    }
+                    title={
+                        extAvailable
+                            ? undefined
+                            : 'Requires the MacroPro MyFitnessPal Companion extension — click to install'
+                    }
                 >
-                    📥 From MyFitnessPal
+                    📥 From MyFitnessPal{extAvailable ? '' : ' 🔒'}
+                </button>
+                <button
+                    className={mode === 'screenshot' ? 'active' : ''}
+                    onClick={() => onModeChange('screenshot')}
+                >
+                    📷 From screenshot
                 </button>
             </div>
 
             {mode === 'mfp' && (
                 <ConnectMfp extAvailable={extAvailable} onMacros={onChange} />
+            )}
+
+            {mode === 'screenshot' && (
+                <ScreenshotInput macros={macros} onChange={onChange} />
             )}
 
             <div className="macro-grid">
