@@ -19,7 +19,7 @@ import chalk from 'chalk'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
 import { extractPdfLines } from './pdf-lines'
-import { ColumnMatcher, extractTables, TableRow } from './table-grid'
+import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid'
 
 /** A row's raw text cells, keyed by the role each column was matched to. */
 export type NutritionRow = TableRow['cells']
@@ -37,8 +37,22 @@ export interface PdfScraperConfig {
     icon: string
     /** Direct URL to the nutrition PDF. */
     url: string
-    /** Header-label → column-role matchers (see {@link ColumnMatcher}). */
-    columns: ColumnMatcher[]
+    /**
+     * Header-label → column-role matchers, for tables whose header row can be
+     * auto-detected. Provide this or {@link fixedColumns}.
+     */
+    columns?: ColumnMatcher[]
+    /**
+     * Explicit column x-anchors, for a single fixed-layout table whose header
+     * can't be auto-detected. Provide this or {@link columns}.
+     */
+    fixedColumns?: FixedColumn[]
+    /** Overrides the default cell→column x-tolerance (lower for tight columns). */
+    columnXTolerance?: number
+    /** Overrides the wrapped-cell merge gap; set 0 for tables whose names never wrap. */
+    continuationLineGap?: number
+    /** Overrides the baseline gap for clustering fragments into a line (lower for tight rows). */
+    lineYTolerance?: number
     /**
      * Builds the item key (map key in {@link RestaurantData}) from a row's text
      * cells and its table's section title. Return `null`/empty to drop the row.
@@ -75,8 +89,13 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         let tables
         try {
             const pdf = await this.download()
-            const lines = await extractPdfLines(pdf)
-            tables = extractTables(lines, { columns: this.config.columns })
+            const lines = await extractPdfLines(pdf, this.config.lineYTolerance)
+            tables = extractTables(lines, {
+                columns: this.config.columns,
+                fixedColumns: this.config.fixedColumns,
+                columnXTolerance: this.config.columnXTolerance,
+                continuationLineGap: this.config.continuationLineGap
+            })
         } catch (error) {
             // Isolate failures (dead URL, unreadable PDF) so one bad scraper
             // doesn't sink the others running alongside it in scrapeAll().

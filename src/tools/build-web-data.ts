@@ -30,7 +30,6 @@ import {
     SnapshotSource
 } from '../core/types'
 
-import { updatedAt as wendysUpdatedAt } from '../scrapers/Wendys/store'
 import { updatedAt as subwayUpdatedAt } from '../scrapers/Subway/store'
 
 interface RestaurantMeta {
@@ -53,7 +52,7 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'Wagamama', key: 'WAGAMAMA', restaurant: 'Wagamama', icon: '🍜', source: 'live' },
     { scrapeKey: 'KFC', key: 'KFC', restaurant: 'KFC', icon: '🍗', source: 'live' },
     { scrapeKey: 'Dominos', key: 'DOMINOS', restaurant: "Domino's", icon: '🍕', source: 'live' },
-    { scrapeKey: 'Wendys', key: 'WENDYS', restaurant: "Wendy's", icon: '🍔', source: 'snapshot', snapshotDate: wendysUpdatedAt },
+    { scrapeKey: 'Wendys', key: 'WENDYS', restaurant: "Wendy's", icon: '🍔', source: 'live' },
     { scrapeKey: 'Subway', key: 'SUBWAY', restaurant: 'Subway', icon: '🥪', source: 'snapshot', snapshotDate: subwayUpdatedAt }
 ]
 
