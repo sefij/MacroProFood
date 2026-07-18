@@ -30,7 +30,6 @@ import {
     SnapshotSource
 } from '../core/types'
 
-import { updatedAt as wendysUpdatedAt } from '../scrapers/Wendys/store'
 import { updatedAt as subwayUpdatedAt } from '../scrapers/Subway/store'
 
 interface RestaurantMeta {
@@ -52,7 +51,8 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'TacoBell', key: 'TACOBELL', restaurant: 'Taco Bell', icon: '🌮', source: 'live' },
     { scrapeKey: 'Wagamama', key: 'WAGAMAMA', restaurant: 'Wagamama', icon: '🍜', source: 'live' },
     { scrapeKey: 'KFC', key: 'KFC', restaurant: 'KFC', icon: '🍗', source: 'live' },
-    { scrapeKey: 'Wendys', key: 'WENDYS', restaurant: "Wendy's", icon: '🍔', source: 'snapshot', snapshotDate: wendysUpdatedAt },
+    { scrapeKey: 'Dominos', key: 'DOMINOS', restaurant: "Domino's", icon: '🍕', source: 'live' },
+    { scrapeKey: 'Wendys', key: 'WENDYS', restaurant: "Wendy's", icon: '🍔', source: 'live' },
     { scrapeKey: 'Subway', key: 'SUBWAY', restaurant: 'Subway', icon: '🥪', source: 'snapshot', snapshotDate: subwayUpdatedAt }
 ]
 
@@ -100,7 +100,17 @@ async function main (): Promise<void> {
     console.log(chalk.magenta.bold('🏗️  Building web nutrition data…'))
     await fs.mkdir(OUTPUT_DIR, { recursive: true })
 
-    const operator = new ScrapingOperator({ bypassCache: false })
+    // `--no-cache` / `--fresh` re-scrapes every restaurant instead of reusing
+    // cached results — needed after a scraper change, whose new output would
+    // otherwise stay hidden behind the cache until it expires.
+    const bypassCache = process.argv.slice(2).some(
+        (arg) => arg === '--no-cache' || arg === '--fresh'
+    )
+    if (bypassCache) {
+        console.log(chalk.gray('♻️  Bypassing scraper cache (fresh scrape)'))
+    }
+
+    const operator = new ScrapingOperator({ bypassCache })
     const scraped = await operator.scrapeAll()
 
     const runTimeIso = new Date().toISOString()
