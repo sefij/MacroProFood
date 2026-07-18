@@ -1,9 +1,16 @@
 name: Refresh nutrition data
 
-# Runs the Playwright scrapers (which can't run on Cloudflare) on a schedule and
-# uploads the regenerated snapshots to the Cloudflare R2 bucket that the web app
-# serves from (via web/worker/index.ts). The JSON files are no longer committed;
-# R2 is the source of truth and their `updatedAt` drives the freshness badges.
+# Runs the Playwright scrapers (which can't run on Cloudflare) and uploads the
+# regenerated snapshots to the Cloudflare R2 bucket that the web app serves from
+# (via web/worker/index.ts). The JSON files are no longer committed; R2 is the
+# source of truth and their `updatedAt` drives the freshness badges.
+#
+# Triggers:
+#   - Daily on a schedule (uses the scraper cache where one is available).
+#   - On every push to main that touches the scraping engine or a scraper — a
+#     deploy whose new logic must regenerate data immediately, so the cache is
+#     bypassed (see the "Build nutrition data" step).
+#   - Manually, with an optional cache-bypass toggle.
 #
 # Required repo secrets:
 #   CLOUDFLARE_API_TOKEN   — token with R2 read/write on the account
@@ -11,8 +18,26 @@ name: Refresh nutrition data
 
 on:
   schedule:
-    - cron: '0 6 * * 1' # every Monday 06:00 UTC
-  workflow_dispatch: {}
+    - cron: '0 6 * * *' # daily 06:00 UTC
+  push:
+    branches: [main]
+    # Only the scraping mechanism / scrapers — a change here can alter the
+    # output, so the run must re-scrape rather than trust cached results.
+    paths:
+      - 'src/scrapers/**'
+      - 'src/cache.ts'
+      - 'src/config.ts'
+      - 'src/types.ts'
+      - 'src/core/types.ts'
+      - 'src/tools/build-web-data.ts'
+      - 'package.json'
+      - 'yarn.lock'
+  workflow_dispatch:
+    inputs:
+      bypass_cache:
+        description: 'Re-scrape everything, ignoring the cache'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -51,13 +76,17 @@ jobs:
       - name: Seed existing snapshots from R2
         run: |
           mkdir -p "$DATA_DIR"
-          for key in index mcdonalds popeyes tacobell wagamama kfc wendys subway; do
+          for key in index mcdonalds popeyes tacobell wagamama kfc dominos wendys subway; do
             npx wrangler r2 object get "$R2_BUCKET/$key.json" \
               --file "$DATA_DIR/$key.json" --remote || true
           done
 
+      # A push (scraper code changed) or a manual bypass re-scrapes everything;
+      # scheduled runs use the cache. `build:data:fresh` passes --no-cache.
       - name: Build nutrition data
-        run: yarn build:data
+        run: >-
+          yarn ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bypass_cache))
+          && 'build:data:fresh' || 'build:data' }}
 
       - name: Upload snapshots to R2
         run: |

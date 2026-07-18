@@ -101,7 +101,17 @@ async function main (): Promise<void> {
     console.log(chalk.magenta.bold('🏗️  Building web nutrition data…'))
     await fs.mkdir(OUTPUT_DIR, { recursive: true })
 
-    const operator = new ScrapingOperator({ bypassCache: false })
+    // `--no-cache` / `--fresh` re-scrapes every restaurant instead of reusing
+    // cached results — needed after a scraper change, whose new output would
+    // otherwise stay hidden behind the cache until it expires.
+    const bypassCache = process.argv.slice(2).some(
+        (arg) => arg === '--no-cache' || arg === '--fresh'
+    )
+    if (bypassCache) {
+        console.log(chalk.gray('♻️  Bypassing scraper cache (fresh scrape)'))
+    }
+
+    const operator = new ScrapingOperator({ bypassCache })
     const scraped = await operator.scrapeAll()
 
     const runTimeIso = new Date().toISOString()
