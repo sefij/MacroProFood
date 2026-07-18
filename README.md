@@ -23,7 +23,6 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 Detailed specs for each todo live in [`docs/specs/`](docs/specs/).
 
-- Show category indicators on items in the view.
 - Ensure conflict resolution handles duplicate item names safely, for example
   when Wendy's has the same name in different menus.
 - Add advanced filtering so certain categories can be excluded from calculations

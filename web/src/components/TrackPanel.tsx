@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MenuItem, OptimizationResult, TargetMacros } from '../macro'
 import { buildClipboardToken, trackMealBookmarklet } from '../bookmarklets'
 import { round } from '../format'
+import { categoryIcon } from '../category'
 
 const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const
 
@@ -190,18 +191,22 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
             </h2>
 
             <ul className="meal-items">
-                {rows.map((r, i) => (
-                    <li key={`${r.item.name}-${i}`} className={`meal-item${r.on ? '' : ' off'}`}>
-                        <label>
-                            <input type="checkbox" checked={r.on} onChange={() => toggle(i)} />
-                            <span className="mi-name">
-                                {prettyName(r.item.name)}
-                                {r.added && <span className="mi-tag">added</span>}
-                            </span>
-                            <span className="mi-cal">{round(r.item.calories)} cal</span>
-                        </label>
-                    </li>
-                ))}
+                {rows.map((r, i) => {
+                    const icon = categoryIcon(r.item.category)
+                    return (
+                        <li key={`${r.item.name}-${i}`} className={`meal-item${r.on ? '' : ' off'}`}>
+                            <label>
+                                <input type="checkbox" checked={r.on} onChange={() => toggle(i)} />
+                                <span className="mi-name">
+                                    {prettyName(r.item.name)}
+                                    {icon && <span className="cat-badge" title={r.item.category}>{icon}</span>}
+                                    {r.added && <span className="mi-tag">added</span>}
+                                </span>
+                                <span className="mi-cal">{round(r.item.calories)} cal</span>
+                            </label>
+                        </li>
+                    )
+                })}
             </ul>
 
             {removedCount > 0 && (
@@ -212,18 +217,22 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
                     {suggestions && suggestions.length > 0 && (
                         <div className="swap-list">
                             <p className="small muted">Add to fill the remaining macros:</p>
-                            {suggestions.map((s) => (
-                                <button
-                                    key={s.name}
-                                    className="swap-chip"
-                                    onClick={() => addSuggestion(s)}
-                                >
-                                    ＋ {prettyName(s.name)}
-                                    <span className="sub">
-                                        {round(s.calories)} cal · {round(s.protein, 1)}p
-                                    </span>
-                                </button>
-                            ))}
+                            {suggestions.map((s) => {
+                                const icon = categoryIcon(s.category)
+                                return (
+                                    <button
+                                        key={s.name}
+                                        className="swap-chip"
+                                        onClick={() => addSuggestion(s)}
+                                    >
+                                        ＋ {prettyName(s.name)}
+                                        {icon && <span className="cat-badge" title={s.category}>{icon}</span>}
+                                        <span className="sub">
+                                            {round(s.calories)} cal · {round(s.protein, 1)}p
+                                        </span>
+                                    </button>
+                                )
+                            })}
                         </div>
                     )}
                     {suggestions && suggestions.length === 0 && (

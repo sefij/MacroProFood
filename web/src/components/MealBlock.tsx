@@ -1,6 +1,7 @@
 import type { OptimizationResult } from '../macro'
 import { accuracyColor, accuracyPercent, round } from '../format'
 import { avgAccuracyOf } from '../macro'
+import { categoryIcon } from '../category'
 
 interface Props {
     combo: OptimizationResult
@@ -58,13 +59,17 @@ export function MealBlock ({ combo, selected, compact, onSelect }: Props) {
             tabIndex={0}
         >
             <ul>
-                {grouped.map((it) => (
-                    <li key={it.name}>
-                        {it.qty > 1 ? `${it.qty}× ` : ''}
-                        {prettyName(it.name)}
-                        <span className="sub"> — {round(it.calories)} cal</span>
-                    </li>
-                ))}
+                {grouped.map((it) => {
+                    const icon = categoryIcon(it.category)
+                    return (
+                        <li key={it.name}>
+                            {it.qty > 1 ? `${it.qty}× ` : ''}
+                            {prettyName(it.name)}
+                            {icon && <span className="cat-badge" title={it.category}>{icon}</span>}
+                            <span className="sub"> — {round(it.calories)} cal</span>
+                        </li>
+                    )
+                })}
             </ul>
 
             <div className="totals">

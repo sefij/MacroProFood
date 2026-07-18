@@ -274,6 +274,14 @@ header.hero p {
 .meal li { font-size: 0.9rem; margin-bottom: 3px; }
 .meal li .sub { color: var(--muted); font-size: 0.78rem; }
 
+/* Category badge — a small emoji chosen by keyword match (web/src/category.ts) */
+.cat-badge {
+    margin-left: 5px;
+    font-size: 0.85em;
+    opacity: 0.85;
+    cursor: default;
+}
+
 .totals {
     display: flex;
     flex-wrap: wrap;
