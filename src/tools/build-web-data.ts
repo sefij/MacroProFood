@@ -52,6 +52,7 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'TacoBell', key: 'TACOBELL', restaurant: 'Taco Bell', icon: '🌮', source: 'live' },
     { scrapeKey: 'Wagamama', key: 'WAGAMAMA', restaurant: 'Wagamama', icon: '🍜', source: 'live' },
     { scrapeKey: 'KFC', key: 'KFC', restaurant: 'KFC', icon: '🍗', source: 'live' },
+    { scrapeKey: 'Dominos', key: 'DOMINOS', restaurant: "Domino's", icon: '🍕', source: 'live' },
     { scrapeKey: 'Wendys', key: 'WENDYS', restaurant: "Wendy's", icon: '🍔', source: 'snapshot', snapshotDate: wendysUpdatedAt },
     { scrapeKey: 'Subway', key: 'SUBWAY', restaurant: 'Subway', icon: '🥪', source: 'snapshot', snapshotDate: subwayUpdatedAt }
 ]

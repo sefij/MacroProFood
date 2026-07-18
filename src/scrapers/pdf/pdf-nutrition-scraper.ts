@@ -1,0 +1,154 @@
+/**
+ * Abstract, config-driven nutrition scraper for PDF menus.
+ *
+ * A concrete scraper supplies only a {@link PdfScraperConfig} — the PDF URL,
+ * regexes that map header labels to columns, a function that builds an item
+ * key from a row, and an optional accept filter. Everything else (fetching the
+ * PDF, reconstructing tables, parsing macro numbers, ratio maths, logging) is
+ * shared here and flows through the reusable {@link extractPdfLines} /
+ * {@link extractTables} pipeline.
+ *
+ * The base understands these column roles: `name`, `crust`, `size`, `serves`,
+ * `calories`, `fat`, `carbs`, `protein` (plus any extra roles the config maps,
+ * which are ignored). `calories` anchors data rows, so every config must map a
+ * calories column.
+ */
+
+import axios from 'axios'
+import chalk from 'chalk'
+import { RestaurantData, SourceScraper, NutritionData } from '../../types'
+import { extractPdfLines } from './pdf-lines'
+import { ColumnMatcher, extractTables, TableRow } from './table-grid'
+
+/** A row's raw text cells, keyed by the role each column was matched to. */
+export type NutritionRow = TableRow['cells']
+
+/** A fully parsed item, passed to {@link PdfScraperConfig.accept}. */
+export interface ParsedNutritionItem {
+    key: string
+    title: string
+    nutrition: NutritionData
+    row: NutritionRow
+}
+
+export interface PdfScraperConfig {
+    name: string
+    icon: string
+    /** Direct URL to the nutrition PDF. */
+    url: string
+    /** Header-label → column-role matchers (see {@link ColumnMatcher}). */
+    columns: ColumnMatcher[]
+    /**
+     * Builds the item key (map key in {@link RestaurantData}) from a row's text
+     * cells and its table's section title. Return `null`/empty to drop the row.
+     * Compose in any distinguishing columns (e.g. crust, size) — and, where the
+     * distinguishing detail lives only in the section title (e.g. per-slice vs
+     * per-whole), pull it from `category` — so variants don't collide.
+     */
+    buildKey: (row: NutritionRow, category: string) => string | null
+    /** Optional final filter, e.g. drop drinks or implausible macros. */
+    accept?: (item: ParsedNutritionItem) => boolean
+    /** HTTP timeout for the PDF download. Defaults to 30s. */
+    timeoutMs?: number
+}
+
+const DEFAULT_TIMEOUT_MS = 30000
+
+const REQUEST_HEADERS = {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+        '(KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
+    Accept: 'application/pdf,*/*'
+}
+
+export abstract class PdfNutritionScraper extends SourceScraper {
+    protected abstract config: PdfScraperConfig
+
+    // No browser needed — pure HTTP download + PDF parsing.
+    async initialize (): Promise<void> { }
+
+    async scrape (): Promise<RestaurantData> {
+        const { name, icon } = this.config
+        console.log(chalk.blue(`${icon} Scraping ${name} (PDF)…`))
+
+        const pdf = await this.download()
+        const lines = await extractPdfLines(pdf)
+        const tables = extractTables(lines, { columns: this.config.columns })
+
+        const items: RestaurantData = {}
+        let invalid = 0
+        let rejected = 0
+        for (const table of tables) {
+            for (const row of table.rows) {
+                const built = this.buildItem(table.title, row.cells)
+                if (built === 'invalid') {
+                    invalid++
+                } else if (built === 'rejected') {
+                    rejected++
+                } else {
+                    items[built.key] = built.nutrition
+                }
+            }
+        }
+
+        console.log(chalk.green(`✓ Found ${Object.keys(items).length} ${name} items (PDF)`))
+        if (invalid > 0 || rejected > 0) {
+            console.log(
+                chalk.gray(
+                    `  skipped ${invalid} (no key / unparseable macros), ` +
+                    `${rejected} (filtered out)`
+                )
+            )
+        }
+        return items
+    }
+
+    private async download (): Promise<Uint8Array> {
+        const response = await axios.get<ArrayBuffer>(this.config.url, {
+            headers: REQUEST_HEADERS,
+            timeout: this.config.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+            responseType: 'arraybuffer'
+        })
+        return new Uint8Array(response.data)
+    }
+
+    /** Turns one table row into an item, or flags why it was dropped. */
+    private buildItem (
+        title: string,
+        row: NutritionRow
+    ): ParsedNutritionItem | 'invalid' | 'rejected' {
+        const key = this.config.buildKey(row, title)?.trim()
+        if (!key) return 'invalid'
+
+        const calories = parseMacro(row.calories)
+        const protein = parseMacro(row.protein)
+        const fat = parseMacro(row.fat)
+        const carbs = parseMacro(row.carbs)
+        if (!Number.isFinite(calories) || calories <= 0) return 'invalid'
+
+        const p = Number.isFinite(protein) ? protein : 0
+        const nutrition: NutritionData = {
+            calories,
+            protein: p,
+            fat: Number.isFinite(fat) ? fat : 0,
+            carbs: Number.isFinite(carbs) ? carbs : 0,
+            ProteinTCalRatio: p / calories,
+            CarbToCalRatio: (Number.isFinite(carbs) ? carbs : 0) / calories
+        }
+
+        const item: ParsedNutritionItem = { key, title, nutrition, row }
+        if (this.config.accept && !this.config.accept(item)) return 'rejected'
+        return item
+    }
+}
+
+/**
+ * Parses a macro cell like `"30g"`, `"1,408"`, or `"5.08g"` into a number.
+ * Strips thousands separators and unit suffixes; returns `NaN` if no number is
+ * present.
+ */
+export function parseMacro (value: string | undefined): number {
+    if (!value) return NaN
+    const match = value.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)
+    return match ? parseFloat(match[0]) : NaN
+}
