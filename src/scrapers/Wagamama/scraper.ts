@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
+import { parseNumber } from '../parse-number'
 
 /**
  * Live Wagamama UK scraper.
@@ -278,13 +279,5 @@ function collectItemNames (
 /** Reads a per-serving macro value from the resolved `Nutrs` rows. */
 function macro (rows: NutrRow[], label: RegExp): number {
     const row = rows.find((r) => label.test(String(r?.Desc ?? '')))
-    return row ? toNumber(row.PerServ) : NaN
-}
-
-/** Coerces a payload value like "4,845" or "68.6" to a number. */
-function toNumber (value: string | number | undefined): number {
-    if (typeof value === 'number') return value
-    if (typeof value !== 'string') return NaN
-    const match = value.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)
-    return match ? parseFloat(match[0]) : NaN
+    return row ? parseNumber(row.PerServ) : NaN
 }

@@ -102,15 +102,6 @@ export function extractTables (
     let lastLineY = 0
 
     for (const line of lines) {
-        if (isHeading(line, headingMinHeight)) {
-            // A section title closes the current table and names the next one.
-            pendingTitle = lineText(line)
-            table = null
-            columns = null
-            lastRow = null
-            continue
-        }
-
         const header = matchHeader(line, options.columns)
         if (header) {
             if (pendingTitle || !table) {
@@ -126,10 +117,24 @@ export function extractTables (
             continue
         }
 
-        if (!table || !columns) continue
+        const mapped = columns ? mapCells(line, columns) : null
+        const isDataRow = mapped != null && mapped[anchorRole] !== undefined
 
-        const mapped = mapCells(line, columns)
-        if (mapped[anchorRole] !== undefined) {
+        // A large-font line is a section title — but only if it isn't a data
+        // row. Checking the anchor first stops a data row that happens to carry
+        // a large/bold fragment (e.g. a featured item name) from being read as
+        // a title, which would drop the row and reset the whole table.
+        if (!isDataRow && isHeading(line, headingMinHeight)) {
+            pendingTitle = lineText(line)
+            table = null
+            columns = null
+            lastRow = null
+            continue
+        }
+
+        if (!table || !columns || !mapped) continue
+
+        if (isDataRow) {
             // A value in the anchor column ⇒ this line starts a data row.
             const row: TableRow = { page: line.page, y: line.y, cells: mapped }
             table.rows.push(row)
@@ -203,22 +208,31 @@ function nearestColumn (cell: PdfCell, columns: Column[]): Column | null {
     return best && bestDist <= COLUMN_X_TOLERANCE ? best : null
 }
 
-/** Lowercase words that begin a fresh word when wrapped, not a mid-word tail. */
+/** Small lowercase words that begin a fresh word when wrapped, not a tail. */
 const CONNECTOR_WORD = /^(and|or|to|of|in|on|at|the|a|no|n|with|for)\b/i
 
 /**
  * Appends a wrapped continuation fragment to a column's running text. Text
  * wrapped across lines is normally separate words and joins with a space
  * (`"BBQ Chicken"` + `"and Bacon"`). The exception is a word the wrap split
- * mid-way: the tail fragment starts with a lowercase letter and isn't itself a
- * small connector word, so it glues on with no space —
- * `"Plant-Bas"` + `"ed"` → `"Plant-Based"`, `"Margheri-t"` + `"astic"` →
- * `"Margheri-tastic"`. Capitals, digits and symbols always start a fresh word.
+ * mid-way, glued on with no space — recognised two ways:
+ *
+ *  - a short lowercase tail that isn't a small connector word
+ *    (`"Plant-Bas"` + `"ed"` → `"Plant-Based"`), or
+ *  - any lowercase fragment following a stem left dangling on a hyphen
+ *    (`"Margheri-t"` + `"astic"` → `"Margheri-tastic"`).
+ *
+ * A longer lowercase fragment on its own (`"andouille"`, `"online"`) is treated
+ * as a fresh word and gets a space, as do capitals, digits and symbols.
  */
 function joinWrapped (prev: string | undefined, next: string): string {
     if (!prev) return next
-    const midWordBreak = /^[a-z]/.test(next) && !CONNECTOR_WORD.test(next)
-    return midWordBreak ? prev + next : `${prev} ${next}`
+    if (!/^[a-z]/.test(next)) return `${prev} ${next}`
+
+    const firstToken = next.match(/^\S+/)?.[0] ?? next
+    const shortTail = firstToken.length <= 3 && !CONNECTOR_WORD.test(next)
+    const danglingHyphen = /-\w{1,2}$/.test(prev)
+    return shortTail || danglingHyphen ? prev + next : `${prev} ${next}`
 }
 
 function isHeading (line: PdfLine, minHeight: number): boolean {

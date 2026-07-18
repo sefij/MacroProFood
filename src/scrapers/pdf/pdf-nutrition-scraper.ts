@@ -17,6 +17,7 @@
 import axios from 'axios'
 import chalk from 'chalk'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
+import { parseNumber } from '../parse-number'
 import { extractPdfLines } from './pdf-lines'
 import { ColumnMatcher, extractTables, TableRow } from './table-grid'
 
@@ -71,13 +72,22 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         const { name, icon } = this.config
         console.log(chalk.blue(`${icon} Scraping ${name} (PDF)…`))
 
-        const pdf = await this.download()
-        const lines = await extractPdfLines(pdf)
-        const tables = extractTables(lines, { columns: this.config.columns })
+        let tables
+        try {
+            const pdf = await this.download()
+            const lines = await extractPdfLines(pdf)
+            tables = extractTables(lines, { columns: this.config.columns })
+        } catch (error) {
+            // Isolate failures (dead URL, unreadable PDF) so one bad scraper
+            // doesn't sink the others running alongside it in scrapeAll().
+            console.error(chalk.red(`Error scraping ${name}: ${error}`))
+            return {}
+        }
 
         const items: RestaurantData = {}
         let invalid = 0
         let rejected = 0
+        let collisions = 0
         for (const table of tables) {
             for (const row of table.rows) {
                 const built = this.buildItem(table.title, row.cells)
@@ -86,17 +96,23 @@ export abstract class PdfNutritionScraper extends SourceScraper {
                 } else if (built === 'rejected') {
                     rejected++
                 } else {
+                    // Distinct rows must not share a key, or one silently
+                    // overwrites the other and the count misreports. Surface it.
+                    if (Object.prototype.hasOwnProperty.call(items, built.key)) {
+                        collisions++
+                        console.log(chalk.yellow(`  ⚠ duplicate key "${built.key}" — overwriting`))
+                    }
                     items[built.key] = built.nutrition
                 }
             }
         }
 
         console.log(chalk.green(`✓ Found ${Object.keys(items).length} ${name} items (PDF)`))
-        if (invalid > 0 || rejected > 0) {
+        if (invalid > 0 || rejected > 0 || collisions > 0) {
             console.log(
                 chalk.gray(
                     `  skipped ${invalid} (no key / unparseable macros), ` +
-                    `${rejected} (filtered out)`
+                    `${rejected} (filtered out), ${collisions} (duplicate key)`
                 )
             )
         }
@@ -120,10 +136,10 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         const key = this.config.buildKey(row, title)?.trim()
         if (!key) return 'invalid'
 
-        const calories = parseMacro(row.calories)
-        const protein = parseMacro(row.protein)
-        const fat = parseMacro(row.fat)
-        const carbs = parseMacro(row.carbs)
+        const calories = parseNumber(row.calories)
+        const protein = parseNumber(row.protein)
+        const fat = parseNumber(row.fat)
+        const carbs = parseNumber(row.carbs)
         if (!Number.isFinite(calories) || calories <= 0) return 'invalid'
 
         const p = Number.isFinite(protein) ? protein : 0
@@ -140,15 +156,4 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         if (this.config.accept && !this.config.accept(item)) return 'rejected'
         return item
     }
-}
-
-/**
- * Parses a macro cell like `"30g"`, `"1,408"`, or `"5.08g"` into a number.
- * Strips thousands separators and unit suffixes; returns `NaN` if no number is
- * present.
- */
-export function parseMacro (value: string | undefined): number {
-    if (!value) return NaN
-    const match = value.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)
-    return match ? parseFloat(match[0]) : NaN
 }
