@@ -58,7 +58,8 @@ export function toRestaurantsData (
                 fat: it.fat,
                 carbs: it.carbs,
                 ProteinTCalRatio: it.protein / it.calories || 1,
-                CarbToCalRatio: it.carbs / it.calories || 1
+                CarbToCalRatio: it.carbs / it.calories || 1,
+                category: it.category
             }
         }
         out[snap.restaurant] = items

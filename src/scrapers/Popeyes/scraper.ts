@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import { RestaurantData, SourceScraper } from '../../types'
 import * as cheerio from 'cheerio'
+import { normalizeCategory } from '../category'
 
 export class PopeyesScraper extends SourceScraper {
     icon = '🍗'
@@ -52,19 +53,18 @@ export class PopeyesScraper extends SourceScraper {
             const EXCLUDED_SECTIONS = new Set(['dips', 'drinks', 'whipz'])
             const table = $('.recipe-title').first().closest('table')
             let currentSection = ''
+            let currentSectionLabel: string | undefined
 
             table.find('tr').each((_, element) => {
                 const $row = $(element)
                 const $title = $row.find('.recipe-title')
 
                 if ($title.length === 0) {
-                    const header = $row
-                        .children()
-                        .first()
-                        .text()
-                        .trim()
-                        .toLowerCase()
-                    if (header) currentSection = header
+                    const header = $row.children().first().text().trim()
+                    if (header) {
+                        currentSection = header.toLowerCase()
+                        currentSectionLabel = header
+                    }
                     return
                 }
 
@@ -112,7 +112,8 @@ export class PopeyesScraper extends SourceScraper {
                         fat,
                         carbs,
                         ProteinTCalRatio: protein / calories,
-                        CarbToCalRatio: carbs / calories
+                        CarbToCalRatio: carbs / calories,
+                        category: normalizeCategory(currentSectionLabel)
                     }
                 }
             })

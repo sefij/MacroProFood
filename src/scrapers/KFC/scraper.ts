@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
+import { normalizeCategory } from '../category'
 
 /**
  * Live KFC UK scraper.
@@ -166,7 +167,8 @@ export class KFCScraper extends SourceScraper {
                 fat: f,
                 carbs: c,
                 ProteinTCalRatio: p / calories,
-                CarbToCalRatio: c / calories
+                CarbToCalRatio: c / calories,
+                category: normalizeCategory(product.categories?.[0])
             }
         }
     }

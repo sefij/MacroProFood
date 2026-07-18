@@ -18,6 +18,7 @@ import axios from 'axios'
 import chalk from 'chalk'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
+import { normalizeCategory } from '../category'
 import { extractPdfLines } from './pdf-lines'
 import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid'
 
@@ -55,6 +56,13 @@ export interface PdfScraperConfig {
     fixedGrids?: FixedColumn[][]
     /** Skips matching lines entirely, e.g. a title re-printed on every page. */
     ignoreTitles?: RegExp
+    /**
+     * Overrides the auto-derived heading-height threshold. Lower it when a
+     * document's subsection headings are only slightly taller than body text
+     * (the auto threshold favours the document's most common — and usually
+     * tallest-clustered — heading style, which can miss a smaller one).
+     */
+    headingMinHeight?: number
     /** Overrides the default cell→column x-tolerance (lower for tight columns). */
     columnXTolerance?: number
     /** Overrides the wrapped-cell merge gap; set 0 for tables whose names never wrap. */
@@ -69,6 +77,13 @@ export interface PdfScraperConfig {
      * per-whole), pull it from `category` — so variants don't collide.
      */
     buildKey: (row: NutritionRow, category: string) => string | null
+    /**
+     * Maps a table's raw section title to a display category. Defaults to the
+     * title as-is (still run through {@link normalizeCategory}); override when
+     * the title carries boilerplate the key logic already strips for other
+     * purposes (e.g. Domino's "Domino's Pizza Nutrition – X (Per Whole)").
+     */
+    category?: (title: string) => string | undefined
     /** Optional final filter, e.g. drop drinks or implausible macros. */
     accept?: (item: ParsedNutritionItem) => boolean
     /** HTTP timeout for the PDF download. Defaults to 30s. */
@@ -103,6 +118,7 @@ export abstract class PdfNutritionScraper extends SourceScraper {
                 fixedColumns: this.config.fixedColumns,
                 fixedGrids: this.config.fixedGrids,
                 ignoreTitles: this.config.ignoreTitles,
+                headingMinHeight: this.config.headingMinHeight,
                 columnXTolerance: this.config.columnXTolerance,
                 continuationLineGap: this.config.continuationLineGap
             })
@@ -172,13 +188,15 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         if (!Number.isFinite(calories) || calories <= 0) return 'invalid'
 
         const p = Number.isFinite(protein) ? protein : 0
+        const rawCategory = this.config.category ? this.config.category(title) : title
         const nutrition: NutritionData = {
             calories,
             protein: p,
             fat: Number.isFinite(fat) ? fat : 0,
             carbs: Number.isFinite(carbs) ? carbs : 0,
             ProteinTCalRatio: p / calories,
-            CarbToCalRatio: (Number.isFinite(carbs) ? carbs : 0) / calories
+            CarbToCalRatio: (Number.isFinite(carbs) ? carbs : 0) / calories,
+            category: normalizeCategory(rawCategory)
         }
 
         const item: ParsedNutritionItem = { key, title, nutrition, row }

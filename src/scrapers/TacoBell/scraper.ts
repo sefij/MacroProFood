@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import { RestaurantData, SourceScraper } from '../../types'
 import * as cheerio from 'cheerio'
+import { normalizeCategory } from '../category'
 
 /**
  * Taco Bell is scraped live — but from nutritionix.com, a **third-party
@@ -40,12 +41,15 @@ export class TacoBellScraper extends SourceScraper {
             // 0: name, 1: kj, 2: kcal, 3: fat, 4: sat fat,
             // 5: carbs, 6: sugars, 7: fibre, 8: protein, 9: salt
             let currentCategory = ''
+            let currentCategoryLabel: string | undefined
 
             table.find('tbody tr').each((_, row) => {
                 const $row = $(row)
 
                 if ($row.hasClass('subCategory')) {
-                    currentCategory = $row.text().trim().toLowerCase()
+                    const label = $row.text().trim()
+                    currentCategory = label.toLowerCase()
+                    currentCategoryLabel = label
                     return
                 }
 
@@ -100,7 +104,8 @@ export class TacoBellScraper extends SourceScraper {
                     fat,
                     carbs,
                     ProteinTCalRatio: protein / calories,
-                    CarbToCalRatio: carbs / calories
+                    CarbToCalRatio: carbs / calories,
+                    category: normalizeCategory(currentCategoryLabel)
                 }
             })
         } catch (error) {
