@@ -3,6 +3,7 @@ import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
 import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 /**
  * Live Wagamama UK scraper.
@@ -77,10 +78,14 @@ export class WagamamaScraper extends SourceScraper {
         let invalid = 0
         let implausible = 0
         let excluded = 0
+        let duplicates = 0
+        let renamed = 0
         for (const raw of this.findItems(payload)) {
             const built = this.buildItem(payload, raw, drinkNames, categories)
             if (built.kind === 'ok') {
-                items[built.name] = built.nutrition
+                const outcome = addItem(items, built.name, built.nutrition)
+                if (outcome.kind === 'duplicate') duplicates++
+                else if (outcome.kind === 'renamed') renamed++
             } else if (built.kind === 'excluded') {
                 excluded++
             } else if (built.kind === 'implausible') {
@@ -94,11 +99,12 @@ export class WagamamaScraper extends SourceScraper {
         console.log(
             chalk.green(`✓ Found ${Object.keys(items).length} Wagamama items (live)`)
         )
-        if (invalid > 0 || implausible > 0 || excluded > 0) {
+        if (invalid > 0 || implausible > 0 || excluded > 0 || duplicates > 0 || renamed > 0) {
             console.log(
                 chalk.gray(
-                    `  skipped ${excluded} (drink category), ` +
-                    `${invalid} (no/zero nutrition), ${implausible} (implausible macros)`
+                    `  skipped ${excluded} (drink category), ${invalid} (no/zero nutrition), ` +
+                    `${implausible} (implausible macros), ${duplicates} (duplicate name, same macros); ` +
+                    `${renamed} name collisions requalified`
                 )
             )
         }

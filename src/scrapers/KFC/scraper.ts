@@ -2,6 +2,7 @@ import chalk from 'chalk'
 import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 /**
  * Live KFC UK scraper.
@@ -69,6 +70,8 @@ export class KFCScraper extends SourceScraper {
         let invalid = 0
         let implausible = 0
         let excluded = 0
+        let duplicates = 0
+        let renamed = 0
         for (const product of products) {
             if (product.categories?.some((c) => EXCLUDED_CATEGORIES.has(c))) {
                 excluded++
@@ -76,7 +79,9 @@ export class KFCScraper extends SourceScraper {
             }
             const built = this.buildItem(product)
             if (built.kind === 'ok') {
-                items[built.name] = built.nutrition
+                const outcome = addItem(items, built.name, built.nutrition)
+                if (outcome.kind === 'duplicate') duplicates++
+                else if (outcome.kind === 'renamed') renamed++
             } else if (built.kind === 'implausible') {
                 implausible++
                 console.log(chalk.yellow(`  ⚠ dropped "${built.name}" — implausible macros`))
@@ -88,11 +93,12 @@ export class KFCScraper extends SourceScraper {
         console.log(
             chalk.green(`✓ Found ${Object.keys(items).length} KFC items (live)`)
         )
-        if (invalid > 0 || implausible > 0 || excluded > 0) {
+        if (invalid > 0 || implausible > 0 || excluded > 0 || duplicates > 0 || renamed > 0) {
             console.log(
                 chalk.gray(
-                    `  skipped ${excluded} (excluded category), ` +
-                    `${invalid} (missing/zero nutrition), ${implausible} (implausible macros)`
+                    `  skipped ${excluded} (excluded category), ${invalid} (missing/zero nutrition), ` +
+                    `${implausible} (implausible macros), ${duplicates} (duplicate name, same macros); ` +
+                    `${renamed} name collisions requalified`
                 )
             )
         }

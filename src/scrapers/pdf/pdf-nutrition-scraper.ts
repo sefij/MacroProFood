@@ -19,6 +19,7 @@ import chalk from 'chalk'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
 import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 import { extractPdfLines } from './pdf-lines'
 import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid'
 
@@ -132,7 +133,8 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         const items: RestaurantData = {}
         let invalid = 0
         let rejected = 0
-        let collisions = 0
+        let duplicates = 0
+        let renamed = 0
         for (const table of tables) {
             for (const row of table.rows) {
                 const built = this.buildItem(table.title, row.cells)
@@ -141,23 +143,19 @@ export abstract class PdfNutritionScraper extends SourceScraper {
                 } else if (built === 'rejected') {
                     rejected++
                 } else {
-                    // Distinct rows must not share a key, or one silently
-                    // overwrites the other and the count misreports. Surface it.
-                    if (Object.prototype.hasOwnProperty.call(items, built.key)) {
-                        collisions++
-                        console.log(chalk.yellow(`  ⚠ duplicate key "${built.key}" — overwriting`))
-                    }
-                    items[built.key] = built.nutrition
+                    const outcome = addItem(items, built.key, built.nutrition)
+                    if (outcome.kind === 'duplicate') duplicates++
+                    else if (outcome.kind === 'renamed') renamed++
                 }
             }
         }
 
         console.log(chalk.green(`✓ Found ${Object.keys(items).length} ${name} items (PDF)`))
-        if (invalid > 0 || rejected > 0 || collisions > 0) {
+        if (invalid > 0 || rejected > 0 || duplicates > 0 || renamed > 0) {
             console.log(
                 chalk.gray(
-                    `  skipped ${invalid} (no key / unparseable macros), ` +
-                    `${rejected} (filtered out), ${collisions} (duplicate key)`
+                    `  skipped ${invalid} (no key / unparseable macros), ${rejected} (filtered out), ` +
+                    `${duplicates} (duplicate name, same macros); ${renamed} name collisions requalified`
                 )
             )
         }
