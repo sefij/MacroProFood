@@ -30,8 +30,26 @@ export interface ColumnMatcher {
     match: RegExp
 }
 
+/** A column at a known x, for documents whose layout can't be auto-detected. */
+export interface FixedColumn {
+    role: string
+    /** Left x that a data cell must sit near to belong to this column. */
+    x: number
+}
+
 export interface TableGridOptions {
-    columns: ColumnMatcher[]
+    /**
+     * Header-label matchers for auto-detecting each table's column layout from
+     * its header row. Mutually exclusive with {@link fixedColumns}.
+     */
+    columns?: ColumnMatcher[]
+    /**
+     * Explicit column layout for a single fixed-layout table whose header can't
+     * be auto-detected (e.g. split across lines). When set, header detection is
+     * skipped, the layout never changes, and large-font lines are treated as
+     * category blocks within that one table rather than new section headers.
+     */
+    fixedColumns?: FixedColumn[]
     /**
      * Role whose cell holds the numeric value that marks a line as a data row
      * (as opposed to a wrapped-text continuation). Defaults to `'calories'`.
@@ -43,6 +61,18 @@ export interface TableGridOptions {
      * Auto-derived from the document when omitted.
      */
     headingMinHeight?: number
+    /**
+     * Max points between a data cell's x and a column's anchor for the cell to
+     * belong to that column. Defaults to {@link COLUMN_X_TOLERANCE}; lower it
+     * for tightly-packed columns.
+     */
+    columnXTolerance?: number
+    /**
+     * Max points below the previous line for a line to be merged as wrapped
+     * text. Defaults to {@link CONTINUATION_LINE_GAP}; set to 0 to disable
+     * wrapped-cell merging (for tables whose names never wrap).
+     */
+    continuationLineGap?: number
 }
 
 /** One extracted data row: role → merged cell text. */
@@ -91,33 +121,46 @@ export function extractTables (
     const anchorRole = options.anchorRole ?? 'calories'
     const headingMinHeight =
         options.headingMinHeight ?? deriveHeadingMinHeight(lines)
+    const xTolerance = options.columnXTolerance ?? COLUMN_X_TOLERANCE
+    const continuationGap = options.continuationLineGap ?? CONTINUATION_LINE_GAP
+    const matchers = options.columns ?? []
+    // Fixed-layout mode: the column x-anchors are given, so headers are never
+    // detected and the layout never changes across the document.
+    const fixed = options.fixedColumns
+        ? options.fixedColumns.map((c) => ({ role: c.role, x: c.x }))
+        : null
 
     const tables: ExtractedTable[] = []
     let table: ExtractedTable | null = null
-    let columns: Column[] | null = null
+    let columns: Column[] | null = fixed
     let pendingTitle = ''
     let lastRow: TableRow | null = null
     // Baseline of the last line folded into `lastRow` (its anchor or a prior
     // wrapped line) — continuations are measured against this, not the anchor.
     let lastLineY = 0
 
+    const openTable = (): ExtractedTable => {
+        const created: ExtractedTable = { title: pendingTitle, rows: [] }
+        tables.push(created)
+        pendingTitle = ''
+        return created
+    }
+
     for (const line of lines) {
-        const header = matchHeader(line, options.columns)
-        if (header) {
-            if (pendingTitle || !table) {
-                // New table: either freshly titled, or an untitled header with
-                // no table in progress to continue.
-                table = { title: pendingTitle, rows: [] }
-                tables.push(table)
-                pendingTitle = ''
+        // Header detection only applies in auto-detect mode.
+        if (!fixed) {
+            const header = matchHeader(line, matchers)
+            if (header) {
+                // New table when freshly titled, else keep flowing rows into the
+                // current one (a repeated header on a continuation page).
+                if (pendingTitle || !table) table = openTable()
+                columns = header
+                lastRow = null
+                continue
             }
-            // Refresh column layout (identical on a continuation page).
-            columns = header
-            lastRow = null
-            continue
         }
 
-        const mapped = columns ? mapCells(line, columns) : null
+        const mapped = columns ? mapCells(line, columns, xTolerance) : null
         const isDataRow = mapped != null && mapped[anchorRole] !== undefined
 
         // A large-font line is a section title — but only if it isn't a data
@@ -126,16 +169,25 @@ export function extractTables (
         // a title, which would drop the row and reset the whole table.
         if (!isDataRow && isHeading(line, headingMinHeight)) {
             pendingTitle = lineText(line)
-            table = null
-            columns = null
             lastRow = null
+            if (fixed) {
+                // A category block under the one fixed layout: open its table
+                // now (no header will follow) but keep the columns.
+                table = openTable()
+            } else {
+                // Auto mode: the section's own header row will follow and
+                // redefine the columns.
+                table = null
+                columns = null
+            }
             continue
         }
 
-        if (!table || !columns || !mapped) continue
+        if (!columns || !mapped) continue
 
         if (isDataRow) {
             // A value in the anchor column ⇒ this line starts a data row.
+            if (!table) table = openTable()
             const row: TableRow = { page: line.page, y: line.y, cells: mapped }
             table.rows.push(row)
             lastRow = row
@@ -144,7 +196,7 @@ export function extractTables (
             lastRow &&
             line.page === lastRow.page &&
             lastLineY - line.y > 0 &&
-            lastLineY - line.y <= CONTINUATION_LINE_GAP
+            lastLineY - line.y <= continuationGap
         ) {
             // Wrapped text one line below the previous: append to the open row.
             for (const [role, value] of Object.entries(mapped)) {
@@ -183,10 +235,14 @@ function matchHeader (line: PdfLine, matchers: ColumnMatcher[]): Column[] | null
  * fragments landing in one column (a name split mid-line) are joined in
  * left→right order.
  */
-function mapCells (line: PdfLine, columns: Column[]): Record<string, string> {
+function mapCells (
+    line: PdfLine,
+    columns: Column[],
+    xTolerance: number
+): Record<string, string> {
     const out: Record<string, string> = {}
     for (const cell of line.cells) {
-        const column = nearestColumn(cell, columns)
+        const column = nearestColumn(cell, columns, xTolerance)
         if (!column) continue
         const value = cell.str.trim()
         if (!value) continue
@@ -195,7 +251,11 @@ function mapCells (line: PdfLine, columns: Column[]): Record<string, string> {
     return out
 }
 
-function nearestColumn (cell: PdfCell, columns: Column[]): Column | null {
+function nearestColumn (
+    cell: PdfCell,
+    columns: Column[],
+    xTolerance: number
+): Column | null {
     let best: Column | null = null
     let bestDist = Infinity
     for (const column of columns) {
@@ -205,7 +265,7 @@ function nearestColumn (cell: PdfCell, columns: Column[]): Column | null {
             best = column
         }
     }
-    return best && bestDist <= COLUMN_X_TOLERANCE ? best : null
+    return best && bestDist <= xTolerance ? best : null
 }
 
 /** Small lowercase words that begin a fresh word when wrapped, not a tail. */

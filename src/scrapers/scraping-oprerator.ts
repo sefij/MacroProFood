@@ -60,9 +60,8 @@ export class ScrapingOperator {
     }
 
     async scrapeWendys (): Promise<RestaurantData> {
-        // Wendy's reads from local JSON — no cache needed
         return this.scrapeIfEnabled('WENDYS', "Wendy's", () =>
-            this.runScraper(new WendysScraper()))
+            this.cached('wendys', () => this.runScraper(new WendysScraper())))
     }
 
     async scrapeMcdonalds (): Promise<RestaurantData> {

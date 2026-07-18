@@ -51,8 +51,15 @@ interface RawItem {
 /**
  * Loads a PDF and returns every non-empty text line across all pages, in
  * natural reading order (page ascending, then top→bottom within a page).
+ *
+ * `lineYTolerance` sets how far apart (in points) two fragments' baselines can
+ * be and still count as one line. Lower it for tables whose rows are packed
+ * close together, or adjacent rows collapse into one.
  */
-export async function extractPdfLines (data: Uint8Array): Promise<PdfLine[]> {
+export async function extractPdfLines (
+    data: Uint8Array,
+    lineYTolerance: number = LINE_Y_TOLERANCE
+): Promise<PdfLine[]> {
     const pdfjs = await importEsm('pdfjs-dist/legacy/build/pdf.mjs')
     const doc = await pdfjs.getDocument({
         data,
@@ -81,7 +88,7 @@ export async function extractPdfLines (data: Uint8Array): Promise<PdfLine[]> {
                 })
             }
 
-            lines.push(...clusterIntoLines(pageNum, items))
+            lines.push(...clusterIntoLines(pageNum, items, lineYTolerance))
             page.cleanup()
         }
     } finally {
@@ -95,7 +102,11 @@ export async function extractPdfLines (data: Uint8Array): Promise<PdfLine[]> {
  * sorted top→bottom (then left→right) so same-line items land adjacently, then
  * runs within {@link LINE_Y_TOLERANCE} are merged.
  */
-function clusterIntoLines (page: number, items: RawItem[]): PdfLine[] {
+function clusterIntoLines (
+    page: number,
+    items: RawItem[],
+    lineYTolerance: number
+): PdfLine[] {
     const sorted = [...items].sort((a, b) => b.y - a.y || a.x - b.x)
     const lines: PdfLine[] = []
 
@@ -107,7 +118,7 @@ function clusterIntoLines (page: number, items: RawItem[]): PdfLine[] {
             str: item.str
         }
         const current = lines[lines.length - 1]
-        if (current && Math.abs(current.y - item.y) <= LINE_Y_TOLERANCE) {
+        if (current && Math.abs(current.y - item.y) <= lineYTolerance) {
             current.cells.push(cell)
         } else {
             lines.push({ page, y: item.y, cells: [cell] })
