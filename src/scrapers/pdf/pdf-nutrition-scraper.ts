@@ -47,6 +47,14 @@ export interface PdfScraperConfig {
      * can't be auto-detected. Provide this or {@link columns}.
      */
     fixedColumns?: FixedColumn[]
+    /**
+     * Several fixed layouts for documents that mix grids (e.g. a menu grid on
+     * early pages, an ingredients grid on the last); each line snaps to the
+     * grid that maps the most of its cells. Alternative to {@link fixedColumns}.
+     */
+    fixedGrids?: FixedColumn[][]
+    /** Skips matching lines entirely, e.g. a title re-printed on every page. */
+    ignoreTitles?: RegExp
     /** Overrides the default cell→column x-tolerance (lower for tight columns). */
     columnXTolerance?: number
     /** Overrides the wrapped-cell merge gap; set 0 for tables whose names never wrap. */
@@ -93,6 +101,8 @@ export abstract class PdfNutritionScraper extends SourceScraper {
             tables = extractTables(lines, {
                 columns: this.config.columns,
                 fixedColumns: this.config.fixedColumns,
+                fixedGrids: this.config.fixedGrids,
+                ignoreTitles: this.config.ignoreTitles,
                 columnXTolerance: this.config.columnXTolerance,
                 continuationLineGap: this.config.continuationLineGap
             })

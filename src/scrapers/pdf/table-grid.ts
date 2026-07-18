@@ -51,6 +51,21 @@ export interface TableGridOptions {
      */
     fixedColumns?: FixedColumn[]
     /**
+     * Like {@link fixedColumns}, but for documents that mix several fixed
+     * layouts (e.g. a menu grid on early pages and an ingredients grid with
+     * different column positions on the last). Each line is mapped with every
+     * grid and keeps the mapping that claims the most cells, so lines snap to
+     * whichever layout they actually belong to.
+     */
+    fixedGrids?: FixedColumn[][]
+    /**
+     * Lines whose text matches are skipped outright — neither headings nor
+     * data. For repeated page-top boilerplate (a document title re-printed on
+     * every page) that would otherwise be read as a section title and cut a
+     * section in two where its rows continue across a page break.
+     */
+    ignoreTitles?: RegExp
+    /**
      * Role whose cell holds the numeric value that marks a line as a data row
      * (as opposed to a wrapped-text continuation). Defaults to `'calories'`.
      */
@@ -125,14 +140,14 @@ export function extractTables (
     const continuationGap = options.continuationLineGap ?? CONTINUATION_LINE_GAP
     const matchers = options.columns ?? []
     // Fixed-layout mode: the column x-anchors are given, so headers are never
-    // detected and the layout never changes across the document.
-    const fixed = options.fixedColumns
-        ? options.fixedColumns.map((c) => ({ role: c.role, x: c.x }))
-        : null
+    // detected and the layout never changes across the document. A single
+    // `fixedColumns` layout is just the one-grid case of `fixedGrids`.
+    const grids = options.fixedGrids ?? (options.fixedColumns ? [options.fixedColumns] : null)
+    const fixed = grids?.map((grid) => grid.map((c): Column => ({ role: c.role, x: c.x }))) ?? null
 
     const tables: ExtractedTable[] = []
     let table: ExtractedTable | null = null
-    let columns: Column[] | null = fixed
+    let columns: Column[] | null = null
     let pendingTitle = ''
     let lastRow: TableRow | null = null
     // Baseline of the last line folded into `lastRow` (its anchor or a prior
@@ -147,6 +162,8 @@ export function extractTables (
     }
 
     for (const line of lines) {
+        if (options.ignoreTitles?.test(lineText(line))) continue
+
         // Header detection only applies in auto-detect mode.
         if (!fixed) {
             const header = matchHeader(line, matchers)
@@ -160,7 +177,11 @@ export function extractTables (
             }
         }
 
-        const mapped = columns ? mapCells(line, columns, xTolerance) : null
+        const mapped = fixed
+            ? bestMapping(line, fixed, xTolerance)
+            : columns
+                ? mapCells(line, columns, xTolerance)
+                : null
         const isDataRow = mapped != null && mapped[anchorRole] !== undefined
 
         // A large-font line is a section title — but only if it isn't a data
@@ -183,7 +204,7 @@ export function extractTables (
             continue
         }
 
-        if (!columns || !mapped) continue
+        if (!mapped) continue
 
         if (isDataRow) {
             // A value in the anchor column ⇒ this line starts a data row.
@@ -228,6 +249,31 @@ function matchHeader (line: PdfLine, matchers: ColumnMatcher[]): Column[] | null
     }
 
     return seenRoles.size >= MIN_HEADER_ROLES ? columns : null
+}
+
+/**
+ * Maps a line with every fixed grid and keeps the mapping that claims the most
+ * cells. The grids of a mixed-layout document differ in (nearly) every anchor,
+ * so the right grid maps most of a row's cells while the wrong one catches
+ * only coincidental near-misses — counting is a reliable tiebreak where
+ * "first grid with an anchor hit" is not.
+ */
+function bestMapping (
+    line: PdfLine,
+    grids: Column[][],
+    xTolerance: number
+): Record<string, string> {
+    let best: Record<string, string> = {}
+    let bestCount = 0
+    for (const grid of grids) {
+        const mapped = mapCells(line, grid, xTolerance)
+        const count = Object.keys(mapped).length
+        if (count > bestCount) {
+            bestCount = count
+            best = mapped
+        }
+    }
+    return best
 }
 
 /**
