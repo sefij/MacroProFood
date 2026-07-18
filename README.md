@@ -9,8 +9,8 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 ## Features
 
-- **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway and
-  Taco Bell (UK menus).
+- **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
+  Taco Bell, Wagamama and Domino's (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -18,6 +18,22 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 - **Result caching** — scraped data is cached for 7 days (override with
   `--no-cache`).
 - **Per-restaurant toggles** — disable any scraper via environment variables.
+
+## Todos
+
+Detailed specs for each todo live in [`docs/specs/`](docs/specs/).
+
+- Add categories to menu items.
+- Show category indicators on items in the view.
+- Ensure conflict resolution handles duplicate item names safely, for example
+  when Wendy's has the same name in different menus.
+- Add advanced filtering so certain categories can be excluded from calculations
+  (for example desserts or drinks).
+- Add a menu mode where users can manually add items and calculate against their
+  goals, with current macros shown alongside targets in a sticky summary.
+- If menu mode proves useful, add it as an option in normal mode alongside the
+  substitution suggestions.
+- Evaluate TypeScript 5/7 compatibility and migration impact.
 
 ## Requirements
 
@@ -50,6 +66,8 @@ cp .env.example .env
 | `DISABLE_MCDONALDS` | Set to `true` to skip the McDonald's scraper.            |
 | `DISABLE_SUBWAY`    | Set to `true` to skip the Subway scraper.                |
 | `DISABLE_TACOBELL`  | Set to `true` to skip the Taco Bell scraper.             |
+| `DISABLE_WAGAMAMA`  | Set to `true` to skip the Wagamama scraper.              |
+| `DISABLE_DOMINOS`   | Set to `true` to skip the Domino's scraper.              |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
 
@@ -95,8 +113,9 @@ yarn start -- --no-mfp
 ## How it works
 
 1. **Scrape** — each restaurant has a scraper under
-   [`src/scrapers/`](src/scrapers/). Some pull live data with Playwright; others
-   read from bundled snapshots (`store.ts`).
+   [`src/scrapers/`](src/scrapers/). All pull live data: with Playwright, a
+   plain HTTP fetch of embedded JSON, or the published nutrition PDF
+   ([`src/scrapers/pdf/`](src/scrapers/pdf/)).
 2. **Cache** — live results are stored under `.cache/scrapers/` for 7 days
    ([`src/cache.ts`](src/cache.ts)).
 3. **Optimize** — [`src/macro-optimizer.ts`](src/macro-optimizer.ts) searches
@@ -106,27 +125,26 @@ yarn start -- --no-mfp
 
 ## Data sources & accuracy
 
-Each restaurant gets its data one of two ways:
+Every restaurant is scraped live (and cached for 7 days):
 
-| Restaurant   | Source                                   | Type            |
-| ------------ | ---------------------------------------- | --------------- |
-| Popeyes      | Live scrape (Playwright)                 | Live + cached   |
-| McDonald's   | Live scrape (Playwright)                 | Live + cached   |
-| Taco Bell    | Live scrape of nutritionix.com           | Live + cached   |
-| KFC          | Bundled JSON snapshot (`store.ts`)       | Snapshot        |
-| Wendy's      | Bundled JSON snapshot (`store.ts`)       | Snapshot        |
-| Subway       | Bundled JSON snapshot (`store.ts`)       | Snapshot        |
+| Restaurant   | Source                                          |
+| ------------ | ----------------------------------------------- |
+| Popeyes      | Live scrape (Playwright)                        |
+| McDonald's   | Live scrape (Playwright)                        |
+| Taco Bell    | Live scrape of nutritionix.com                  |
+| KFC          | Embedded JSON on the nutrition page             |
+| Wagamama     | Embedded JSON on the menu page                  |
+| Wendy's      | Published nutrition PDF                         |
+| Domino's     | Published nutrition PDF                         |
+| Subway       | Published nutrition PDF (UK & ROI)              |
 
-- **Snapshot scrapers (KFC, Wendy's, Subway)** read from a hand-captured JSON
-  snapshot of the menu committed in the repo
-  ([`src/scrapers/<name>/store.ts`](src/scrapers/)). They are fast and don't
-  hit the network, but they are **a point-in-time copy and will go stale** as
-  restaurants change their menus or reformulate items. Re-capture the snapshot
-  periodically to keep figures current.
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
   rather than Taco Bell directly, because that's what powers their UK online
   menu. As a result its macros **may differ from official / in-store values**.
+- **Subway** figures are per 6-inch serving (double them for a footlong); the
+  PDF also covers individual ingredients (breads, proteins, sauces, veg), which
+  are scraped as their own items.
 
 ## Scripts
 
