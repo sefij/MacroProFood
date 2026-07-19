@@ -8,6 +8,10 @@ import type {
     RestaurantSnapshot,
     RestaurantsData
 } from './macro'
+import {
+    filterCategoriesByRestaurant,
+    type RestaurantCategoryFilter
+} from '../../src/core/category-filter'
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
 
@@ -40,11 +44,15 @@ export async function loadData (): Promise<LoadedData> {
 
 /**
  * Adapts the selected restaurants' snapshots into `RestaurantsData` keyed by
- * display name (which the optimizer surfaces back in results).
+ * display name (which the optimizer surfaces back in results). `categoryFilters`
+ * (keyed by that same display name — see {@link RestaurantCategoryFilter})
+ * is applied here so both the main compute path and swap suggestions share
+ * the same per-restaurant filtering.
  */
 export function toRestaurantsData (
     snapshots: Record<string, RestaurantSnapshot>,
-    selectedKeys: string[]
+    selectedKeys: string[],
+    categoryFilters: Record<string, RestaurantCategoryFilter> = {}
 ): RestaurantsData {
     const out: RestaurantsData = {}
     for (const key of selectedKeys) {
@@ -58,10 +66,11 @@ export function toRestaurantsData (
                 fat: it.fat,
                 carbs: it.carbs,
                 ProteinTCalRatio: it.protein / it.calories || 1,
-                CarbToCalRatio: it.carbs / it.calories || 1
+                CarbToCalRatio: it.carbs / it.calories || 1,
+                category: it.category
             }
         }
         out[snap.restaurant] = items
     }
-    return out
+    return filterCategoriesByRestaurant(out, categoryFilters)
 }

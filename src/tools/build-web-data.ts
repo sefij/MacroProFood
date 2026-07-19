@@ -5,12 +5,10 @@
  * file per restaurant plus an `index.json` summary into `web/public/data/`,
  * which the React app fetches at runtime.
  *
- * Each file carries an `updatedAt` timestamp:
- *  - snapshot restaurants (Wendy's / Subway) use the hand-captured date
- *    exported from their `store.ts`;
- *  - live restaurants (KFC / Popeyes / McDonald's / Taco Bell) are stamped with
- *    the scrape run time, but only when the scrape actually returned items (so a
- *    failed scrape never masquerades as "fresh").
+ * Each file carries an `updatedAt` timestamp: every restaurant is now scraped
+ * live and stamped with the scrape run time, but only when the scrape actually
+ * returned items (so a failed scrape never masquerades as "fresh"). The
+ * `snapshot` source plumbing remains for any future hand-captured restaurant.
  *
  * Usage: `yarn build:data` (compiles, then runs `dist/tools/build-web-data.js`).
  */
@@ -29,8 +27,6 @@ import {
     SnapshotItem,
     SnapshotSource
 } from '../core/types'
-
-import { updatedAt as subwayUpdatedAt } from '../scrapers/Subway/store'
 
 interface RestaurantMeta {
     /** Key as produced by ScrapingOperator.scrapeAll(). */
@@ -53,7 +49,7 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'KFC', key: 'KFC', restaurant: 'KFC', icon: '🍗', source: 'live' },
     { scrapeKey: 'Dominos', key: 'DOMINOS', restaurant: "Domino's", icon: '🍕', source: 'live' },
     { scrapeKey: 'Wendys', key: 'WENDYS', restaurant: "Wendy's", icon: '🍔', source: 'live' },
-    { scrapeKey: 'Subway', key: 'SUBWAY', restaurant: 'Subway', icon: '🥪', source: 'snapshot', snapshotDate: subwayUpdatedAt }
+    { scrapeKey: 'Subway', key: 'SUBWAY', restaurant: 'Subway', icon: '🥪', source: 'live' }
 ]
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'web', 'public', 'data')
@@ -66,7 +62,8 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
         calories: n.calories,
         protein: n.protein,
         fat: n.fat,
-        carbs: n.carbs
+        carbs: n.carbs,
+        category: n.category
     }))
 }
 

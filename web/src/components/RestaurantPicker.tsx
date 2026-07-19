@@ -1,5 +1,7 @@
 import type { RestaurantIndexEntry } from '../macro'
+import type { RestaurantCategoryFilter } from '../../../src/core/category-filter'
 import { staleness } from '../format'
+import { CategoryFilters, type RestaurantCategoryGroup } from './CategoryFilters'
 
 interface Props {
     restaurants: RestaurantIndexEntry[]
@@ -7,9 +9,23 @@ interface Props {
     onToggle: (key: string) => void
     useAll: boolean
     onUseAll: (v: boolean) => void
+    categoryGroups: RestaurantCategoryGroup[]
+    categoryFilters: Record<string, RestaurantCategoryFilter>
+    onCategoryModeChange: (restaurant: string, mode: RestaurantCategoryFilter['mode']) => void
+    onToggleCategory: (restaurant: string, category: string) => void
 }
 
-export function RestaurantPicker ({ restaurants, selected, onToggle, useAll, onUseAll }: Props) {
+export function RestaurantPicker ({
+    restaurants,
+    selected,
+    onToggle,
+    useAll,
+    onUseAll,
+    categoryGroups,
+    categoryFilters,
+    onCategoryModeChange,
+    onToggleCategory
+}: Props) {
     return (
         <section className="card">
             <div className="picker-head">
@@ -48,6 +64,13 @@ export function RestaurantPicker ({ restaurants, selected, onToggle, useAll, onU
                     )
                 })}
             </div>
+
+            <CategoryFilters
+                groups={categoryGroups}
+                filters={categoryFilters}
+                onModeChange={onCategoryModeChange}
+                onToggleCategory={onToggleCategory}
+            />
         </section>
     )
 }

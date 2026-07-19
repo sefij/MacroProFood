@@ -49,6 +49,7 @@ const DOMINOS_CONFIG: PdfScraperConfig = {
         { role: 'name', match: /^[A-Za-z]/ }
     ],
     buildKey: buildDominosKey,
+    category: dominosCategory,
     // Guard against feed errors: a single macro can't out-energise the whole
     // item (protein/carbs ≈ 4 kcal/g, fat ≈ 9 kcal/g), with slack for rounding.
     accept: ({ nutrition: n }) => {
@@ -105,6 +106,25 @@ function pizzaServingBasis (category: string): string {
 /** Trims and collapses the internal whitespace left by multi-line merges. */
 function clean (value: string | undefined): string {
     return (value ?? '').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Strips a table title down to its display category. Titles come in two
+ * shapes: pizza tables read "Domino's Pizza Nutrition – <Category> (<Serving>)"
+ * (category after the dash); everything else reads "Domino's <Category>
+ * Nutrition (<Serving>)?" (category before "Nutrition"). Continuation tables
+ * with no "Domino's … Nutrition" wrapper at all (e.g. "Chick 'N' Dip Combos")
+ * pass through unchanged.
+ */
+function dominosCategory (title: string): string {
+    const stripped = title
+        .replace(/^\d+\.\s*/, '')
+        .replace(/^Domino'?s\s*/i, '')
+        .replace(/\s*\([^)]*\)\s*$/, '')
+        .trim()
+    const afterDash = stripped.match(/^Pizza Nutrition\s*[–-]\s*(.+)$/i)
+    if (afterDash) return afterDash[1].trim()
+    return stripped.replace(/\s*Nutrition\s*$/i, '').trim()
 }
 
 export class DominosScraper extends PdfNutritionScraper {

@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { MenuItem, OptimizationResult, TargetMacros } from '../macro'
+import type { MenuItem, OptimizationResult, SnapshotItem, TargetMacros } from '../macro'
 import { buildClipboardToken, trackMealBookmarklet } from '../bookmarklets'
 import { round } from '../format'
+import { categoryIcon } from '../category'
+import { MenuItemList } from './MenuBuilder'
+import { MacroStatusGrid } from './MacroStatusGrid'
+import { menuItemKey, type MenuState } from '../menu'
 
 const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const
 
@@ -106,6 +110,8 @@ interface Props {
     onSend: (nutrition: Nutrition, mealName: string) => Promise<void>
     /** Suggests items from the same restaurant that fit `remaining`. */
     suggest: (remaining: TargetMacros) => MenuItem[]
+    /** The meal's restaurant's full menu, for "+ Add from menu" (empty hides the section). */
+    menuItems: SnapshotItem[]
 }
 
 /**
@@ -114,7 +120,7 @@ interface Props {
  * gets sent to MFP) update live. Removing items reveals a "Suggest swaps" action
  * that re-runs the optimizer against the freed-up macros so you can fill the gap.
  */
-export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, suggest }: Props) {
+export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, suggest, menuItems }: Props) {
     const [sending, setSending] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [meal, setMeal] = useState<string>(defaultMeal)
@@ -148,7 +154,14 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
     const toggle = (idx: number) =>
         setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, on: !r.on } : r)))
 
-    const runSuggest = () => {
+    // Toggles the suggestion list: hidden (null) -> computed & shown -> hidden
+    // again on a second click, so a user who's added what they wanted isn't
+    // stuck looking at leftover chips they no longer care about.
+    const toggleSuggestions = () => {
+        if (suggestions !== null) {
+            setSuggestions(null)
+            return
+        }
         const remaining: TargetMacros = {
             calories: Math.max(0, targets.calories - total.calories),
             protein: Math.max(0, targets.protein - total.protein),
@@ -166,6 +179,34 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
         setRows((prev) => [...prev, { item, on: true, added: true }])
         setSuggestions((prev) => prev?.filter((s) => s.name !== item.name) ?? null)
     }
+
+    // "+ Add from menu" (spec 07) reuses `MenuItemList` — the same
+    // browse/search/stepper UI as menu mode — scoped to this meal's
+    // restaurant. It needs the current on-rows regrouped into `MenuState`
+    // (qty per item) to know what to show as already-added; adding just
+    // reuses `addSuggestion` above, and removing turns off the most recently
+    // added matching row rather than deleting it, so it stays toggleable via
+    // its checkbox like every other row.
+    const menuMealState = useMemo(() => {
+        const map: MenuState = new Map()
+        for (const r of rows) {
+            if (!r.on) continue
+            const key = menuItemKey(r.item)
+            map.set(key, { item: r.item, qty: (map.get(key)?.qty ?? 0) + 1 })
+        }
+        return map
+    }, [rows])
+
+    const removeFromMenu = (item: MenuItem) => {
+        setRows((prev) => {
+            const idx = [...prev].reverse().findIndex((r) => r.on && r.item.name === item.name)
+            if (idx === -1) return prev
+            const realIdx = prev.length - 1 - idx
+            return prev.map((r, i) => (i === realIdx ? { ...r, on: false } : r))
+        })
+    }
+
+    const menuRestaurantName = combo.items[0]?.restaurant ?? ''
 
     const href = trackMealBookmarklet()
     const token = buildClipboardToken(total)
@@ -190,40 +231,48 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
             </h2>
 
             <ul className="meal-items">
-                {rows.map((r, i) => (
-                    <li key={`${r.item.name}-${i}`} className={`meal-item${r.on ? '' : ' off'}`}>
-                        <label>
-                            <input type="checkbox" checked={r.on} onChange={() => toggle(i)} />
-                            <span className="mi-name">
-                                {prettyName(r.item.name)}
-                                {r.added && <span className="mi-tag">added</span>}
-                            </span>
-                            <span className="mi-cal">{round(r.item.calories)} cal</span>
-                        </label>
-                    </li>
-                ))}
+                {rows.map((r, i) => {
+                    const icon = categoryIcon(r.item.category)
+                    return (
+                        <li key={`${r.item.name}-${i}`} className={`meal-item${r.on ? '' : ' off'}`}>
+                            <label>
+                                <input type="checkbox" checked={r.on} onChange={() => toggle(i)} />
+                                <span className="mi-name">
+                                    {prettyName(r.item.name)}
+                                    {icon && <span className="cat-badge" title={r.item.category}>{icon}</span>}
+                                    {r.added && <span className="mi-tag">added</span>}
+                                </span>
+                                <span className="mi-cal">{round(r.item.calories)} cal</span>
+                            </label>
+                        </li>
+                    )
+                })}
             </ul>
 
             {removedCount > 0 && (
                 <div className="swaps">
-                    <button className="btn btn-ghost small" onClick={runSuggest} disabled={empty}>
-                        Suggest swaps for what you removed
+                    <button className="btn btn-ghost small" onClick={toggleSuggestions} disabled={empty}>
+                        {suggestions !== null ? 'Hide suggestions' : 'Suggest swaps for what you removed'}
                     </button>
                     {suggestions && suggestions.length > 0 && (
                         <div className="swap-list">
                             <p className="small muted">Add to fill the remaining macros:</p>
-                            {suggestions.map((s) => (
-                                <button
-                                    key={s.name}
-                                    className="swap-chip"
-                                    onClick={() => addSuggestion(s)}
-                                >
-                                    ＋ {prettyName(s.name)}
-                                    <span className="sub">
-                                        {round(s.calories)} cal · {round(s.protein, 1)}p
-                                    </span>
-                                </button>
-                            ))}
+                            {suggestions.map((s) => {
+                                const icon = categoryIcon(s.category)
+                                return (
+                                    <button
+                                        key={s.name}
+                                        className="swap-chip"
+                                        onClick={() => addSuggestion(s)}
+                                    >
+                                        ＋ {prettyName(s.name)}
+                                        {icon && <span className="cat-badge" title={s.category}>{icon}</span>}
+                                        <span className="sub">
+                                            {round(s.calories)} cal · {round(s.protein, 1)}p
+                                        </span>
+                                    </button>
+                                )
+                            })}
                         </div>
                     )}
                     {suggestions && suggestions.length === 0 && (
@@ -232,6 +281,20 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
                         </p>
                     )}
                 </div>
+            )}
+
+            {menuItems.length > 0 && (
+                <details className="add-from-menu">
+                    <summary>＋ Add from menu</summary>
+                    <MacroStatusGrid totals={total} targets={targets} />
+                    <MenuItemList
+                        items={menuItems}
+                        restaurantName={menuRestaurantName}
+                        meal={menuMealState}
+                        onAdd={addSuggestion}
+                        onRemove={removeFromMenu}
+                    />
+                </details>
             )}
 
             {extAvailable ? (

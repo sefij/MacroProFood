@@ -18,6 +18,8 @@ import axios from 'axios'
 import chalk from 'chalk'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
+import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 import { extractPdfLines } from './pdf-lines'
 import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid'
 
@@ -47,6 +49,21 @@ export interface PdfScraperConfig {
      * can't be auto-detected. Provide this or {@link columns}.
      */
     fixedColumns?: FixedColumn[]
+    /**
+     * Several fixed layouts for documents that mix grids (e.g. a menu grid on
+     * early pages, an ingredients grid on the last); each line snaps to the
+     * grid that maps the most of its cells. Alternative to {@link fixedColumns}.
+     */
+    fixedGrids?: FixedColumn[][]
+    /** Skips matching lines entirely, e.g. a title re-printed on every page. */
+    ignoreTitles?: RegExp
+    /**
+     * Overrides the auto-derived heading-height threshold. Lower it when a
+     * document's subsection headings are only slightly taller than body text
+     * (the auto threshold favours the document's most common — and usually
+     * tallest-clustered — heading style, which can miss a smaller one).
+     */
+    headingMinHeight?: number
     /** Overrides the default cell→column x-tolerance (lower for tight columns). */
     columnXTolerance?: number
     /** Overrides the wrapped-cell merge gap; set 0 for tables whose names never wrap. */
@@ -61,6 +78,13 @@ export interface PdfScraperConfig {
      * per-whole), pull it from `category` — so variants don't collide.
      */
     buildKey: (row: NutritionRow, category: string) => string | null
+    /**
+     * Maps a table's raw section title to a display category. Defaults to the
+     * title as-is (still run through {@link normalizeCategory}); override when
+     * the title carries boilerplate the key logic already strips for other
+     * purposes (e.g. Domino's "Domino's Pizza Nutrition – X (Per Whole)").
+     */
+    category?: (title: string) => string | undefined
     /** Optional final filter, e.g. drop drinks or implausible macros. */
     accept?: (item: ParsedNutritionItem) => boolean
     /** HTTP timeout for the PDF download. Defaults to 30s. */
@@ -93,6 +117,9 @@ export abstract class PdfNutritionScraper extends SourceScraper {
             tables = extractTables(lines, {
                 columns: this.config.columns,
                 fixedColumns: this.config.fixedColumns,
+                fixedGrids: this.config.fixedGrids,
+                ignoreTitles: this.config.ignoreTitles,
+                headingMinHeight: this.config.headingMinHeight,
                 columnXTolerance: this.config.columnXTolerance,
                 continuationLineGap: this.config.continuationLineGap
             })
@@ -106,7 +133,8 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         const items: RestaurantData = {}
         let invalid = 0
         let rejected = 0
-        let collisions = 0
+        let duplicates = 0
+        let renamed = 0
         for (const table of tables) {
             for (const row of table.rows) {
                 const built = this.buildItem(table.title, row.cells)
@@ -115,23 +143,19 @@ export abstract class PdfNutritionScraper extends SourceScraper {
                 } else if (built === 'rejected') {
                     rejected++
                 } else {
-                    // Distinct rows must not share a key, or one silently
-                    // overwrites the other and the count misreports. Surface it.
-                    if (Object.prototype.hasOwnProperty.call(items, built.key)) {
-                        collisions++
-                        console.log(chalk.yellow(`  ⚠ duplicate key "${built.key}" — overwriting`))
-                    }
-                    items[built.key] = built.nutrition
+                    const outcome = addItem(items, built.key, built.nutrition)
+                    if (outcome.kind === 'duplicate') duplicates++
+                    else if (outcome.kind === 'renamed') renamed++
                 }
             }
         }
 
         console.log(chalk.green(`✓ Found ${Object.keys(items).length} ${name} items (PDF)`))
-        if (invalid > 0 || rejected > 0 || collisions > 0) {
+        if (invalid > 0 || rejected > 0 || duplicates > 0 || renamed > 0) {
             console.log(
                 chalk.gray(
-                    `  skipped ${invalid} (no key / unparseable macros), ` +
-                    `${rejected} (filtered out), ${collisions} (duplicate key)`
+                    `  skipped ${invalid} (no key / unparseable macros), ${rejected} (filtered out), ` +
+                    `${duplicates} (duplicate name, same macros); ${renamed} name collisions requalified`
                 )
             )
         }
@@ -162,13 +186,15 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         if (!Number.isFinite(calories) || calories <= 0) return 'invalid'
 
         const p = Number.isFinite(protein) ? protein : 0
+        const rawCategory = this.config.category ? this.config.category(title) : title
         const nutrition: NutritionData = {
             calories,
             protein: p,
             fat: Number.isFinite(fat) ? fat : 0,
             carbs: Number.isFinite(carbs) ? carbs : 0,
             ProteinTCalRatio: p / calories,
-            CarbToCalRatio: (Number.isFinite(carbs) ? carbs : 0) / calories
+            CarbToCalRatio: (Number.isFinite(carbs) ? carbs : 0) / calories,
+            category: normalizeCategory(rawCategory)
         }
 
         const item: ParsedNutritionItem = { key, title, nutrition, row }

@@ -2,6 +2,8 @@ import chalk from 'chalk'
 import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
+import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 /**
  * Live Wagamama UK scraper.
@@ -70,15 +72,20 @@ export class WagamamaScraper extends SourceScraper {
         const html = await this.fetchPage()
         const payload = this.extractPayload(html)
         const drinkNames = this.collectDrinkNames(payload)
+        const categories = this.collectCategoryNames(payload)
 
         const items: RestaurantData = {}
         let invalid = 0
         let implausible = 0
         let excluded = 0
+        let duplicates = 0
+        let renamed = 0
         for (const raw of this.findItems(payload)) {
-            const built = this.buildItem(payload, raw, drinkNames)
+            const built = this.buildItem(payload, raw, drinkNames, categories)
             if (built.kind === 'ok') {
-                items[built.name] = built.nutrition
+                const outcome = addItem(items, built.name, built.nutrition)
+                if (outcome.kind === 'duplicate') duplicates++
+                else if (outcome.kind === 'renamed') renamed++
             } else if (built.kind === 'excluded') {
                 excluded++
             } else if (built.kind === 'implausible') {
@@ -92,11 +99,12 @@ export class WagamamaScraper extends SourceScraper {
         console.log(
             chalk.green(`✓ Found ${Object.keys(items).length} Wagamama items (live)`)
         )
-        if (invalid > 0 || implausible > 0 || excluded > 0) {
+        if (invalid > 0 || implausible > 0 || excluded > 0 || duplicates > 0 || renamed > 0) {
             console.log(
                 chalk.gray(
-                    `  skipped ${excluded} (drink category), ` +
-                    `${invalid} (no/zero nutrition), ${implausible} (implausible macros)`
+                    `  skipped ${excluded} (drink category), ${invalid} (no/zero nutrition), ` +
+                    `${implausible} (implausible macros), ${duplicates} (duplicate name, same macros); ` +
+                    `${renamed} name collisions requalified`
                 )
             )
         }
@@ -180,7 +188,8 @@ export class WagamamaScraper extends SourceScraper {
     private buildItem (
         payload: unknown[],
         raw: WagaItem,
-        drinkNames: Set<string>
+        drinkNames: Set<string>,
+        categories: Map<string, string>
     ): BuildResult {
         const name = String(resolveRef(payload, raw.Name) ?? '').trim()
         const nutrs = resolveRef(payload, raw.Nutrs)
@@ -212,9 +221,51 @@ export class WagamamaScraper extends SourceScraper {
                 fat: f,
                 carbs: c,
                 ProteinTCalRatio: p / calories,
-                CarbToCalRatio: c / calories
+                CarbToCalRatio: c / calories,
+                category: normalizeCategory(categories.get(name.toLowerCase()))
             }
         }
+    }
+
+    /**
+     * Walks every menu category and returns the lowercased item name → raw
+     * category name it was found under (first category wins if an item is
+     * shared). Mirrors {@link collectDrinkNames}'s tree walk, generalized to
+     * record every category instead of testing against one regex.
+     *
+     * The payload carries one extra `Recipes`/`Sections`/`Name`-shaped node
+     * above the real categories: an overall menu-metadata object (its `Name`
+     * resolves to something like "17/06/2026 - UK - main website", not a
+     * section). Real categories carry an `SType` field it lacks, distinguishing
+     * them — without this check that one node is walked first and claims every
+     * item's category before any real section gets a turn.
+     *
+     * Each category gets its own `visited` guard rather than one shared across
+     * all of them: the devalue graph deduplicates shared substructure (sizes,
+     * pictures, …), so a node touched in passing while walking one category can
+     * be the very node a *different* category's real items hang off — a shared
+     * guard would mark it visited first and starve that category's walk.
+     */
+    private collectCategoryNames (payload: unknown[]): Map<string, string> {
+        const names = new Map<string, string>()
+        for (const entry of payload) {
+            if (
+                entry === null ||
+                typeof entry !== 'object' ||
+                Array.isArray(entry) ||
+                !('Recipes' in entry) ||
+                !('Sections' in entry) ||
+                !('Name' in entry) ||
+                !('SType' in entry)
+            ) {
+                continue
+            }
+            const categoryName = resolveRef(payload, (entry as { Name: unknown }).Name)
+            if (typeof categoryName === 'string' && categoryName.trim()) {
+                collectItemCategories(payload, entry, categoryName.trim(), names, new Set())
+            }
+        }
+        return names
     }
 }
 
@@ -274,6 +325,54 @@ function collectItemNames (
     for (const key of Object.keys(obj)) {
         collectItemNames(payload, obj[key], out, visited, depth + 1)
     }
+}
+
+/**
+ * Walks a devalue subtree (following index references, with a visited guard
+ * for cycles) and records `category` for the `Name` of every item object (one
+ * carrying `Nutrs`) found underneath.
+ *
+ * Unlike {@link collectItemNames}, this only descends into `Recipes` and
+ * `Sections` — the two fields that actually nest items/subcategories — rather
+ * than every key. A category object also carries scalar fields like `SType`
+ * or `Order` that are plain type codes, not references, but are still plain
+ * numbers; walking them blindly sends the traversal down `payload[thatNumber]`
+ * as if it were a real reference, and if that number happens to coincide with
+ * an unrelated (or even the root) node, every category's walk collapses onto
+ * the same shared path and wrongly marks each other's items `visited` before
+ * their real owning category's `Recipes` is reached.
+ */
+function collectItemCategories (
+    payload: unknown[],
+    node: unknown,
+    category: string,
+    out: Map<string, string>,
+    visited: Set<number>,
+    depth = 0
+): void {
+    if (depth > 16) return
+    if (typeof node === 'number') {
+        if (node < 0 || visited.has(node)) return
+        visited.add(node)
+        collectItemCategories(payload, payload[node], category, out, visited, depth + 1)
+        return
+    }
+    if (node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+        for (const child of node) collectItemCategories(payload, child, category, out, visited, depth + 1)
+        return
+    }
+    const obj = node as Record<string, unknown>
+    if ('Name' in obj && 'Nutrs' in obj) {
+        const name = resolveRef(payload, obj.Name)
+        if (typeof name === 'string') {
+            const key = name.trim().toLowerCase()
+            if (!out.has(key)) out.set(key, category)
+        }
+        return // an item node nests no further items
+    }
+    if ('Recipes' in obj) collectItemCategories(payload, obj.Recipes, category, out, visited, depth + 1)
+    if ('Sections' in obj) collectItemCategories(payload, obj.Sections, category, out, visited, depth + 1)
 }
 
 /** Reads a per-serving macro value from the resolved `Nutrs` rows. */

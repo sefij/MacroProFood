@@ -3,6 +3,8 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { BrowserContext } from 'playwright'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
+import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 /**
  * McDonald's UK scraper.
@@ -16,15 +18,16 @@ import { RestaurantData, SourceScraper, NutritionData } from '../../types'
  *    …) so it's obvious whether the site lost an item or the scraper did.
  */
 
-const CATEGORY_URLS = [
-    'https://www.mcdonalds.com/gb/en-gb/menu/made-for-sharing.html',
-    'https://www.mcdonalds.com/gb/en-gb/menu/burgers.html',
-    'https://www.mcdonalds.com/gb/en-gb/menu/chicken-mcnuggets-and-selects.html',
-    'https://www.mcdonalds.com/gb/en-gb/menu/wraps-and-salads.html',
-    'https://www.mcdonalds.com/gb/en-gb/menu/saver-menu.html',
-    'https://www.mcdonalds.com/gb/en-gb/menu/happy-meal-meal.html',
-    'https://www.mcdonalds.com/gb/en-gb/menu/fries-and-sides.html',
-    'https://www.mcdonalds.com/gb/en-gb/menu/desserts.html'
+/** Menu category pages to crawl, each tagged with its display category. */
+const CATEGORY_URLS: Array<{ url: string; category: string }> = [
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/made-for-sharing.html', category: 'Sharing' },
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/burgers.html', category: 'Burgers' },
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/chicken-mcnuggets-and-selects.html', category: 'Chicken' },
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/wraps-and-salads.html', category: 'Wraps & Salads' },
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/saver-menu.html', category: 'Saver Menu' },
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/happy-meal-meal.html', category: 'Happy Meal' },
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/fries-and-sides.html', category: 'Fries & Sides' },
+    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/desserts.html', category: 'Desserts' }
 ]
 
 const ITEM_URL_SKIP_PATTERNS = [
@@ -82,7 +85,7 @@ export class McDonaldsScraper extends SourceScraper {
         const itemUrls = await this.collectItemUrls()
         console.log(
             chalk.blue(
-                `🍟 Discovered ${itemUrls.length} items across ${CATEGORY_URLS.length} categories`
+                `🍟 Discovered ${itemUrls.size} items across ${CATEGORY_URLS.length} categories`
             )
         )
 
@@ -96,14 +99,20 @@ export class McDonaldsScraper extends SourceScraper {
         })
 
         try {
-            await this.runWithConcurrency(itemUrls, ITEM_CONCURRENCY, async (itemUrl) => {
-                const result = await this.scrapeItem(context, itemUrl)
-                if (result.kind === 'ok') {
-                    items[result.name] = this.buildNutritionData(result.nutrition)
-                } else {
-                    bump(result.reason)
+            await this.runWithConcurrency(
+                Array.from(itemUrls),
+                ITEM_CONCURRENCY,
+                async ([itemUrl, category]) => {
+                    const result = await this.scrapeItem(context, itemUrl)
+                    if (result.kind === 'ok') {
+                        const outcome = addItem(items, result.name, this.buildNutritionData(result.nutrition, category))
+                        if (outcome.kind === 'duplicate') bump('duplicate-name')
+                        else if (outcome.kind === 'renamed') bump('name-collision-requalified')
+                    } else {
+                        bump(result.reason)
+                    }
                 }
-            })
+            )
         } finally {
             await context.close()
         }
@@ -120,11 +129,12 @@ export class McDonaldsScraper extends SourceScraper {
         return items
     }
 
-    private async collectItemUrls (): Promise<string[]> {
-        const allUrls = new Set<string>()
+    /** Item URL → its display category (first category wins if listed twice). */
+    private async collectItemUrls (): Promise<Map<string, string>> {
+        const urlCategories = new Map<string, string>()
 
         await Promise.all(
-            CATEGORY_URLS.map(async (categoryUrl) => {
+            CATEGORY_URLS.map(async ({ url: categoryUrl, category }) => {
                 try {
                     const response = await axios.get<string>(categoryUrl, {
                         headers: REQUEST_HEADERS,
@@ -139,7 +149,7 @@ export class McDonaldsScraper extends SourceScraper {
                         const abs = new URL(href, categoryUrl).toString()
                         if (!abs.includes('/product/')) return
                         if (this.shouldSkip(abs)) return
-                        allUrls.add(abs)
+                        if (!urlCategories.has(abs)) urlCategories.set(abs, category)
                     })
                 } catch (error: any) {
                     console.log(
@@ -151,7 +161,7 @@ export class McDonaldsScraper extends SourceScraper {
             })
         )
 
-        return Array.from(allUrls)
+        return urlCategories
     }
 
     private shouldSkip (url: string): boolean {
@@ -257,14 +267,15 @@ export class McDonaldsScraper extends SourceScraper {
         }
     }
 
-    private buildNutritionData (n: ParsedNutrition): NutritionData {
+    private buildNutritionData (n: ParsedNutrition, category?: string): NutritionData {
         return {
             calories: n.calories,
             protein: n.protein,
             fat: n.fat,
             carbs: n.carbs,
             ProteinTCalRatio: n.calories > 0 ? n.protein / n.calories : 0,
-            CarbToCalRatio: n.calories > 0 ? n.carbs / n.calories : 0
+            CarbToCalRatio: n.calories > 0 ? n.carbs / n.calories : 0,
+            category: normalizeCategory(category)
         }
     }
 

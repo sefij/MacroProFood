@@ -94,7 +94,8 @@ export class MacroOptimizer {
                 console.log(chalk.gray('  ' + '-'.repeat(58)))
 
                 for (const item of combo.items) {
-                    console.log(chalk.white(`  • ${item.name}`))
+                    const category = item.category ? chalk.gray(` [${item.category}]`) : ''
+                    console.log(chalk.white(`  • ${item.name}`) + category)
                     console.log(
                         chalk.gray(
                             `    📊 ${item.calories.toFixed(

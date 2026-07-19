@@ -1,6 +1,8 @@
 import chalk from 'chalk'
 import { RestaurantData, SourceScraper } from '../../types'
 import * as cheerio from 'cheerio'
+import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 export class PopeyesScraper extends SourceScraper {
     icon = '🍗'
@@ -13,6 +15,8 @@ export class PopeyesScraper extends SourceScraper {
 
         const page = await this.browser.newPage()
         const items: RestaurantData = {}
+        let duplicates = 0
+        let renamed = 0
 
         try {
             // Set user agent and viewport
@@ -52,19 +56,18 @@ export class PopeyesScraper extends SourceScraper {
             const EXCLUDED_SECTIONS = new Set(['dips', 'drinks', 'whipz'])
             const table = $('.recipe-title').first().closest('table')
             let currentSection = ''
+            let currentSectionLabel: string | undefined
 
             table.find('tr').each((_, element) => {
                 const $row = $(element)
                 const $title = $row.find('.recipe-title')
 
                 if ($title.length === 0) {
-                    const header = $row
-                        .children()
-                        .first()
-                        .text()
-                        .trim()
-                        .toLowerCase()
-                    if (header) currentSection = header
+                    const header = $row.children().first().text().trim()
+                    if (header) {
+                        currentSection = header.toLowerCase()
+                        currentSectionLabel = header
+                    }
                     return
                 }
 
@@ -106,14 +109,17 @@ export class PopeyesScraper extends SourceScraper {
                     !name.includes('jam') &&
                     !name.includes('brekkie')
                 ) {
-                    items[name] = {
+                    const outcome = addItem(items, name, {
                         calories,
                         protein,
                         fat,
                         carbs,
                         ProteinTCalRatio: protein / calories,
-                        CarbToCalRatio: carbs / calories
-                    }
+                        CarbToCalRatio: carbs / calories,
+                        category: normalizeCategory(currentSectionLabel)
+                    })
+                    if (outcome.kind === 'duplicate') duplicates++
+                    else if (outcome.kind === 'renamed') renamed++
                 }
             })
         } catch (error) {
@@ -125,6 +131,14 @@ export class PopeyesScraper extends SourceScraper {
         console.log(
             chalk.green(`✓ Found ${Object.keys(items).length} Popeyes items`)
         )
+        if (duplicates > 0 || renamed > 0) {
+            console.log(
+                chalk.gray(
+                    `  ${duplicates} duplicate name (same macros) dropped; ` +
+                    `${renamed} name collisions requalified`
+                )
+            )
+        }
         return items
     }
 }

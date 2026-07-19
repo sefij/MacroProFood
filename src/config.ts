@@ -79,3 +79,15 @@ export type RestaurantKey =
 export function isScraperDisabled (restaurant: RestaurantKey): boolean {
     return isTrue(process.env[`DISABLE_${restaurant}`])
 }
+
+/**
+ * Default category exclusions for the CLI, from a comma-separated
+ * `EXCLUDE_CATEGORIES` env var (e.g. `EXCLUDE_CATEGORIES=Desserts,Drinks`).
+ * Overridden (not merged) by `-x/--exclude-category` when that flag is given.
+ */
+export function defaultExcludedCategories (): string[] {
+    return (process.env.EXCLUDE_CATEGORIES ?? '')
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean)
+}
