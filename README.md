@@ -23,8 +23,6 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 Detailed specs for each todo live in [`docs/specs/`](docs/specs/).
 
-- Add a menu mode where users can manually add items and calculate against their
-  goals, with current macros shown alongside targets in a sticky summary.
 - If menu mode proves useful, add it as an option in normal mode alongside the
   substitution suggestions.
 - Evaluate TypeScript 5/7 compatibility and migration impact.
