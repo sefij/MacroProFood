@@ -168,6 +168,73 @@ header.hero p {
 .chip .badge.stale { color: var(--warn); }
 .chip .badge.empty { color: var(--bad); }
 
+/* Category filters (collapsible, nested inside the restaurant picker card) */
+.filters { margin-top: 14px; }
+.filters summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    color: var(--muted);
+    list-style: none;
+}
+.filters summary::-webkit-details-marker { display: none; }
+.filters summary::before { content: '▸ '; }
+.filters[open] summary::before { content: '▾ '; }
+
+/* One restaurant's mode selector + category chips. */
+.restaurant-filter {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+.restaurant-filter-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.restaurant-filter-head .icon { font-size: 1rem; }
+
+.mode-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.mode-btn {
+    padding: 5px 11px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.76rem;
+}
+.mode-btn.active {
+    color: var(--text);
+    border-color: var(--accent);
+    background: #2a2114;
+}
+
+.filters .chips { margin-top: 0; }
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+.filter-chip.selected {
+    border-color: var(--accent);
+    background: #2a2114;
+}
+
 /* Switch */
 .switch {
     display: inline-flex;

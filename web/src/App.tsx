@@ -12,10 +12,27 @@ import { buildClipboardToken, parseRemainingHash } from './bookmarklets'
 import { detectExtension, trackMeal as extTrackMeal } from './mfpExtension'
 import { MacroInput, type InputMode } from './components/MacroInput'
 import { RestaurantPicker } from './components/RestaurantPicker'
+import type { RestaurantCategoryGroup } from './components/CategoryFilters'
 import { Results } from './components/Results'
 import { TrackPanel } from './components/TrackPanel'
+import type { RestaurantCategoryFilter } from '../../src/core/category-filter'
 
 const EMPTY: TargetMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }
+
+// Persists the per-restaurant category filter selection across visits.
+// Unlike the CLI's EXCLUDE_CATEGORIES env default, the web app starts
+// unfiltered ('all' for every restaurant) — this key simply remembers
+// whatever the user last chose.
+const CATEGORY_FILTERS_KEY = 'macropro:categoryFilters'
+
+function loadCategoryFilters (): Record<string, RestaurantCategoryFilter> {
+    try {
+        const raw = localStorage.getItem(CATEGORY_FILTERS_KEY)
+        return raw ? JSON.parse(raw) : {}
+    } catch {
+        return {}
+    }
+}
 
 // Swap-suggestion tuning. The optimizer never exceeds its target, so to give
 // swaps "room for overage" we inflate the freed-up macros before searching:
@@ -39,6 +56,8 @@ export function App() {
 
     const [useAll, setUseAll] = useState(true)
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+    const [categoryFilters, setCategoryFilters] =
+        useState<Record<string, RestaurantCategoryFilter>>(loadCategoryFilters)
 
     const [results, setResults] = useState<OptimizationResults | null>(null)
     const [picked, setPicked] = useState<{
@@ -103,9 +122,56 @@ export function App() {
         : availableKeys.filter((k) => selectedKeys.has(k))
     const canCompute = hasMacros && activeKeys.length > 0 && !!data
 
+    // One group per currently active restaurant that actually has categorized
+    // items — recomputed as the restaurant selection changes so a group for a
+    // deselected restaurant doesn't linger.
+    const categoryGroups = useMemo(() => {
+        const groups: RestaurantCategoryGroup[] = []
+        for (const key of activeKeys) {
+            const snap = data?.snapshots[key]
+            if (!snap) continue
+            const cats = new Set<string>()
+            for (const item of snap.items) if (item.category) cats.add(item.category)
+            if (cats.size === 0) continue
+            groups.push({
+                restaurant: snap.restaurant,
+                icon: snap.icon,
+                categories: Array.from(cats).sort()
+            })
+        }
+        return groups.sort((a, b) => a.restaurant.localeCompare(b.restaurant))
+    }, [activeKeys, data])
+
+    const persistCategoryFilters = (next: Record<string, RestaurantCategoryFilter>) => {
+        localStorage.setItem(CATEGORY_FILTERS_KEY, JSON.stringify(next))
+    }
+
+    const setCategoryMode = (restaurant: string, mode: RestaurantCategoryFilter['mode']) => {
+        setCategoryFilters((prev) => {
+            const next = {
+                ...prev,
+                [restaurant]: { mode, categories: prev[restaurant]?.categories ?? [] }
+            }
+            persistCategoryFilters(next)
+            return next
+        })
+    }
+
+    const toggleFilterCategory = (restaurant: string, category: string) => {
+        setCategoryFilters((prev) => {
+            const current = prev[restaurant] ?? { mode: 'exclude' as const, categories: [] }
+            const categories = current.categories.includes(category)
+                ? current.categories.filter((c) => c !== category)
+                : [...current.categories, category]
+            const next = { ...prev, [restaurant]: { mode: current.mode, categories } }
+            persistCategoryFilters(next)
+            return next
+        })
+    }
+
     const compute = () => {
         if (!data) return
-        const restaurantsData = toRestaurantsData(data.snapshots, activeKeys)
+        const restaurantsData = toRestaurantsData(data.snapshots, activeKeys, categoryFilters)
         setResults(findBestCombinations(restaurantsData, macros, 5, 3))
         setPicked(null)
         setTracked(null)
@@ -154,7 +220,7 @@ export function App() {
             (r) => r.restaurant === picked.restaurant
         )?.key
         if (!key) return []
-        const restData = toRestaurantsData(data.snapshots, [key])
+        const restData = toRestaurantsData(data.snapshots, [key], categoryFilters)
         // Inflate the gap so suggestions get headroom past the freed-up macros.
         const pad = (rem: number, target: number) =>
             Math.max(rem * SWAP_OVERAGE, target * SWAP_MIN_HEADROOM)
@@ -208,6 +274,10 @@ export function App() {
                 onToggle={toggleKey}
                 useAll={useAll}
                 onUseAll={setUseAll}
+                categoryGroups={categoryGroups}
+                categoryFilters={categoryFilters}
+                onCategoryModeChange={setCategoryMode}
+                onToggleCategory={toggleFilterCategory}
             />
 
             <button
