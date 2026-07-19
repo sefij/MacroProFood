@@ -19,7 +19,7 @@ import { TrackPanel } from './components/TrackPanel'
 import { MenuBuilder } from './components/MenuBuilder'
 import { StickySummary } from './components/StickySummary'
 import type { RestaurantCategoryFilter } from '../../src/core/category-filter'
-import { menuItemKey, menuTotals, type MenuState } from './menu'
+import { menuItemKey, menuRestaurant, menuTotals, type MenuState } from './menu'
 
 type AppMode = 'optimize' | 'menu'
 
@@ -279,14 +279,25 @@ export function App() {
     }, [data, tracked, restaurants])
 
     // Menu mode: the restaurant currently being browsed, and the running
-    // totals of whatever's been added so far (across any number of
-    // restaurants — the meal itself isn't scoped to one).
+    // totals of whatever's been added so far. Browsing a different
+    // restaurant's chip doesn't touch the meal — only adding from it does
+    // (see addMenuItem) — so switching around to compare menus is free.
     const menuSnapshot = menuRestaurantKey ? data?.snapshots[menuRestaurantKey] : undefined
     const menuItems = menuSnapshot?.items ?? []
     const menuRestaurantName = menuSnapshot?.restaurant ?? ''
     const menuMealTotals = useMemo(() => menuTotals(menuMeal), [menuMeal])
 
+    // The meal is scoped to one restaurant at a time: adding an item from a
+    // different restaurant than what's already in the meal starts a fresh
+    // meal rather than mixing the two, with a toast so the reset isn't a
+    // silent surprise.
     const addMenuItem = (item: MenuItem) => {
+        const currentRestaurant = menuRestaurant(menuMeal)
+        if (currentRestaurant && currentRestaurant !== item.restaurant) {
+            showToast(`Switched to ${item.restaurant} — cleared your ${currentRestaurant} picks`)
+            setMenuMeal(new Map([[menuItemKey(item), { item, qty: 1 }]]))
+            return
+        }
         setMenuMeal((prev) => {
             const next = new Map(prev)
             const key = menuItemKey(item)

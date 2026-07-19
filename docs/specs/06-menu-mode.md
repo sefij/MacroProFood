@@ -33,8 +33,15 @@ running totals to their targets.
   `menuItemKey()` (keys by `restaurant::name` so the same item name from two
   restaurants stays distinct) and `menuTotals()` (sums an in-progress meal).
 - **State**: `menuMeal: Map<string, { item: MenuItem; qty }>` in `App`,
-  restaurant-qualified by key — surviving restaurant switches, so a meal can
-  mix items from several restaurants (verified below).
+  restaurant-qualified by key. **Scoped to one restaurant at a time**: browsing
+  a different restaurant's chip doesn't touch the meal (freely comparable),
+  but *adding* an item from a restaurant that differs from what's already in
+  the meal clears the old one first (`web/src/menu.ts`'s `menuRestaurant()`
+  helper reads the meal's current restaurant off any existing entry), with a
+  toast so the reset isn't a silent surprise. This reverses the original
+  design (mixed-restaurant meals were explicitly allowed and verified
+  working) — changed on direct follow-up feedback that a single meal mixing
+  two restaurants' items was itself the bug, not a feature.
 - **TrackPanel reuse**: "Track this meal" expands the qty map back into a flat
   `MenuItem[]` (qty 2 → the item appears twice, matching how an optimizer
   combo already represents a repeated item) and builds an `OptimizationResult`
@@ -67,6 +74,22 @@ and holds for the entire scroll. Fix: dropped the desktop media query
 entirely — bottom-pinned everywhere, which is what "always visible while
 scrolling the menu" actually requires on this page shape.
 
+## Follow-up fix: meal scoped to one restaurant at a time
+
+Shipped originally allowing a mixed-restaurant meal (explicitly called for in
+the spec draft, and verified working). Direct feedback reversed this: mixing
+restaurants in one meal was confusing, not useful — switching restaurants
+should let you freely *browse and compare*, but *adding* from a new one
+should start fresh rather than silently combine two restaurants' items into
+one MyFitnessPal entry. Fixed in `addMenuItem` (`App.tsx`): compares the
+item's restaurant against whatever's already in the meal (via `menuMeal.ts`'s
+new `menuRestaurant()`), and if they differ, replaces the meal with just the
+new item instead of accumulating, with a toast ("Switched to X — cleared your
+Y picks") so the reset is visible rather than a silent surprise. Browsing
+alone (switching the chip without adding) never touches the meal — verified
+by switching to McDonald's, not adding anything, switching back to KFC, and
+confirming its item's quantity was untouched.
+
 ## Out of scope (per original spec, unchanged)
 
 CLI equivalent; saving named meals; substitution suggestions inside menu mode
@@ -78,9 +101,9 @@ Drove the running dev server with Playwright (not just typecheck):
 
 - Selected KFC, added one item plus a second at qty 2 via the stepper (+/−),
   confirmed the running sticky totals updated correctly.
-- Switched to McDonald's *without clearing the meal* and added a third item —
-  confirmed the KFC items were still present (cross-restaurant meal
-  persistence) and the sticky totals reflected all three.
+- (Superseded by the single-restaurant-meal fix below — originally verified
+  that switching to McDonald's without adding kept the KFC items and adding a
+  third item merged all three restaurants' items into one meal.)
 - Searched "wing" and confirmed KFC's list correctly filtered from 135 items
   down to 3.
 - Clicked "Track this meal": `TrackPanel` opened showing all four expanded

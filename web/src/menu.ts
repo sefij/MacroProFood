@@ -17,6 +17,11 @@ export function menuItemKey (item: Pick<MenuItem, 'restaurant' | 'name'>): strin
     return `${item.restaurant}::${item.name}`
 }
 
+/** The single restaurant a menu-mode meal's items currently belong to, or `null` if empty. */
+export function menuRestaurant (meal: MenuState): string | null {
+    return meal.values().next().value?.item.restaurant ?? null
+}
+
 /** Sums an in-progress menu-mode meal into the same shape the optimizer uses. */
 export function menuTotals (meal: MenuState): TargetMacros {
     const totals: TargetMacros = { calories: 0, protein: 0, fat: 0, carbs: 0 }
