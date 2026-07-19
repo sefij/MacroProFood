@@ -23,8 +23,6 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 Detailed specs for each todo live in [`docs/specs/`](docs/specs/).
 
-- If menu mode proves useful, add it as an option in normal mode alongside the
-  substitution suggestions.
 - Evaluate TypeScript 5/7 compatibility and migration impact.
 
 ## Requirements

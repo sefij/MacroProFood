@@ -4,6 +4,7 @@ import type {
     OptimizationResult,
     OptimizationResults,
     RestaurantIndexEntry,
+    SnapshotItem,
     TargetMacros
 } from './macro'
 import { findBestCombinations } from './macro'
@@ -264,6 +265,19 @@ export function App() {
         return out.slice(0, SWAP_MAX_SUGGESTIONS)
     }
 
+    // The tracked combo's restaurant's full menu, for TrackPanel's "+ Add
+    // from menu" section. Optimizer combos are always single-restaurant; a
+    // menu-mode-tracked meal could in principle span several, so this just
+    // takes the first item's restaurant — good enough for "add more from
+    // wherever this meal is mostly from" without over-engineering a rarely
+    // mixed case.
+    const trackedMenuItems: SnapshotItem[] = useMemo(() => {
+        const restaurantName = tracked?.items[0]?.restaurant
+        if (!data || !restaurantName) return []
+        const key = restaurants.find((r) => r.restaurant === restaurantName)?.key
+        return key ? data.snapshots[key]?.items ?? [] : []
+    }, [data, tracked, restaurants])
+
     // Menu mode: the restaurant currently being browsed, and the running
     // totals of whatever's been added so far (across any number of
     // restaurants — the meal itself isn't scoped to one).
@@ -425,6 +439,7 @@ export function App() {
                         sendToMfp(nutrition, mealName)
                     }
                     suggest={suggestSwaps}
+                    menuItems={trackedMenuItems}
                 />
             )}
 

@@ -510,6 +510,25 @@ header.hero p {
 .swap-chip:hover { background: #2a2114; }
 .swap-chip .sub { color: var(--muted); font-size: 0.74rem; }
 
+/* "+ Add from menu" (TrackPanel, spec 07) — same disclosure pattern as
+   Advanced filters / menu-mode category groups. */
+.add-from-menu {
+    margin-bottom: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+.add-from-menu summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    color: var(--muted);
+    list-style: none;
+}
+.add-from-menu summary::-webkit-details-marker { display: none; }
+.add-from-menu summary::before { content: '▸ '; }
+.add-from-menu[open] summary::before { content: '▾ '; }
+.add-from-menu .sticky-summary-grid { margin: 12px 0; }
+.add-from-menu .menu-search { margin-top: 4px; }
+
 .meal-select {
     display: flex;
     align-items: center;
