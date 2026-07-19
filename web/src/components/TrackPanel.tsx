@@ -154,7 +154,14 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
     const toggle = (idx: number) =>
         setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, on: !r.on } : r)))
 
-    const runSuggest = () => {
+    // Toggles the suggestion list: hidden (null) -> computed & shown -> hidden
+    // again on a second click, so a user who's added what they wanted isn't
+    // stuck looking at leftover chips they no longer care about.
+    const toggleSuggestions = () => {
+        if (suggestions !== null) {
+            setSuggestions(null)
+            return
+        }
         const remaining: TargetMacros = {
             calories: Math.max(0, targets.calories - total.calories),
             protein: Math.max(0, targets.protein - total.protein),
@@ -244,8 +251,8 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
 
             {removedCount > 0 && (
                 <div className="swaps">
-                    <button className="btn btn-ghost small" onClick={runSuggest} disabled={empty}>
-                        Suggest swaps for what you removed
+                    <button className="btn btn-ghost small" onClick={toggleSuggestions} disabled={empty}>
+                        {suggestions !== null ? 'Hide suggestions' : 'Suggest swaps for what you removed'}
                     </button>
                     {suggestions && suggestions.length > 0 && (
                         <div className="swap-list">
