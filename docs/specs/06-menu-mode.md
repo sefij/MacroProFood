@@ -16,8 +16,14 @@ running totals to their targets.
   (same `.chip` styling as `RestaurantPicker`, one restaurant at a time), a
   search box, and the menu grouped by category (falls back to an "Other"
   bucket for uncategorized items — every restaurant has categories per specs
-  02–03, but this keeps the component correct even if one didn't). Each row
-  shows name + macros and a `+` button that becomes a −/count/+ stepper once
+  02–03, but this keeps the component correct even if one didn't). Each
+  category is its own collapsible `<details>` (same disclosure-triangle
+  pattern as "Advanced filters"), collapsed by default — a 100+ item menu in
+  one flat list was the actual problem this solves — and auto-expanded while
+  a search is active so filtered matches are immediately visible without
+  clicking into every group by hand; matches the "Advanced filters" toggle
+  UX, not a separate convention. Each row shows name + macros and a `+`
+  button that becomes a −/count/+ stepper once
   added.
 - **`web/src/components/StickySummary.tsx`** — a `position: sticky` bar
   showing current/target/remaining per macro, colored via `format.ts`'s new

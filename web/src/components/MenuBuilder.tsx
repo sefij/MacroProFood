@@ -39,6 +39,8 @@ export function MenuBuilder ({
 }: Props) {
     const [search, setSearch] = useState('')
 
+    const hasSearch = search.trim() !== ''
+
     const groups = useMemo(() => {
         const q = search.trim().toLowerCase()
         const filtered = q ? items.filter((it) => it.name.toLowerCase().includes(q)) : items
@@ -84,8 +86,11 @@ export function MenuBuilder ({
                     />
 
                     {groups.map(([category, catItems]) => (
-                        <div className="menu-group" key={category}>
-                            <div className="menu-group-title">{category}</div>
+                        <details className="menu-group" key={category} open={hasSearch}>
+                            <summary className="menu-group-title">
+                                {category}
+                                <span className="menu-group-count">{catItems.length}</span>
+                            </summary>
                             <ul className="menu-list">
                                 {catItems.map((it) => {
                                     const item: MenuItem = {
@@ -135,7 +140,7 @@ export function MenuBuilder ({
                                     )
                                 })}
                             </ul>
-                        </div>
+                        </details>
                     ))}
 
                     {groups.length === 0 && (

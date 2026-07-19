@@ -607,11 +607,25 @@ footer.foot br { line-height: 2; }
 
 .menu-group + .menu-group { margin-top: 16px; }
 .menu-group-title {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--muted);
-    margin-bottom: 6px;
+    list-style: none;
+}
+.menu-group-title::-webkit-details-marker { display: none; }
+.menu-group-title::before { content: '▸ '; }
+.menu-group[open] .menu-group-title { margin-bottom: 6px; }
+.menu-group[open] > .menu-group-title::before { content: '▾ '; }
+.menu-group-count {
+    color: var(--muted);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
 }
 .menu-list { list-style: none; margin: 0; padding: 0; }
 .menu-row {
