@@ -1,8 +1,9 @@
 # Specs
 
-One spec per README todo, in suggested implementation order. Dependencies are
-noted at the top of each spec — 02 (categories) is the foundation for 03, 04
-(partly), and 05; 06 is the foundation for 07.
+One spec per README todo, in suggested implementation order (01–08), plus
+ad-hoc feature specs requested directly outside that list (09 on). Dependencies
+are noted at the top of each spec — 02 (categories) is the foundation for 03,
+04 (partly), and 05; 06 is the foundation for 07.
 
 | #  | Spec                                                              | Status  |
 | -- | ----------------------------------------------------------------- | ------- |
@@ -14,3 +15,4 @@ noted at the top of each spec — 02 (categories) is the foundation for 03, 04
 | 06 | [Menu mode (manual meal builder)](06-menu-mode.md)                | Done    |
 | 07 | [Menu mode inside normal mode](07-menu-mode-in-normal-mode.md)    | Done    |
 | 08 | [TypeScript 5/7 evaluation](08-typescript-migration.md)           | Planned |
+| 09 | [Add Wingstop as a restaurant](09-wingstop-restaurant.md)         | Done    |

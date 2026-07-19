@@ -10,7 +10,7 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 ## Features
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
-  Taco Bell, Wagamama and Domino's (UK menus).
+  Taco Bell, Wagamama, Domino's and Wingstop (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -58,6 +58,7 @@ cp .env.example .env
 | `DISABLE_TACOBELL`  | Set to `true` to skip the Taco Bell scraper.             |
 | `DISABLE_WAGAMAMA`  | Set to `true` to skip the Wagamama scraper.              |
 | `DISABLE_DOMINOS`   | Set to `true` to skip the Domino's scraper.              |
+| `DISABLE_WINGSTOP`  | Set to `true` to skip the Wingstop scraper.               |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -132,6 +133,7 @@ Every restaurant is scraped live (and cached for 7 days):
 | Wendy's      | Published nutrition PDF                         |
 | Domino's     | Published nutrition PDF                         |
 | Subway       | Published nutrition PDF (UK & ROI)              |
+| Wingstop     | Live JSON menu API                              |
 
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
@@ -140,6 +142,12 @@ Every restaurant is scraped live (and cached for 7 days):
 - **Subway** figures are per 6-inch serving (double them for a footlong); the
   PDF also covers individual ingredients (breads, proteins, sauces, veg), which
   are scraped as their own items.
+- **Wingstop**'s feed publishes macros per a normalized serving size rather
+  than the item's true total for large shareable items (wings, burgers,
+  platters, fries, corn, churros); macros are scaled up using each item's true
+  total calories (parsed from its menu description) divided by the feed's
+  stated calories. See [`docs/specs/09-wingstop-restaurant.md`](docs/specs/09-wingstop-restaurant.md)
+  for the full derivation.
 
 ## Scripts
 
