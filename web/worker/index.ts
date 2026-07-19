@@ -16,10 +16,23 @@ interface Env {
 }
 
 const DATA_PREFIX = '/data/'
+const CANONICAL_HOST = 'www.macropro.food'
 
 export default {
     async fetch (request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url)
+
+        // The bare apex domain (macropro.food, over http or https) still
+        // resolves and serves the site directly — Google was finding it,
+        // respecting the canonical tag, and not double-indexing it, but it
+        // was still two live copies of the site splitting link equity.
+        // Redirect it to the canonical www host instead of just relying on
+        // the <link rel="canonical"> tag to paper over it.
+        if (url.hostname === 'macropro.food') {
+            url.hostname = CANONICAL_HOST
+            url.protocol = 'https:'
+            return Response.redirect(url.toString(), 301)
+        }
 
         if (!url.pathname.startsWith(DATA_PREFIX)) {
             return env.ASSETS.fetch(request)
