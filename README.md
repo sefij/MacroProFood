@@ -23,12 +23,6 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 Detailed specs for each todo live in [`docs/specs/`](docs/specs/).
 
-- Add advanced filtering so certain categories can be excluded from calculations
-  (for example desserts or drinks).
-- Add a menu mode where users can manually add items and calculate against their
-  goals, with current macros shown alongside targets in a sticky summary.
-- If menu mode proves useful, add it as an option in normal mode alongside the
-  substitution suggestions.
 - Evaluate TypeScript 5/7 compatibility and migration impact.
 
 ## Requirements
@@ -64,6 +58,7 @@ cp .env.example .env
 | `DISABLE_TACOBELL`  | Set to `true` to skip the Taco Bell scraper.             |
 | `DISABLE_WAGAMAMA`  | Set to `true` to skip the Wagamama scraper.              |
 | `DISABLE_DOMINOS`   | Set to `true` to skip the Domino's scraper.              |
+| `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
 
@@ -90,6 +85,7 @@ MyFitnessPal instead.
 | `-r, --carbs <number>`    | Target carbs in grams (defaults to MFP).         |
 | `-m, --max-items <n>`     | Maximum items per restaurant (default `5`).      |
 | `-e, --restaurant <name>` | Limit to a single restaurant.                    |
+| `-x, --exclude-category <name...>` | Category to leave out, e.g. `Desserts` (space-separated for more than one; defaults to `EXCLUDE_CATEGORIES`). |
 | `--no-cache`              | Bypass cached scraper results and fetch fresh.   |
 | `--no-mfp`                | Skip the MyFitnessPal push prompt.               |
 
@@ -104,6 +100,9 @@ yarn start -- -e kfc -m 4 -c 1200 -p 90 -f 40 -r 110
 
 # Use MFP remaining macros and skip pushing the result back
 yarn start -- --no-mfp
+
+# Leave desserts and drinks out of the calculation
+yarn start -- -c 1800 -p 140 -f 60 -r 180 -x Desserts Drinks
 ```
 
 ## How it works

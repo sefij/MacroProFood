@@ -32,9 +32,6 @@ const HTTP_TIMEOUT_MS = 20000
 // protein — so we drop anything that breaks physics by more than this slack.
 const MACRO_CALORIE_TOLERANCE = 1.3
 
-// Menu categories to drop wholesale — drinks aren't meal items for macro fitting.
-const EXCLUDED_CATEGORIES = new Set(['Drinks'])
-
 /** One product as it appears in the page's `__NEXT_DATA__` JSON. */
 interface KfcProduct {
     name?: string
@@ -69,14 +66,9 @@ export class KFCScraper extends SourceScraper {
         const items: RestaurantData = {}
         let invalid = 0
         let implausible = 0
-        let excluded = 0
         let duplicates = 0
         let renamed = 0
         for (const product of products) {
-            if (product.categories?.some((c) => EXCLUDED_CATEGORIES.has(c))) {
-                excluded++
-                continue
-            }
             const built = this.buildItem(product)
             if (built.kind === 'ok') {
                 const outcome = addItem(items, built.name, built.nutrition)
@@ -93,12 +85,11 @@ export class KFCScraper extends SourceScraper {
         console.log(
             chalk.green(`✓ Found ${Object.keys(items).length} KFC items (live)`)
         )
-        if (invalid > 0 || implausible > 0 || excluded > 0 || duplicates > 0 || renamed > 0) {
+        if (invalid > 0 || implausible > 0 || duplicates > 0 || renamed > 0) {
             console.log(
                 chalk.gray(
-                    `  skipped ${excluded} (excluded category), ${invalid} (missing/zero nutrition), ` +
-                    `${implausible} (implausible macros), ${duplicates} (duplicate name, same macros); ` +
-                    `${renamed} name collisions requalified`
+                    `  skipped ${invalid} (missing/zero nutrition), ${implausible} (implausible macros), ` +
+                    `${duplicates} (duplicate name, same macros); ${renamed} name collisions requalified`
                 )
             )
         }

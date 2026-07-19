@@ -4,6 +4,7 @@ import type {
     OptimizationResult,
     OptimizationResults,
     RestaurantIndexEntry,
+    SnapshotItem,
     TargetMacros
 } from './macro'
 import { findBestCombinations } from './macro'
@@ -12,10 +13,32 @@ import { buildClipboardToken, parseRemainingHash } from './bookmarklets'
 import { detectExtension, trackMeal as extTrackMeal } from './mfpExtension'
 import { MacroInput, type InputMode } from './components/MacroInput'
 import { RestaurantPicker } from './components/RestaurantPicker'
+import type { RestaurantCategoryGroup } from './components/CategoryFilters'
 import { Results } from './components/Results'
 import { TrackPanel } from './components/TrackPanel'
+import { MenuBuilder } from './components/MenuBuilder'
+import { StickySummary } from './components/StickySummary'
+import type { RestaurantCategoryFilter } from '../../src/core/category-filter'
+import { menuItemKey, menuTotals, type MenuState } from './menu'
+
+type AppMode = 'optimize' | 'menu'
 
 const EMPTY: TargetMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }
+
+// Persists the per-restaurant category filter selection across visits.
+// Unlike the CLI's EXCLUDE_CATEGORIES env default, the web app starts
+// unfiltered ('all' for every restaurant) — this key simply remembers
+// whatever the user last chose.
+const CATEGORY_FILTERS_KEY = 'macropro:categoryFilters'
+
+function loadCategoryFilters (): Record<string, RestaurantCategoryFilter> {
+    try {
+        const raw = localStorage.getItem(CATEGORY_FILTERS_KEY)
+        return raw ? JSON.parse(raw) : {}
+    } catch {
+        return {}
+    }
+}
 
 // Swap-suggestion tuning. The optimizer never exceeds its target, so to give
 // swaps "room for overage" we inflate the freed-up macros before searching:
@@ -39,6 +62,8 @@ export function App() {
 
     const [useAll, setUseAll] = useState(true)
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+    const [categoryFilters, setCategoryFilters] =
+        useState<Record<string, RestaurantCategoryFilter>>(loadCategoryFilters)
 
     const [results, setResults] = useState<OptimizationResults | null>(null)
     const [picked, setPicked] = useState<{
@@ -48,6 +73,10 @@ export function App() {
     const [tracked, setTracked] = useState<OptimizationResult | null>(null)
     const [toast, setToast] = useState<string | null>(null)
     const [extAvailable, setExtAvailable] = useState(false)
+
+    const [appMode, setAppMode] = useState<AppMode>('optimize')
+    const [menuRestaurantKey, setMenuRestaurantKey] = useState<string | null>(null)
+    const [menuMeal, setMenuMeal] = useState<MenuState>(new Map())
 
     // Load nutrition data once.
     useEffect(() => {
@@ -64,6 +93,15 @@ export function App() {
     const showToast = (msg: string) => {
         setToast(msg)
         setTimeout(() => setToast(null), 4000)
+    }
+
+    // Switching modes starts fresh rather than carrying over a stale
+    // Results/TrackPanel from whichever mode was active before.
+    const switchAppMode = (next: AppMode) => {
+        setAppMode(next)
+        setResults(null)
+        setPicked(null)
+        setTracked(null)
     }
 
     // If the "Pull remaining" bookmarklet sent us macros via the hash, prefill.
@@ -103,9 +141,56 @@ export function App() {
         : availableKeys.filter((k) => selectedKeys.has(k))
     const canCompute = hasMacros && activeKeys.length > 0 && !!data
 
+    // One group per currently active restaurant that actually has categorized
+    // items — recomputed as the restaurant selection changes so a group for a
+    // deselected restaurant doesn't linger.
+    const categoryGroups = useMemo(() => {
+        const groups: RestaurantCategoryGroup[] = []
+        for (const key of activeKeys) {
+            const snap = data?.snapshots[key]
+            if (!snap) continue
+            const cats = new Set<string>()
+            for (const item of snap.items) if (item.category) cats.add(item.category)
+            if (cats.size === 0) continue
+            groups.push({
+                restaurant: snap.restaurant,
+                icon: snap.icon,
+                categories: Array.from(cats).sort()
+            })
+        }
+        return groups.sort((a, b) => a.restaurant.localeCompare(b.restaurant))
+    }, [activeKeys, data])
+
+    const persistCategoryFilters = (next: Record<string, RestaurantCategoryFilter>) => {
+        localStorage.setItem(CATEGORY_FILTERS_KEY, JSON.stringify(next))
+    }
+
+    const setCategoryMode = (restaurant: string, mode: RestaurantCategoryFilter['mode']) => {
+        setCategoryFilters((prev) => {
+            const next = {
+                ...prev,
+                [restaurant]: { mode, categories: prev[restaurant]?.categories ?? [] }
+            }
+            persistCategoryFilters(next)
+            return next
+        })
+    }
+
+    const toggleFilterCategory = (restaurant: string, category: string) => {
+        setCategoryFilters((prev) => {
+            const current = prev[restaurant] ?? { mode: 'exclude' as const, categories: [] }
+            const categories = current.categories.includes(category)
+                ? current.categories.filter((c) => c !== category)
+                : [...current.categories, category]
+            const next = { ...prev, [restaurant]: { mode: current.mode, categories } }
+            persistCategoryFilters(next)
+            return next
+        })
+    }
+
     const compute = () => {
         if (!data) return
-        const restaurantsData = toRestaurantsData(data.snapshots, activeKeys)
+        const restaurantsData = toRestaurantsData(data.snapshots, activeKeys, categoryFilters)
         setResults(findBestCombinations(restaurantsData, macros, 5, 3))
         setPicked(null)
         setTracked(null)
@@ -154,7 +239,7 @@ export function App() {
             (r) => r.restaurant === picked.restaurant
         )?.key
         if (!key) return []
-        const restData = toRestaurantsData(data.snapshots, [key])
+        const restData = toRestaurantsData(data.snapshots, [key], categoryFilters)
         // Inflate the gap so suggestions get headroom past the freed-up macros.
         const pad = (rem: number, target: number) =>
             Math.max(rem * SWAP_OVERAGE, target * SWAP_MIN_HEADROOM)
@@ -180,6 +265,77 @@ export function App() {
         return out.slice(0, SWAP_MAX_SUGGESTIONS)
     }
 
+    // The tracked combo's restaurant's full menu, for TrackPanel's "+ Add
+    // from menu" section. Optimizer combos are always single-restaurant; a
+    // menu-mode-tracked meal could in principle span several, so this just
+    // takes the first item's restaurant — good enough for "add more from
+    // wherever this meal is mostly from" without over-engineering a rarely
+    // mixed case.
+    const trackedMenuItems: SnapshotItem[] = useMemo(() => {
+        const restaurantName = tracked?.items[0]?.restaurant
+        if (!data || !restaurantName) return []
+        const key = restaurants.find((r) => r.restaurant === restaurantName)?.key
+        return key ? data.snapshots[key]?.items ?? [] : []
+    }, [data, tracked, restaurants])
+
+    // Menu mode: the restaurant currently being browsed, and the running
+    // totals of whatever's been added so far (across any number of
+    // restaurants — the meal itself isn't scoped to one).
+    const menuSnapshot = menuRestaurantKey ? data?.snapshots[menuRestaurantKey] : undefined
+    const menuItems = menuSnapshot?.items ?? []
+    const menuRestaurantName = menuSnapshot?.restaurant ?? ''
+    const menuMealTotals = useMemo(() => menuTotals(menuMeal), [menuMeal])
+
+    const addMenuItem = (item: MenuItem) => {
+        setMenuMeal((prev) => {
+            const next = new Map(prev)
+            const key = menuItemKey(item)
+            const qty = (next.get(key)?.qty ?? 0) + 1
+            next.set(key, { item, qty })
+            return next
+        })
+    }
+
+    const removeMenuItem = (item: MenuItem) => {
+        setMenuMeal((prev) => {
+            const key = menuItemKey(item)
+            const existing = prev.get(key)
+            if (!existing) return prev
+            const next = new Map(prev)
+            if (existing.qty <= 1) next.delete(key)
+            else next.set(key, { item, qty: existing.qty - 1 })
+            return next
+        })
+    }
+
+    // Hands the built meal to the same TrackPanel optimized combos use —
+    // expanding qty back into repeated entries so a "3x Fries" pick reads the
+    // same way an optimizer combo with three Fries would.
+    const trackMenuMeal = () => {
+        if (menuMeal.size === 0) return
+        const items: MenuItem[] = []
+        for (const { item, qty } of menuMeal.values()) {
+            for (let i = 0; i < qty; i++) items.push(item)
+        }
+        const totalNutrition = menuMealTotals
+        const tCal = Math.max(macros.calories, 1)
+        const tProt = Math.max(macros.protein, 1)
+        const tFat = Math.max(macros.fat, 1)
+        const tCarbs = Math.max(macros.carbs, 1)
+        setResults(null)
+        setPicked(null)
+        setTracked({
+            items,
+            totalNutrition,
+            accuracy: {
+                calories: Math.abs(totalNutrition.calories - macros.calories) / tCal,
+                protein: Math.abs(totalNutrition.protein - macros.protein) / tProt,
+                fat: Math.abs(totalNutrition.fat - macros.fat) / tFat,
+                carbs: Math.abs(totalNutrition.carbs - macros.carbs) / tCarbs
+            }
+        })
+    }
+
     return (
         <div className="app">
             <header className="hero">
@@ -194,6 +350,21 @@ export function App() {
                 </div>
             )}
 
+            <div className="segmented app-mode-switch" role="tablist">
+                <button
+                    className={appMode === 'optimize' ? 'active' : ''}
+                    onClick={() => switchAppMode('optimize')}
+                >
+                    🎯 Optimize
+                </button>
+                <button
+                    className={appMode === 'menu' ? 'active' : ''}
+                    onClick={() => switchAppMode('menu')}
+                >
+                    🍽️ Build a meal
+                </button>
+            </div>
+
             <MacroInput
                 mode={mode}
                 onModeChange={setMode}
@@ -202,32 +373,60 @@ export function App() {
                 extAvailable={extAvailable}
             />
 
-            <RestaurantPicker
-                restaurants={restaurants}
-                selected={selectedKeys}
-                onToggle={toggleKey}
-                useAll={useAll}
-                onUseAll={setUseAll}
-            />
-
-            <button
-                className="btn btn-primary"
-                disabled={!canCompute}
-                onClick={compute}
-            >
-                {hasMacros ? 'Find meals' : 'Enter your calories first'}
-            </button>
-
-            {results && (
-                <div style={{ marginTop: 22 }}>
-                    <Results
-                        results={results}
-                        iconFor={iconFor}
-                        selected={picked}
-                        onSelect={choose}
-                        onClear={clearChoice}
+            {appMode === 'optimize' ? (
+                <>
+                    <RestaurantPicker
+                        restaurants={restaurants}
+                        selected={selectedKeys}
+                        onToggle={toggleKey}
+                        useAll={useAll}
+                        onUseAll={setUseAll}
+                        categoryGroups={categoryGroups}
+                        categoryFilters={categoryFilters}
+                        onCategoryModeChange={setCategoryMode}
+                        onToggleCategory={toggleFilterCategory}
                     />
-                </div>
+
+                    <button
+                        className="btn btn-primary"
+                        disabled={!canCompute}
+                        onClick={compute}
+                    >
+                        {hasMacros ? 'Find meals' : 'Enter your calories first'}
+                    </button>
+
+                    {results && (
+                        <div style={{ marginTop: 22 }}>
+                            <Results
+                                results={results}
+                                iconFor={iconFor}
+                                selected={picked}
+                                onSelect={choose}
+                                onClear={clearChoice}
+                            />
+                        </div>
+                    )}
+                </>
+            ) : (
+                <>
+                    <MenuBuilder
+                        restaurants={restaurants}
+                        selectedKey={menuRestaurantKey}
+                        onSelectRestaurant={setMenuRestaurantKey}
+                        items={menuItems}
+                        restaurantName={menuRestaurantName}
+                        meal={menuMeal}
+                        onAdd={addMenuItem}
+                        onRemove={removeMenuItem}
+                    />
+
+                    <StickySummary
+                        totals={menuMealTotals}
+                        targets={macros}
+                        onTrack={trackMenuMeal}
+                        canTrack={menuMeal.size > 0}
+                    />
+                </>
             )}
 
             {tracked && (
@@ -240,6 +439,7 @@ export function App() {
                         sendToMfp(nutrition, mealName)
                     }
                     suggest={suggestSwaps}
+                    menuItems={trackedMenuItems}
                 />
             )}
 
