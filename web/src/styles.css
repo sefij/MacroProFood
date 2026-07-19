@@ -168,6 +168,73 @@ header.hero p {
 .chip .badge.stale { color: var(--warn); }
 .chip .badge.empty { color: var(--bad); }
 
+/* Category filters (collapsible, nested inside the restaurant picker card) */
+.filters { margin-top: 14px; }
+.filters summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    color: var(--muted);
+    list-style: none;
+}
+.filters summary::-webkit-details-marker { display: none; }
+.filters summary::before { content: '▸ '; }
+.filters[open] summary::before { content: '▾ '; }
+
+/* One restaurant's mode selector + category chips. */
+.restaurant-filter {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+.restaurant-filter-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.restaurant-filter-head .icon { font-size: 1rem; }
+
+.mode-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.mode-btn {
+    padding: 5px 11px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.76rem;
+}
+.mode-btn.active {
+    color: var(--text);
+    border-color: var(--accent);
+    background: #2a2114;
+}
+
+.filters .chips { margin-top: 0; }
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+.filter-chip.selected {
+    border-color: var(--accent);
+    background: #2a2114;
+}
+
 /* Switch */
 .switch {
     display: inline-flex;
@@ -443,6 +510,25 @@ header.hero p {
 .swap-chip:hover { background: #2a2114; }
 .swap-chip .sub { color: var(--muted); font-size: 0.74rem; }
 
+/* "+ Add from menu" (TrackPanel, spec 07) — same disclosure pattern as
+   Advanced filters / menu-mode category groups. */
+.add-from-menu {
+    margin-bottom: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+.add-from-menu summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    color: var(--muted);
+    list-style: none;
+}
+.add-from-menu summary::-webkit-details-marker { display: none; }
+.add-from-menu summary::before { content: '▸ '; }
+.add-from-menu[open] summary::before { content: '▾ '; }
+.add-from-menu .sticky-summary-grid { margin: 12px 0; }
+.add-from-menu .menu-search { margin-top: 4px; }
+
 .meal-select {
     display: flex;
     align-items: center;
@@ -520,4 +606,135 @@ footer.foot br { line-height: 2; }
     content: '·';
     margin-right: 14px;
     color: var(--muted);
+}
+
+/* Top-level Optimize / Build-a-meal switch */
+.app-mode-switch { margin-bottom: 18px; }
+
+/* Menu mode: build-your-own-meal browser */
+.menu-search {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    margin-bottom: 14px;
+}
+.menu-search:focus { outline: none; border-color: var(--accent); }
+
+.menu-group + .menu-group { margin-top: 16px; }
+.menu-group-title {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    list-style: none;
+}
+.menu-group-title::-webkit-details-marker { display: none; }
+.menu-group-title::before { content: '▸ '; }
+.menu-group[open] .menu-group-title { margin-bottom: 6px; }
+.menu-group[open] > .menu-group-title::before { content: '▾ '; }
+.menu-group-count {
+    color: var(--muted);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+}
+.menu-list { list-style: none; margin: 0; padding: 0; }
+.menu-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+}
+.menu-row + .menu-row { border-top: 1px solid var(--border); }
+.menu-row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.menu-row-info .mi-name { font-size: 0.9rem; }
+.menu-row-macros { color: var(--muted); font-size: 0.76rem; }
+
+.btn-add {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.btn-add:hover { background: #2a2114; }
+
+.stepper {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 4px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+}
+.stepper button {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: 0;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.stepper span { min-width: 1.2em; text-align: center; font-size: 0.88rem; font-weight: 600; }
+
+/*
+ * Menu mode's always-visible current-vs-target bar. Bottom-pinned at every
+ * width — the app is a single, centered column with nothing beside the
+ * summary to anchor a top-pin against, and this element sits right after the
+ * whole (long) menu list with only the footer trailing it. A top-pin there
+ * has virtually no "stuck window": it can't engage until scrolled almost to
+ * the document's end, and the footer immediately releases it again, so on
+ * a wide viewport it was measurably never visible while actually scrolling
+ * the menu (verified: its sticky-engagement threshold sat past the page's
+ * maximum scroll position). Bottom-pinning engages as soon as the short
+ * trailing content fits the remaining viewport and holds for the entire
+ * scroll, which is what "always visible while scrolling" actually requires.
+ */
+.sticky-summary {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 12px 14px;
+    margin-top: 14px;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.35);
+}
+.sticky-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.ss-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ss-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+}
+.ss-value { font-size: 1rem; font-weight: 700; }
+.ss-target { font-size: 0.76rem; font-weight: 400; color: var(--muted); }
+.ss-remaining { font-size: 0.7rem; color: var(--muted); }
+
+@media (max-width: 460px) {
+    .sticky-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }

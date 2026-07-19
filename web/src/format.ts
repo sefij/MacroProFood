@@ -26,6 +26,17 @@ export function accuracyPercent (avgDelta: number): string {
     return `${((1 - avgDelta) * 100).toFixed(0)}% match`
 }
 
+/**
+ * Color for a single macro's current-vs-target status (menu mode's sticky
+ * summary): green within 5% of target either way, amber under, red over.
+ */
+export function macroStatusColor (current: number, target: number): string {
+    if (target <= 0) return 'var(--muted)'
+    const delta = (current - target) / target
+    if (Math.abs(delta) <= 0.05) return 'var(--good)'
+    return delta < 0 ? 'var(--warn)' : 'var(--bad)'
+}
+
 export const round = (n: number, dp = 0): number => {
     const f = 10 ** dp
     return Math.round(n * f) / f

@@ -15,6 +15,8 @@ import chalk from 'chalk'
 
 import { RestaurantsData, TargetMacros } from './types'
 import { MacroOptimizer } from './macro-optimizer'
+import { excludeCategories } from './core/category-filter'
+import { defaultExcludedCategories } from './config'
 
 import { ScrapingOperator } from './scrapers/scraping-oprerator'
 import { promptSelection } from './mfp/prompt'
@@ -49,6 +51,10 @@ async function main (): Promise<void> {
         )
         .option('-m, --max-items <number>', 'Maximum items per restaurant', '5')
         .option('-e, --restaurant <string>', 'Restaurant name')
+        .option(
+            '-x, --exclude-category <name...>',
+            'Category to exclude from calculations, e.g. Desserts (defaults to EXCLUDE_CATEGORIES env var)'
+        )
         .option('--no-cache', 'Bypass cached scraper results and fetch fresh data')
         .option('--no-mfp', 'Skip the MyFitnessPal push prompt')
         .parse()
@@ -106,6 +112,16 @@ async function main (): Promise<void> {
                 } restaurants\n`
             )
         )
+
+        // -x/--exclude-category, falling back to EXCLUDE_CATEGORIES when not given.
+        const excludedCategories: string[] =
+            options.excludeCategory ?? defaultExcludedCategories()
+        if (excludedCategories.length > 0) {
+            restaurantData = excludeCategories(restaurantData, excludedCategories)
+            console.log(
+                chalk.gray(`Excluding categories: ${excludedCategories.join(', ')}\n`)
+            )
+        }
 
         // Optimize macros
         const optimizer = new MacroOptimizer(restaurantData)

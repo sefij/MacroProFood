@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio'
 import { BrowserContext } from 'playwright'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 /**
  * McDonald's UK scraper.
@@ -104,7 +105,9 @@ export class McDonaldsScraper extends SourceScraper {
                 async ([itemUrl, category]) => {
                     const result = await this.scrapeItem(context, itemUrl)
                     if (result.kind === 'ok') {
-                        items[result.name] = this.buildNutritionData(result.nutrition, category)
+                        const outcome = addItem(items, result.name, this.buildNutritionData(result.nutrition, category))
+                        if (outcome.kind === 'duplicate') bump('duplicate-name')
+                        else if (outcome.kind === 'renamed') bump('name-collision-requalified')
                     } else {
                         bump(result.reason)
                     }

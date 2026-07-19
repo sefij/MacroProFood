@@ -2,6 +2,7 @@ import chalk from 'chalk'
 import { RestaurantData, SourceScraper } from '../../types'
 import * as cheerio from 'cheerio'
 import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 export class PopeyesScraper extends SourceScraper {
     icon = '🍗'
@@ -14,6 +15,8 @@ export class PopeyesScraper extends SourceScraper {
 
         const page = await this.browser.newPage()
         const items: RestaurantData = {}
+        let duplicates = 0
+        let renamed = 0
 
         try {
             // Set user agent and viewport
@@ -106,7 +109,7 @@ export class PopeyesScraper extends SourceScraper {
                     !name.includes('jam') &&
                     !name.includes('brekkie')
                 ) {
-                    items[name] = {
+                    const outcome = addItem(items, name, {
                         calories,
                         protein,
                         fat,
@@ -114,7 +117,9 @@ export class PopeyesScraper extends SourceScraper {
                         ProteinTCalRatio: protein / calories,
                         CarbToCalRatio: carbs / calories,
                         category: normalizeCategory(currentSectionLabel)
-                    }
+                    })
+                    if (outcome.kind === 'duplicate') duplicates++
+                    else if (outcome.kind === 'renamed') renamed++
                 }
             })
         } catch (error) {
@@ -126,6 +131,14 @@ export class PopeyesScraper extends SourceScraper {
         console.log(
             chalk.green(`✓ Found ${Object.keys(items).length} Popeyes items`)
         )
+        if (duplicates > 0 || renamed > 0) {
+            console.log(
+                chalk.gray(
+                    `  ${duplicates} duplicate name (same macros) dropped; ` +
+                    `${renamed} name collisions requalified`
+                )
+            )
+        }
         return items
     }
 }

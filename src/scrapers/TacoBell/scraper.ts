@@ -2,6 +2,7 @@ import chalk from 'chalk'
 import { RestaurantData, SourceScraper } from '../../types'
 import * as cheerio from 'cheerio'
 import { normalizeCategory } from '../category'
+import { addItem } from '../add-item'
 
 /**
  * Taco Bell is scraped live — but from nutritionix.com, a **third-party
@@ -20,6 +21,8 @@ export class TacoBellScraper extends SourceScraper {
 
         const page = await this.browser.newPage()
         const items: RestaurantData = {}
+        let duplicates = 0
+        let renamed = 0
 
         try {
             await page.setViewportSize({ width: 1366, height: 768 })
@@ -98,7 +101,7 @@ export class TacoBellScraper extends SourceScraper {
                     return
                 }
 
-                items[name] = {
+                const outcome = addItem(items, name, {
                     calories,
                     protein,
                     fat,
@@ -106,7 +109,9 @@ export class TacoBellScraper extends SourceScraper {
                     ProteinTCalRatio: protein / calories,
                     CarbToCalRatio: carbs / calories,
                     category: normalizeCategory(currentCategoryLabel)
-                }
+                })
+                if (outcome.kind === 'duplicate') duplicates++
+                else if (outcome.kind === 'renamed') renamed++
             })
         } catch (error) {
             console.error(chalk.red(`Error scraping Taco Bell: ${error}`))
@@ -117,6 +122,14 @@ export class TacoBellScraper extends SourceScraper {
         console.log(
             chalk.green(`✓ Found ${Object.keys(items).length} Taco Bell items`)
         )
+        if (duplicates > 0 || renamed > 0) {
+            console.log(
+                chalk.gray(
+                    `  ${duplicates} duplicate name (same macros) dropped; ` +
+                    `${renamed} name collisions requalified`
+                )
+            )
+        }
         return items
     }
 }
