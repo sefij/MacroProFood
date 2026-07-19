@@ -24,8 +24,17 @@ import {
  * Menu-section names are bare ("Bacon", "Chicken Tikka"), which both collides
  * with the page-3 ingredient portions of the same name and reads poorly in
  * results, so {@link buildItemKey} suffixes them with their section ("Bacon
- * Sub", "Chicken Tikka Wrap"). Page-3 ingredient names are kept as published
- * (their section headings are mostly too small for heading detection anyway).
+ * Sub", "Chicken Tikka Wrap").
+ *
+ * Page-3 subsection headings (PROTEINS, CHEESE, VEGETABLES, …) sit at 6.5 pt —
+ * only 0.3 pt above the document's dominant body-text height (6.0 pt, from the
+ * far more numerous per-serving/per-100g numeric cells), which pushes the
+ * auto-derived heading threshold to 7.5 pt and leaves every one of those
+ * headings undetected (they'd all fold into the sole page-3 heading that *is*
+ * tall enough, "BREADS" at 7.7 pt). `headingMinHeight` is lowered below 6.5 to
+ * catch them — safe because a data row can never reach the heading branch
+ * regardless of this threshold (checked only when the anchor column is
+ * empty), so this only affects section titles and boilerplate.
  */
 const SUBWAY_CONFIG: PdfScraperConfig = {
     name: 'Subway',
@@ -64,6 +73,7 @@ const SUBWAY_CONFIG: PdfScraperConfig = {
         ]
     ],
     ignoreTitles: /^(Nutrition Information|UK and ROI|Subway Nutrition)/,
+    headingMinHeight: 6.4,
     columnXTolerance: 5,
     // Names never wrap; merging could only glue stray boilerplate onto a row.
     continuationLineGap: 0,

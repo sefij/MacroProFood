@@ -26,7 +26,8 @@ export function flattenItems (restaurantsData: RestaurantsData): MenuItem[] {
                 calories: nutrition.calories,
                 protein: nutrition.protein,
                 fat: nutrition.fat,
-                carbs: nutrition.carbs
+                carbs: nutrition.carbs,
+                category: nutrition.category
             })
         }
     }

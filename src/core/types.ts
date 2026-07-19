@@ -14,6 +14,8 @@ export interface NutritionData {
     carbs: number
     ProteinTCalRatio: number
     CarbToCalRatio: number
+    /** Menu section the item was scraped under, e.g. "Burgers", "Desserts". Omitted when the source offers none. */
+    category?: string
 }
 
 export interface MenuItem {
@@ -23,6 +25,7 @@ export interface MenuItem {
     protein: number
     fat: number
     carbs: number
+    category?: string
 }
 
 export interface RestaurantData {
@@ -35,8 +38,10 @@ export interface RestaurantsData {
 
 export interface OptimizationResult {
     items: MenuItem[]
-    totalNutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>
-    accuracy: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>
+    // A combo's total/accuracy have no single category, so 'category' is
+    // dropped along with the ratio fields rather than inherited as optional.
+    totalNutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio' | 'category'>
+    accuracy: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio' | 'category'>
 }
 
 export interface OptimizationResults {
@@ -62,6 +67,7 @@ export interface SnapshotItem {
     protein: number
     fat: number
     carbs: number
+    category?: string
 }
 
 /** How a restaurant's data is sourced. */

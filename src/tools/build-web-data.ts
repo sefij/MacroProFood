@@ -62,7 +62,8 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
         calories: n.calories,
         protein: n.protein,
         fat: n.fat,
-        carbs: n.carbs
+        carbs: n.carbs,
+        category: n.category
     }))
 }
 
