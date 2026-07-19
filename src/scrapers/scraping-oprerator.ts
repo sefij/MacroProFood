@@ -6,6 +6,7 @@ import { SubwayScraper } from './Subway/scraper'
 import { TacoBellScraper } from './TacoBell/scraper'
 import { WagamamaScraper } from './Wagamama/scraper'
 import { DominosScraper } from './Dominos/scraper'
+import { NandosScraper } from './Nandos/scraper'
 import { RestaurantData, RestaurantsData, SourceScraper } from '../types'
 import { withCache } from '../cache'
 import { RestaurantKey, isScraperDisabled } from '../config'
@@ -89,6 +90,11 @@ export class ScrapingOperator {
             this.cached('dominos', () => this.runScraper(new DominosScraper())))
     }
 
+    async scrapeNandos (): Promise<RestaurantData> {
+        return this.scrapeIfEnabled('NANDOS', "Nando's", () =>
+            this.cached('nandos', () => this.runScraper(new NandosScraper())))
+    }
+
     async scrapeAll (): Promise<RestaurantsData> {
         const startTime = performance.now()
 
@@ -102,7 +108,8 @@ export class ScrapingOperator {
             subwayResults,
             tacoBellResults,
             wagamamaResults,
-            dominosResults
+            dominosResults,
+            nandosResults
         ] = await Promise.all([
             this.scrapePopeyes(),
             this.scrapeKFC(),
@@ -111,7 +118,8 @@ export class ScrapingOperator {
             this.scrapeSubway(),
             this.scrapeTacoBell(),
             this.scrapeWagamama(),
-            this.scrapeDominos()
+            this.scrapeDominos(),
+            this.scrapeNandos()
         ])
 
         this.restaurants.Popeyes = popeyesResults
@@ -122,6 +130,7 @@ export class ScrapingOperator {
         this.restaurants.TacoBell = tacoBellResults
         this.restaurants.Wagamama = wagamamaResults
         this.restaurants.Dominos = dominosResults
+        this.restaurants.Nandos = nandosResults
 
         // Save data to files for debugging and caching
         for (const [restaurant, data] of Object.entries(this.restaurants)) {
@@ -171,6 +180,9 @@ export class ScrapingOperator {
             case "domino's":
             case 'dominoes':
                 return this.scrapeDominos()
+            case 'nandos':
+            case "nando's":
+                return this.scrapeNandos()
             default:
                 console.log(chalk.red(`\n❌ Unknown restaurant: ${restaurant}`))
                 return
