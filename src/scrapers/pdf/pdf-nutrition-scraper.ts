@@ -16,12 +16,12 @@
 
 import axios from 'axios'
 import chalk from 'chalk'
-import { RestaurantData, SourceScraper, NutritionData } from '../../types'
-import { parseNumber } from '../parse-number'
-import { normalizeCategory } from '../category'
-import { addItem } from '../add-item'
-import { extractPdfLines } from './pdf-lines'
-import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid'
+import { RestaurantData, SourceScraper, NutritionData } from '../../types.js'
+import { parseNumber } from '../parse-number.js'
+import { normalizeCategory } from '../category.js'
+import { addItem } from '../add-item.js'
+import { extractPdfLines } from './pdf-lines.js'
+import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid.js'
 
 /** A row's raw text cells, keyed by the role each column was matched to. */
 export type NutritionRow = TableRow['cells']

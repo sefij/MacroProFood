@@ -1,9 +1,9 @@
 import { Browser, chromium } from 'playwright'
-import { RestaurantData } from './core/types'
+import { RestaurantData } from './core/types.js'
 
 // Re-export the pure data types from the dependency-free core module so that
 // existing `import { ... } from './types'` call sites keep working unchanged.
-export * from './core/types'
+export * from './core/types.js'
 
 export abstract class SourceScraper {
     protected browser: Browser | null = null

@@ -1,8 +1,8 @@
 import chalk from 'chalk'
 import axios from 'axios'
-import { RestaurantData, SourceScraper, NutritionData } from '../../types'
-import { normalizeCategory } from '../category'
-import { addItem } from '../add-item'
+import { RestaurantData, SourceScraper, NutritionData } from '../../types.js'
+import { normalizeCategory } from '../category.js'
+import { addItem } from '../add-item.js'
 
 /**
  * Live KFC UK scraper.

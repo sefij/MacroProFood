@@ -6,16 +6,7 @@
  * text fragments, each fragment carrying its x-range and font height. It knows
  * nothing about tables or nutrition; {@link ../pdf/table-grid} builds structure
  * on top of it.
- *
- * `pdfjs-dist` v5 ships as ESM only, but this project compiles to CommonJS.
- * A `require()` of the ESM build throws, and `tsc` would down-level a plain
- * `import()` into that failing `require()`. We dodge both by loading it through
- * a `Function`-wrapped dynamic import, which TypeScript leaves untouched.
  */
-
-const importEsm = new Function('specifier', 'return import(specifier)') as (
-    specifier: string
-) => Promise<typeof import('pdfjs-dist')>
 
 /** A single text fragment on a line, with its horizontal extent. */
 export interface PdfCell {
@@ -60,7 +51,7 @@ export async function extractPdfLines (
     data: Uint8Array,
     lineYTolerance: number = LINE_Y_TOLERANCE
 ): Promise<PdfLine[]> {
-    const pdfjs = await importEsm('pdfjs-dist/legacy/build/pdf.mjs')
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const doc = await pdfjs.getDocument({
         data,
         useSystemFonts: true,

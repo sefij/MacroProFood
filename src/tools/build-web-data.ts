@@ -12,13 +12,13 @@
  *
  * Usage: `yarn build:data` (compiles, then runs `dist/tools/build-web-data.js`).
  */
-import '../config' // loads .env (e.g. DISABLE_<KEY>) before scrapers read it
+import '../config.js' // loads .env (e.g. DISABLE_<KEY>) before scrapers read it
 
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import chalk from 'chalk'
 
-import { ScrapingOperator } from '../scrapers/scraping-oprerator'
+import { ScrapingOperator } from '../scrapers/scraping-oprerator.js'
 import {
     DataIndex,
     RestaurantData,
@@ -26,7 +26,7 @@ import {
     RestaurantSnapshot,
     SnapshotItem,
     SnapshotSource
-} from '../core/types'
+} from '../core/types.js'
 
 interface RestaurantMeta {
     /** Key as produced by ScrapingOperator.scrapeAll(). */

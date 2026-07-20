@@ -21,9 +21,8 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 ## Todos
 
-Detailed specs for each todo live in [`docs/specs/`](docs/specs/).
-
-- CLI modernization: `module: nodenext` (real ESM) + `strict`.
+Detailed specs for each todo live in [`docs/specs/`](docs/specs/). Nothing
+outstanding right now — see the specs index for what's shipped.
 
 ## Requirements
 

@@ -3,8 +3,8 @@ import {
     OptimizationResults,
     RestaurantsData,
     TargetMacros
-} from './types'
-import { avgAccuracyOf, findBestCombinations } from './core/optimizer'
+} from './types.js'
+import { avgAccuracyOf, findBestCombinations } from './core/optimizer.js'
 
 /**
  * CLI-facing wrapper around the pure optimizer in {@link ./core/optimizer}.

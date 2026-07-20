@@ -8,20 +8,20 @@
  *   node nutrition-scraper.js --calories 2000 --protein 150 --fat 67 --carbs 250
  */
 
-import './config' // loads .env into process.env before anything reads it
+import './config.js' // loads .env into process.env before anything reads it
 
 import { Command } from 'commander'
 import chalk from 'chalk'
 
-import { RestaurantsData, TargetMacros } from './types'
-import { MacroOptimizer } from './macro-optimizer'
-import { excludeCategories } from './core/category-filter'
-import { defaultExcludedCategories } from './config'
+import { RestaurantsData, TargetMacros } from './types.js'
+import { MacroOptimizer } from './macro-optimizer.js'
+import { excludeCategories } from './core/category-filter.js'
+import { defaultExcludedCategories } from './config.js'
 
-import { ScrapingOperator } from './scrapers/scraping-oprerator'
-import { promptSelection } from './mfp/prompt'
-import { MfpClient } from './mfp/client'
-import { resolveAuth } from './mfp/auth'
+import { ScrapingOperator } from './scrapers/scraping-oprerator.js'
+import { promptSelection } from './mfp/prompt.js'
+import { MfpClient } from './mfp/client.js'
+import { resolveAuth } from './mfp/auth.js'
 
 async function main (): Promise<void> {
     const program = new Command()
@@ -200,7 +200,7 @@ async function resolveTargetMacros (provided: MaybeTargets): Promise<TargetMacro
 }
 
 async function pushToMyFitnessPal (
-    results: import('./types').OptimizationResults
+    results: import('./types.js').OptimizationResults
 ): Promise<void> {
     const selection = await promptSelection(results)
     if (!selection) return

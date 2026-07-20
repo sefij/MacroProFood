@@ -9,7 +9,7 @@
  * instead of assigning `items[name] = nutrition` directly.
  */
 import chalk from 'chalk'
-import { NutritionData, RestaurantData } from '../core/types'
+import { NutritionData, RestaurantData } from '../core/types.js'
 
 export type AddItemOutcome =
     /** No prior entry under this name (or any of its qualified variants). */

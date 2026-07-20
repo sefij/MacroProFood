@@ -1,7 +1,7 @@
 import * as readline from 'readline/promises'
 import chalk from 'chalk'
 
-import { OptimizationResults } from '../types'
+import { OptimizationResults } from '../types.js'
 
 export interface Selection {
     restaurant: string

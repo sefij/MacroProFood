@@ -1,8 +1,8 @@
 import chalk from 'chalk'
-import { RestaurantData, SourceScraper } from '../../types'
+import { RestaurantData, SourceScraper } from '../../types.js'
 import * as cheerio from 'cheerio'
-import { normalizeCategory } from '../category'
-import { addItem } from '../add-item'
+import { normalizeCategory } from '../category.js'
+import { addItem } from '../add-item.js'
 
 /**
  * Taco Bell is scraped live — but from nutritionix.com, a **third-party

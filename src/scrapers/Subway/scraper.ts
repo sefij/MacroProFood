@@ -2,7 +2,7 @@ import {
     PdfNutritionScraper,
     PdfScraperConfig,
     NutritionRow
-} from '../pdf/pdf-nutrition-scraper'
+} from '../pdf/pdf-nutrition-scraper.js'
 
 /**
  * Subway UK & ROI — parsed from the published nutrition information PDF.

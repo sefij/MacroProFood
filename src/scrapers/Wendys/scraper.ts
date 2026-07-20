@@ -2,7 +2,7 @@ import {
     PdfNutritionScraper,
     PdfScraperConfig,
     NutritionRow
-} from '../pdf/pdf-nutrition-scraper'
+} from '../pdf/pdf-nutrition-scraper.js'
 
 /**
  * Wendy's UK — parsed from their published nutrition PDF.

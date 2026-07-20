@@ -8,7 +8,7 @@
  * `RestaurantsData` is assembled for optimization. Pure — returns a new
  * object rather than mutating `data`.
  */
-import { RestaurantsData } from './types'
+import { RestaurantsData } from './types.js'
 
 export function excludeCategories (
     data: RestaurantsData,

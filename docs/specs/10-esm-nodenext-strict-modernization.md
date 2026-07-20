@@ -107,3 +107,53 @@ separate one — no reason to split something that costs nothing.
   *not* expected to be empty this time (unlike spec 08's TS7 finding) —
   the module system itself is changing — so verification here is behavioral
   (does it run and produce the same data), not a byte-diff.
+
+## Findings (2026-07-20)
+
+Implemented as specced, with two extra cases the "rewrite every `from
+'...'`" script missed on the first pass — both real, both easy to miss with
+a from-clause-only regex:
+
+- **Side-effect-only imports** (no `from` clause at all):
+  `import './config'` in `main.ts` and `import '../config'` in
+  `build-web-data.ts` (both load `.env` before anything else reads it).
+- **An inline `import(...)` type reference**, not a top-level import
+  statement: `results: import('./types').OptimizationResults` in `main.ts`.
+
+Both patterns are invisible to a regex anchored on `from '...'`; `tsc`
+itself caught both immediately as `TS2835` on the first build attempt, so
+neither shipped silently. Final tally: 20 files touched, 59 import lines
+extension-fixed (the spec's upfront count of 52 covered only the `from`-clause
+imports, undercounting these 3 extra edits across 2 files) — plus the two
+`pdf-lines.ts` edits (drop the `Function`-wrapped hack, plain `import()`)
+and the `package.json`/`tsconfig.json` config changes.
+
+**`strict` cost exactly what the pre-check predicted: nothing.** `tsc`
+compiled clean on the first attempt with `nodenext` + every extension fixed
++ `strict: true` all enabled together — no `strictNullChecks` fallout, no
+implicit-`any` fallout.
+
+**Runtime verification, all live (not just cached-data no-ops):**
+- `yarn build` — clean.
+- `yarn build:data:fresh` (bypasses cache entirely) — all 9 restaurants
+  scraped live successfully: Playwright (Popeyes, McDonald's), embedded-JSON
+  (KFC, Wagamama, Nando's), PDF (Wendy's, Domino's, Subway), third-party
+  live (Taco Bell). Item-count deltas from the previous run (e.g. KFC
+  134 vs. 135, Nando's 197 vs. 200) are normal run-to-run live-data
+  fluctuation — same behavior seen throughout this session before this
+  change, unrelated to the module-system migration.
+- `node dist/main.js -e wendys --no-cache`, same for `dominos` and
+  `subway` — each individually exercises the rewritten `pdfjs-dist` dynamic
+  `import()` end to end (parses a real PDF, produces real menu items,
+  feeds the optimizer). All three produced correct, sane results.
+- `node dist/main.js -e popeyes --no-cache` — Playwright path unaffected.
+- Chalk-colored console output (the thing the `require(ESM)` interop quirk
+  was propping up) rendered correctly throughout every run above — no
+  `__importDefault`/`.default`-unwrapping involved anymore, just a real
+  `import chalk from 'chalk'`.
+- `web/`'s build (`tsc -b && vite build`) — untouched, confirmed still
+  clean, exactly as scoped ("out of scope" above).
+
+No behavioral regressions found. `pdf-lines.ts`'s module doc comment
+(explaining the now-deleted workaround) was trimmed down to just what the
+module does.

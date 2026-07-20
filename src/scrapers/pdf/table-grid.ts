@@ -22,7 +22,7 @@
  * the caller, and cell values stay as raw text for a higher layer to parse.
  */
 
-import { PdfLine, PdfCell } from './pdf-lines'
+import { PdfLine, PdfCell } from './pdf-lines.js'
 
 /** Maps a header cell (matched by `match`) to a caller-defined column role. */
 export interface ColumnMatcher {

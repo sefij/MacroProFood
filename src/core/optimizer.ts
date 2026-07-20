@@ -12,7 +12,7 @@ import {
     OptimizationResults,
     RestaurantsData,
     TargetMacros
-} from './types'
+} from './types.js'
 
 /** Flattens `RestaurantsData` into a single list of `MenuItem`s. */
 export function flattenItems (restaurantsData: RestaurantsData): MenuItem[] {
