@@ -16,25 +16,37 @@ interface Env {
 }
 
 const DATA_PREFIX = '/data/'
+const APEX_HOST = 'macropro.food'
 const CANONICAL_HOST = 'www.macropro.food'
 
 export default {
     async fetch (request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url)
+        const isDataRequest = url.pathname.startsWith(DATA_PREFIX)
 
         // The bare apex domain (macropro.food, over http or https) still
-        // resolves and serves the site directly — Google was finding it,
-        // respecting the canonical tag, and not double-indexing it, but it
-        // was still two live copies of the site splitting link equity.
-        // Redirect it to the canonical www host instead of just relying on
-        // the <link rel="canonical"> tag to paper over it.
-        if (url.hostname === 'macropro.food') {
+        // resolves and serves the site directly, splitting link equity from
+        // the canonical www host. Redirect it — but never for `/data/*` (the
+        // app's own same-origin fetches; redirecting those cross-origin trips
+        // CORS, since the target sends no Access-Control-Allow-Origin, and
+        // breaks the app outright for any client whose page happens to still
+        // be running from the apex origin — e.g. a tab left open from before
+        // this redirect shipped), and only for actual page navigations
+        // otherwise (`Sec-Fetch-Mode: navigate`, sent by browsers and
+        // Googlebot for a real navigation but not for a page's own fetch()
+        // calls) — so a client already running from the apex host keeps
+        // working rather than getting redirected mid-session and broken.
+        if (
+            url.hostname === APEX_HOST &&
+            !isDataRequest &&
+            request.headers.get('sec-fetch-mode') === 'navigate'
+        ) {
             url.hostname = CANONICAL_HOST
             url.protocol = 'https:'
             return Response.redirect(url.toString(), 301)
         }
 
-        if (!url.pathname.startsWith(DATA_PREFIX)) {
+        if (!isDataRequest) {
             return env.ASSETS.fetch(request)
         }
 
@@ -58,6 +70,11 @@ export default {
         if (!headers.has('content-type')) {
             headers.set('content-type', 'application/json; charset=utf-8')
         }
+        // Public, non-sensitive nutrition data — allow cross-origin reads so
+        // a page never gets stuck unable to fetch its own data regardless of
+        // which host (apex, www, a preview deploy) it happens to be served
+        // from.
+        headers.set('access-control-allow-origin', '*')
 
         // Honor conditional requests so unchanged snapshots return 304.
         if (request.headers.get('if-none-match') === object.httpEtag) {
