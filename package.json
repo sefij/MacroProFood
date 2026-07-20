@@ -13,7 +13,7 @@
     "lodash": "^4.17.21",
     "pdfjs-dist": "^5.4.530",
     "playwright": "^1.57.0",
-    "typescript": "^5.9.2"
+    "typescript": "^7.0.2"
   },
   "scripts": {
     "start": "yarn run build && node dist/main.js",
