@@ -21,6 +21,10 @@ export abstract class SourceScraper {
             ]
         })
     }
+    /** Closes the browser launched by {@link initialize}, if any (HTTP-only scrapers never launch one). */
+    async close (): Promise<void> {
+        await this.browser?.close()
+    }
     abstract scrape (): Promise<RestaurantData>
 }
 

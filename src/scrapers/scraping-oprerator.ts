@@ -27,7 +27,11 @@ export class ScrapingOperator {
 
     private async runScraper (scraper: SourceScraper): Promise<RestaurantData> {
         await scraper.initialize()
-        return await scraper.scrape()
+        try {
+            return await scraper.scrape()
+        } finally {
+            await scraper.close()
+        }
     }
 
     private cached (key: string, producer: () => Promise<RestaurantData>): Promise<RestaurantData> {
