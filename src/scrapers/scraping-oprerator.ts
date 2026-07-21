@@ -7,6 +7,7 @@ import { TacoBellScraper } from './TacoBell/scraper'
 import { WagamamaScraper } from './Wagamama/scraper'
 import { DominosScraper } from './Dominos/scraper'
 import { NandosScraper } from './Nandos/scraper'
+import { ItsuScraper } from './Itsu/scraper'
 import { RestaurantData, RestaurantsData, SourceScraper } from '../types'
 import { withCache } from '../cache'
 import { RestaurantKey, isScraperDisabled } from '../config'
@@ -95,6 +96,11 @@ export class ScrapingOperator {
             this.cached('nandos', () => this.runScraper(new NandosScraper())))
     }
 
+    async scrapeItsu (): Promise<RestaurantData> {
+        return this.scrapeIfEnabled('ITSU', 'itsu', () =>
+            this.cached('itsu', () => this.runScraper(new ItsuScraper())))
+    }
+
     async scrapeAll (): Promise<RestaurantsData> {
         const startTime = performance.now()
 
@@ -109,7 +115,8 @@ export class ScrapingOperator {
             tacoBellResults,
             wagamamaResults,
             dominosResults,
-            nandosResults
+            nandosResults,
+            itsuResults
         ] = await Promise.all([
             this.scrapePopeyes(),
             this.scrapeKFC(),
@@ -119,7 +126,8 @@ export class ScrapingOperator {
             this.scrapeTacoBell(),
             this.scrapeWagamama(),
             this.scrapeDominos(),
-            this.scrapeNandos()
+            this.scrapeNandos(),
+            this.scrapeItsu()
         ])
 
         this.restaurants.Popeyes = popeyesResults
@@ -131,6 +139,7 @@ export class ScrapingOperator {
         this.restaurants.Wagamama = wagamamaResults
         this.restaurants.Dominos = dominosResults
         this.restaurants.Nandos = nandosResults
+        this.restaurants.Itsu = itsuResults
 
         // Save data to files for debugging and caching
         for (const [restaurant, data] of Object.entries(this.restaurants)) {
@@ -183,6 +192,8 @@ export class ScrapingOperator {
             case 'nandos':
             case "nando's":
                 return this.scrapeNandos()
+            case 'itsu':
+                return this.scrapeItsu()
             default:
                 console.log(chalk.red(`\n❌ Unknown restaurant: ${restaurant}`))
                 return
