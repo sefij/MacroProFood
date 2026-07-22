@@ -29,6 +29,9 @@ body {
     margin: 0 auto;
     padding: 24px 16px 80px;
 }
+/* Menu mode's sticky-summary is fixed (not in flow) — this reserves screen
+   space at the bottom so it never overlaps the tail of the page content. */
+.app--menu { padding-bottom: 230px; }
 
 header.hero {
     text-align: center;
@@ -126,7 +129,6 @@ header.hero p {
 
 @media (max-width: 460px) {
     .macro-grid { grid-template-columns: repeat(2, 1fr); }
-    .restaurant-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Restaurant picker */
@@ -141,9 +143,11 @@ header.hero p {
     flex-wrap: wrap;
     gap: 10px;
 }
+/* auto-fill (not auto-fit) so every tile stays the same size — a short
+   last row leaves trailing empty space instead of stretching to fill it. */
 .restaurant-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
     gap: 10px;
 }
 .chip {
@@ -712,16 +716,27 @@ footer.foot br { line-height: 2; }
  * maximum scroll position). Bottom-pinning engages as soon as the short
  * trailing content fits the remaining viewport and holds for the entire
  * scroll, which is what "always visible while scrolling" actually requires.
+ *
+ * `position: fixed`, not `sticky` — sticky still participates in document
+ * flow, so on a page shorter than the viewport (e.g. menu mode before any
+ * restaurant/items are picked) it gets pulled into view immediately and
+ * renders on top of the tail of whatever precedes it (the restaurant grid).
+ * Fixed removes it from flow entirely; `.app--menu`'s reserved bottom
+ * padding keeps real content from ever needing to occupy that same space.
  */
 .sticky-summary {
-    position: sticky;
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
     bottom: 0;
+    width: calc(100% - 32px); /* viewport width minus .app's 16px side padding, mirrored */
+    max-width: 688px; /* .app's 720px max-width minus its 16px side padding */
+    box-sizing: border-box;
     z-index: 5;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius) var(--radius) 0 0;
     padding: 12px 14px;
-    margin-top: 14px;
     box-shadow: 0 -8px 24px rgba(0,0,0,0.35);
 }
 .sticky-summary-grid {
