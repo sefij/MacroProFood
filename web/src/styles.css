@@ -126,6 +126,7 @@ header.hero p {
 
 @media (max-width: 460px) {
     .macro-grid { grid-template-columns: repeat(2, 1fr); }
+    .restaurant-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Restaurant picker */
@@ -140,13 +141,18 @@ header.hero p {
     flex-wrap: wrap;
     gap: 10px;
 }
+.restaurant-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+}
 .chip {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    min-width: 84px;
+    width: 100%;
     padding: 12px 10px;
     background: var(--surface-2);
     border: 1.5px solid var(--border);
