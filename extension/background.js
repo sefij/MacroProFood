@@ -227,6 +227,13 @@ async function waitForQuickAddForm (tabId) {
  * Reads the diary "Remaining" row → {calories,protein,fat,carbs} | null.
  * Polls for up to ~10s because MFP renders the daily-summary table client-side
  * (it isn't in the initial HTML), mirroring the waitForFunction in client.ts.
+ *
+ * "Remaining" appears more than once on the diary: with per-meal goals enabled,
+ * each meal section has its own Remaining row *above* the day's summary table.
+ * Taking the first match therefore read back whatever was logged under that meal
+ * (e.g. the Quick Add we'd just written) instead of the day's remaining macros —
+ * so we anchor to the summary table and prefer the last match. Mirrored in
+ * src/mfp/client.ts and web/src/bookmarklets.ts.
  */
 async function readRemainingInPage () {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -234,18 +241,38 @@ async function readRemainingInPage () {
         const m = String(txt || '').replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)
         return m ? parseFloat(m[0]) : null
     }
+    // A row's label, or null when it's too narrow to be a macro row.
+    const labelOf = (row) => {
+        const cells = row.querySelectorAll('td, th')
+        if (cells.length < 5) return null
+        return (cells[0].textContent || '').trim().toLowerCase()
+    }
+    // Only the day's summary table carries a "Totals" / "Your Daily Goal" row.
+    const isSummaryTable = (row) => {
+        const table = row.closest('table')
+        if (!table) return false
+        return Array.from(table.querySelectorAll('tr')).some((other) => {
+            const l = labelOf(other)
+            return l !== null && /^(totals?|your daily goal|goal)\b/.test(l)
+        })
+    }
     const findRow = () => {
         const rows = Array.from(document.querySelectorAll('tr'))
-        for (const row of rows) {
-            const cells = Array.from(row.querySelectorAll('td, th'))
-            if (cells.length < 5) continue
-            const label = (cells[0].textContent || '').trim().toLowerCase()
-            if (!label.includes('remaining')) continue
+        const candidates = rows.filter((r) => {
+            const l = labelOf(r)
+            return l !== null && l.includes('remaining')
+        })
+        if (candidates.length === 0) return null
+        const inSummary = candidates.filter(isSummaryTable)
+        const pool = inSummary.length > 0 ? inSummary : candidates
+        // Last match: the day's summary renders after every meal section.
+        for (let i = pool.length - 1; i >= 0; i--) {
+            const cells = Array.from(pool[i].querySelectorAll('td, th'))
             const calories = parseNum(cells[1].textContent)
             const carbs = parseNum(cells[2].textContent)
             const fat = parseNum(cells[3].textContent)
             const protein = parseNum(cells[4].textContent)
-            if ([calories, carbs, fat, protein].some((v) => v === null)) return null
+            if ([calories, carbs, fat, protein].some((v) => v === null)) continue
             return { calories, protein, fat, carbs }
         }
         return null
@@ -288,6 +315,14 @@ async function openQuickAddInPage (mealName) {
     )
     if (!heading) return { ok: false, message: `Could not find the "${mealName}" section on your diary.` }
 
+    // Everything that already looks like a "Quick Add" *before* we open anything:
+    // a diary entry logged via Quick Add renders as a link with that exact name,
+    // so this snapshot is what tells the food entry apart from the menu item that
+    // the dropdown is about to render.
+    const quickAddish = () =>
+        clickables().filter((e) => /quick\s*add/i.test((e.textContent || '').trim()))
+    const preExisting = new Set(quickAddish())
+
     // The first "Quick Tools" that comes after this meal's heading is its own.
     const quickTools = await waitFor(() =>
         clickables().find(
@@ -299,10 +334,37 @@ async function openQuickAddInPage (mealName) {
     if (!quickTools) return { ok: false, message: `Could not find Quick Tools for ${mealName}.` }
     quickTools.click()
 
-    // The dropdown's "Quick add calories" item (rendered anywhere in the DOM).
-    const quickAdd = await waitFor(() =>
-        clickables().find((e) => /quick\s*add/i.test((e.textContent || '').trim()))
-    )
+    // Pick the dropdown's "Quick add calories" item. Scored rather than filtered,
+    // because the dropdown's position in the DOM varies (it may be portalled, or
+    // rendered inside the meal's own table) — a hard filter on any one of these
+    // signals rejects the real item on some layouts. Appearing only after the
+    // click is the strongest signal; an existing diary entry is the one thing we
+    // refuse outright, since clicking it edits an already-logged meal.
+    const isMenuItem = (e) =>
+        e.getAttribute('role') === 'menuitem' ||
+        !!e.closest('[role="menu"], [role="listbox"], [class*="dropdown"], [class*="menu"]')
+
+    const quickAdd = await waitFor(() => {
+        const candidates = quickAddish()
+        if (candidates.length === 0) return null
+        const score = (e) => {
+            const text = (e.textContent || '').trim()
+            // A logged entry is named "Quick Add"; only the menu item carries the
+            // full "Quick add calories" label, so that alone clears it of being one.
+            const isMenuLabel = /^quick\s*add\s*calories$/i.test(text)
+            let s = 0
+            if (!preExisting.has(e)) s += 6 // rendered by the dropdown we just opened
+            if (isMenuLabel) s += 4
+            if (isMenuItem(e)) s += 3
+            if (heading.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING) s += 1
+            // Was on the page before we clicked, sits in a diary table, and isn't
+            // labelled like the menu item: a logged food entry.
+            if (!isMenuLabel && preExisting.has(e) && e.closest('tbody')) s -= 8
+            return s
+        }
+        const best = candidates.slice().sort((a, b) => score(b) - score(a))[0]
+        return score(best) > 0 ? best : null
+    })
     if (!quickAdd) return { ok: false, message: 'Could not find "Quick add calories".' }
     quickAdd.click()
     return { ok: true }

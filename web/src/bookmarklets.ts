@@ -34,19 +34,27 @@ function toBookmarklet (source: string): string {
 /**
  * "Pull remaining → MacroPro": reads the MFP diary's "Remaining" row and sends
  * the four numbers to the app via the URL hash (#remaining=cal,protein,fat,carbs).
+ *
+ * Meal sections can each carry their own "Remaining" row (per-meal goals), so we
+ * anchor to the day's summary table — the one that also has "Totals" / "Your
+ * Daily Goal" — and take the last match. Mirrored in src/mfp/client.ts and
+ * extension/background.js.
  */
 export function pullRemainingBookmarklet (appUrl: string): string {
     const target = JSON.stringify(appUrl.replace(/\/$/, '') + '/#remaining=')
     return toBookmarklet(`
         var P=function(t){var m=String(t||'').replace(/,/g,'').match(/-?\\d+(?:\\.\\d+)?/);return m?parseFloat(m[0]):null};
-        var rows=[].slice.call(document.querySelectorAll('tr'));
-        for(var i=0;i<rows.length;i++){
-            var c=[].slice.call(rows[i].querySelectorAll('td,th'));
-            if(c.length<5)continue;
-            var l=(c[0].textContent||'').trim().toLowerCase();
-            if(l.indexOf('remaining')<0)continue;
+        var L=function(r){var c=r.querySelectorAll('td,th');return c.length<5?null:(c[0].textContent||'').trim().toLowerCase()};
+        var S=function(r){
+            var t=r.closest('table');if(!t)return false;
+            return [].slice.call(t.querySelectorAll('tr')).some(function(o){var l=L(o);return l!==null&&/^(totals?|your daily goal|goal)\\b/.test(l)});
+        };
+        var cand=[].slice.call(document.querySelectorAll('tr')).filter(function(r){var l=L(r);return l!==null&&l.indexOf('remaining')>=0});
+        var sum=cand.filter(S),pool=sum.length?sum:cand;
+        for(var i=pool.length-1;i>=0;i--){
+            var c=[].slice.call(pool[i].querySelectorAll('td,th'));
             var cal=P(c[1].textContent),carbs=P(c[2].textContent),fat=P(c[3].textContent),prot=P(c[4].textContent);
-            if(cal===null||carbs===null||fat===null||prot===null)break;
+            if(cal===null||carbs===null||fat===null||prot===null)continue;
             location.href=${target}+[cal,prot,fat,carbs].join(',');
             return;
         }
