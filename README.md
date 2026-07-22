@@ -10,7 +10,7 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 ## Features
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
-  Taco Bell, Wagamama, Domino's, Nando's and itsu (UK menus).
+  Taco Bell, Wagamama, Domino's, Nando's, itsu and YO! Sushi (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -60,6 +60,7 @@ cp .env.example .env
 | `DISABLE_DOMINOS`   | Set to `true` to skip the Domino's scraper.              |
 | `DISABLE_NANDOS`    | Set to `true` to skip the Nando's scraper.                |
 | `DISABLE_ITSU`      | Set to `true` to skip the itsu scraper.                   |
+| `DISABLE_YOSUSHI`   | Set to `true` to skip the YO! Sushi scraper.              |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -135,6 +136,8 @@ Every restaurant is scraped live (and cached for 7 days):
 | Domino's     | Published nutrition PDF                         |
 | Subway       | Published nutrition PDF (UK & ROI)              |
 | Nando's      | Embedded JSON on the menu page                  |
+| itsu         | GraphQL API behind the menu page                |
+| YO! Sushi    | Live scrape of menus.tenkites.com               |
 
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
@@ -147,6 +150,15 @@ Every restaurant is scraped live (and cached for 7 days):
   nutrition, without any baste (spice level), side, or meal-size choice
   folded in, same as how sides and drinks are scraped as their own separate
   items for every other restaurant.
+- **YO! Sushi** is scraped live from a **third-party allergen/nutrition
+  portal ([menus.tenkites.com](https://menus.tenkites.com/yosushi/allergenpageyosushi)),
+  linked from yosushi.com's own allergen-information page** — not from
+  yosushi.com itself. yosushi.com's own per-item nutrition panel never
+  publishes protein or total carbs (checked across every item type), so it
+  can't feed this app's optimizer; tenkites has the full macro panel for
+  every item in one page. Its item list isn't a perfect match for the live
+  menu, though — e.g. "aburi scallop nigiri" is on yosushi.com but absent
+  from tenkites entirely, so it's not included here.
 
 ## Scripts
 
