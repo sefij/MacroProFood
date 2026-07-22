@@ -10,6 +10,7 @@ import { NandosScraper } from './Nandos/scraper'
 import { ItsuScraper } from './Itsu/scraper'
 import { YoSushiScraper } from './YoSushi/scraper'
 import { SlimChickensScraper } from './SlimChickens/scraper'
+import { BurgerKingScraper } from './BurgerKing/scraper'
 import { RestaurantData, RestaurantsData, SourceScraper } from '../types'
 import { withCache } from '../cache'
 import { RestaurantKey, isScraperDisabled } from '../config'
@@ -113,6 +114,11 @@ export class ScrapingOperator {
             this.cached('slimchickens', () => this.runScraper(new SlimChickensScraper())))
     }
 
+    async scrapeBurgerKing (): Promise<RestaurantData> {
+        return this.scrapeIfEnabled('BURGERKING', 'Burger King', () =>
+            this.cached('burgerking', () => this.runScraper(new BurgerKingScraper())))
+    }
+
     async scrapeAll (): Promise<RestaurantsData> {
         const startTime = performance.now()
 
@@ -130,7 +136,8 @@ export class ScrapingOperator {
             nandosResults,
             itsuResults,
             yoSushiResults,
-            slimChickensResults
+            slimChickensResults,
+            burgerKingResults
         ] = await Promise.all([
             this.scrapePopeyes(),
             this.scrapeKFC(),
@@ -143,7 +150,8 @@ export class ScrapingOperator {
             this.scrapeNandos(),
             this.scrapeItsu(),
             this.scrapeYoSushi(),
-            this.scrapeSlimChickens()
+            this.scrapeSlimChickens(),
+            this.scrapeBurgerKing()
         ])
 
         this.restaurants.Popeyes = popeyesResults
@@ -158,6 +166,7 @@ export class ScrapingOperator {
         this.restaurants.Itsu = itsuResults
         this.restaurants.YoSushi = yoSushiResults
         this.restaurants.SlimChickens = slimChickensResults
+        this.restaurants.BurgerKing = burgerKingResults
 
         // Save data to files for debugging and caching
         for (const [restaurant, data] of Object.entries(this.restaurants)) {
@@ -219,6 +228,10 @@ export class ScrapingOperator {
             case 'slimchickens':
             case 'slim chickens':
                 return this.scrapeSlimChickens()
+            case 'burgerking':
+            case 'burger king':
+            case 'bk':
+                return this.scrapeBurgerKing()
             default:
                 console.log(chalk.red(`\n❌ Unknown restaurant: ${restaurant}`))
                 return
