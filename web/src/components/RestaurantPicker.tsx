@@ -41,7 +41,7 @@ export function RestaurantPicker ({
                 </label>
             </div>
 
-            <div className="chips">
+            <div className="restaurant-grid">
                 {restaurants.map((r) => {
                     const empty = r.itemCount === 0
                     const { stale, label } = staleness(r.updatedAt)
