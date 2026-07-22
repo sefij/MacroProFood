@@ -348,7 +348,7 @@ export function App() {
     }
 
     return (
-        <div className="app">
+        <div className={`app${appMode === 'menu' ? ' app--menu' : ''}`}>
             <header className="hero">
                 <h1>🍔 MacroPro</h1>
                 <p>Find a fast-food meal that fits your remaining macros.</p>
@@ -431,12 +431,14 @@ export function App() {
                         onRemove={removeMenuItem}
                     />
 
-                    <StickySummary
-                        totals={menuMealTotals}
-                        targets={macros}
-                        onTrack={trackMenuMeal}
-                        canTrack={menuMeal.size > 0}
-                    />
+                    {menuMeal.size > 0 && (
+                        <StickySummary
+                            totals={menuMealTotals}
+                            targets={macros}
+                            onTrack={trackMenuMeal}
+                            canTrack
+                        />
+                    )}
                 </>
             )}
 
