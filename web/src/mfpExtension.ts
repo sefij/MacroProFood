@@ -87,10 +87,17 @@ export interface TrackResult {
     meal?: string
 }
 
-/** Fills and submits the MFP Quick Add form with the chosen meal, under `mealName`. */
+/**
+ * Fills and submits the MFP Quick Add form with the chosen meal, under `mealName`.
+ *
+ * Tracking waits on several MFP page loads in sequence (up to ~15s for the Quick
+ * Add form, ~8s to fill it, ~12s to confirm the save), so it gets a much longer
+ * deadline than the 20s default — otherwise a slow diary makes the app report
+ * "the extension did not respond" while the worker is still mid-submit.
+ */
 export function trackMeal (
     meal: { calories: number; protein: number; fat: number; carbs: number },
     mealName: string
 ): Promise<TrackResult> {
-    return request<TrackResult>({ type: 'track', meal, mealName })
+    return request<TrackResult>({ type: 'track', meal, mealName }, 60000)
 }

@@ -199,13 +199,36 @@ export class MfpClient {
                     return Number.isFinite(n) ? n : null
                 }
 
-                const rows = Array.from(document.querySelectorAll('tr'))
-                for (const row of rows) {
-                    const cells = Array.from(row.querySelectorAll('td, th'))
-                    if (cells.length < 5) continue
-                    const label = (cells[0].textContent || '').trim().toLowerCase()
-                    if (!label.includes('remaining')) continue
+                // A row's label, or null when it's too narrow to be a macro row.
+                const labelOf = (row: Element): string | null => {
+                    const cells = row.querySelectorAll('td, th')
+                    if (cells.length < 5) return null
+                    return (cells[0].textContent || '').trim().toLowerCase()
+                }
+                // Only the day's summary table carries a "Totals" / "Your Daily
+                // Goal" row; meal sections with per-meal goals have their own
+                // "Remaining" row, which we must not read instead.
+                const isSummaryTable = (row: Element): boolean => {
+                    const table = row.closest('table')
+                    if (!table) return false
+                    return Array.from(table.querySelectorAll('tr')).some((other) => {
+                        const l = labelOf(other)
+                        return l !== null && /^(totals?|your daily goal|goal)\b/.test(l)
+                    })
+                }
 
+                const rows = Array.from(document.querySelectorAll('tr'))
+                const candidates = rows.filter((row) => {
+                    const l = labelOf(row)
+                    return l !== null && l.includes('remaining')
+                })
+                if (candidates.length === 0) return null
+                const inSummary = candidates.filter(isSummaryTable)
+                const pool = inSummary.length > 0 ? inSummary : candidates
+
+                // Last match: the day's summary renders after every meal section.
+                for (let i = pool.length - 1; i >= 0; i--) {
+                    const cells = Array.from(pool[i].querySelectorAll('td, th'))
                     const calories = parseNum(cells[1].textContent || '')
                     const carbs = parseNum(cells[2].textContent || '')
                     const fat = parseNum(cells[3].textContent || '')
@@ -217,7 +240,7 @@ export class MfpClient {
                         fat === null ||
                         protein === null
                     ) {
-                        return null
+                        continue
                     }
                     return { calories, carbs, fat, protein }
                 }
