@@ -10,8 +10,8 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 ## Features
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
-  Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi and Slim Chickens
-  (UK menus).
+  Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi, Slim Chickens and
+  Burger King (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -62,6 +62,8 @@ cp .env.example .env
 | `DISABLE_NANDOS`    | Set to `true` to skip the Nando's scraper.                |
 | `DISABLE_ITSU`      | Set to `true` to skip the itsu scraper.                   |
 | `DISABLE_YOSUSHI`   | Set to `true` to skip the YO! Sushi scraper.              |
+| `DISABLE_SLIMCHICKENS` | Set to `true` to skip the Slim Chickens scraper.      |
+| `DISABLE_BURGERKING`| Set to `true` to skip the Burger King scraper.            |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -140,6 +142,7 @@ Every restaurant is scraped live (and cached for 7 days):
 | itsu         | GraphQL API behind the menu page                |
 | YO! Sushi    | Live scrape of menus.tenkites.com               |
 | Slim Chickens| Live scrape of menus.tenkites.com               |
+| Burger King  | Public Sanity CMS dataset (GROQ query)          |
 
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
