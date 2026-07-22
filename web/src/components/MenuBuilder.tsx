@@ -147,7 +147,7 @@ export function MenuBuilder ({
         <section className="card">
             <h2>Build your own meal</h2>
 
-            <div className="chips" style={{ marginBottom: selectedKey ? 14 : 0 }}>
+            <div className="restaurant-grid" style={{ marginBottom: selectedKey ? 14 : 0 }}>
                 {restaurants
                     .filter((r) => r.itemCount > 0)
                     .map((r) => (

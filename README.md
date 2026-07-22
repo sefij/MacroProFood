@@ -10,7 +10,8 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 ## Features
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
-  Taco Bell, Wagamama, Domino's, Nando's, itsu and YO! Sushi (UK menus).
+  Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi and Slim Chickens
+  (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -138,6 +139,7 @@ Every restaurant is scraped live (and cached for 7 days):
 | Nando's      | Embedded JSON on the menu page                  |
 | itsu         | GraphQL API behind the menu page                |
 | YO! Sushi    | Live scrape of menus.tenkites.com               |
+| Slim Chickens| Live scrape of menus.tenkites.com               |
 
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
@@ -159,6 +161,13 @@ Every restaurant is scraped live (and cached for 7 days):
   every item in one page. Its item list isn't a perfect match for the live
   menu, though — e.g. "aburi scallop nigiri" is on yosushi.com but absent
   from tenkites entirely, so it's not included here.
+- **Slim Chickens** is scraped from the **same tenkites platform as YO!
+  Sushi**, not from slimchickens.com — that's the **US** site (every
+  restaurant its own API returns is US-based) and would give US recipes/
+  portions. The UK operator (Boparan Restaurant Group) publishes its menu on
+  tenkites as a per-branch picker rather than one flat page; this scraper
+  resolves the first "standard menu" branch from that picker and scrapes it
+  as representative of the UK menu, rather than every branch individually.
 
 ## Scripts
 
