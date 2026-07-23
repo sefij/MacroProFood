@@ -19,12 +19,22 @@ import chalk from 'chalk'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
 import { normalizeCategory } from '../category'
-import { addItem } from '../add-item'
+import { addItem, addVariant } from '../add-item'
 import { extractPdfLines } from './pdf-lines'
 import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid'
 
 /** A row's raw text cells, keyed by the role each column was matched to. */
 export type NutritionRow = TableRow['cells']
+
+/** A base item + one of its selectable variants (spec 10). */
+export interface RowVariant {
+    /** Base item name, e.g. "Pepperoni". */
+    base: string
+    /** Selector heading, e.g. "Crust & size". */
+    groupLabel: string
+    /** This variant's option label, e.g. "Thin & Crispy (Per Whole)". */
+    option: string
+}
 
 /** A fully parsed item, passed to {@link PdfScraperConfig.accept}. */
 export interface ParsedNutritionItem {
@@ -32,6 +42,8 @@ export interface ParsedNutritionItem {
     title: string
     nutrition: NutritionData
     row: NutritionRow
+    /** Set when the config's `variant` mapped this row to a variant of a base item. */
+    variant?: RowVariant
 }
 
 export interface PdfScraperConfig {
@@ -78,6 +90,14 @@ export interface PdfScraperConfig {
      * per-whole), pull it from `category` — so variants don't collide.
      */
     buildKey: (row: NutritionRow, category: string) => string | null
+    /**
+     * Optional (spec 10): maps a row to a variant of a base item, so sizes/
+     * crusts become one item with a selector instead of separate rows. Return
+     * `null` to fall back to {@link buildKey} (a plain item). When it returns a
+     * {@link RowVariant}, the row is stored via `addVariant` and `buildKey` is
+     * not consulted for it.
+     */
+    variant?: (row: NutritionRow, category: string) => RowVariant | null
     /**
      * Maps a table's raw section title to a display category. Defaults to the
      * title as-is (still run through {@link normalizeCategory}); override when
@@ -143,7 +163,15 @@ export abstract class PdfNutritionScraper extends SourceScraper {
                 } else if (built === 'rejected') {
                     rejected++
                 } else {
-                    const outcome = addItem(items, built.key, built.nutrition)
+                    const outcome = built.variant
+                        ? addVariant(
+                            items,
+                            built.variant.base,
+                            built.variant.groupLabel,
+                            built.variant.option,
+                            built.nutrition
+                        )
+                        : addItem(items, built.key, built.nutrition)
                     if (outcome.kind === 'duplicate') duplicates++
                     else if (outcome.kind === 'renamed') renamed++
                 }
@@ -176,7 +204,12 @@ export abstract class PdfNutritionScraper extends SourceScraper {
         title: string,
         row: NutritionRow
     ): ParsedNutritionItem | 'invalid' | 'rejected' {
-        const key = this.config.buildKey(row, title)?.trim()
+        // A variant maps to a base + option (stored via addVariant); otherwise
+        // fall back to a plain key. Either way something must identify the row.
+        const variant = this.config.variant?.(row, title) ?? undefined
+        const key = variant
+            ? `${variant.base} (${variant.option})`
+            : this.config.buildKey(row, title)?.trim()
         if (!key) return 'invalid'
 
         const calories = parseNumber(row.calories)
@@ -197,7 +230,7 @@ export abstract class PdfNutritionScraper extends SourceScraper {
             category: normalizeCategory(rawCategory)
         }
 
-        const item: ParsedNutritionItem = { key, title, nutrition, row }
+        const item: ParsedNutritionItem = { key, title, nutrition, row, variant }
         if (this.config.accept && !this.config.accept(item)) return 'rejected'
         return item
     }

@@ -132,13 +132,31 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
         }
     }
 
-    // Finalise each variant item's inline (representative) macros to its median.
     for (const item of variantItemByBase.values()) {
-        const def = medianVariant(item.variants!)
-        item.calories = def.calories
-        item.protein = def.protein
-        item.fat = def.fat
-        item.carbs = def.carbs
+        if (item.variants!.length === 1) {
+            // A "group" of one isn't a choice — collapse it back to a plain
+            // item, folding the lone option into the name so its detail isn't
+            // lost: "GF Cheese & Tomato (Small)". An option that already
+            // carries its own parentheses (e.g. "Classic (Per Slice, Large)")
+            // is em-dash-joined instead, to avoid nesting "(Classic (…))".
+            const only = item.variants![0]
+            item.name = only.label.includes('(')
+                ? `${item.name} — ${only.label}`
+                : `${item.name} (${only.label})`
+            item.calories = only.calories
+            item.protein = only.protein
+            item.fat = only.fat
+            item.carbs = only.carbs
+            delete item.variants
+            delete item.variantLabel
+        } else {
+            // Inline (representative) macros = the median-calorie default.
+            const def = medianVariant(item.variants!)
+            item.calories = def.calories
+            item.protein = def.protein
+            item.fat = def.fat
+            item.carbs = def.carbs
+        }
     }
 
     return out
