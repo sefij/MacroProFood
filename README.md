@@ -41,6 +41,26 @@ yarn install
 yarn playwright install chromium
 ```
 
+The CLI above is the whole project on its own. Two optional pieces build on it:
+
+- **Web app** ([`web/`](web/)) — a React UI for the same optimizer, deployed to
+  Cloudflare Pages. To run it locally:
+
+  ```bash
+  cd web
+  yarn install
+  yarn dev
+  ```
+
+  It reads pre-scraped nutrition data from `web/public/data/`, produced by
+  `yarn build:data` in the root project (see [Scripts](#scripts) below).
+
+- **MyFitnessPal Companion** ([`extension/`](extension/)) — a browser extension
+  that lets the web app read/write your MFP diary via your existing logged-in
+  session, no password needed. It's optional (the web app falls back to a
+  bookmarklet without it); see [`extension/README.md`](extension/README.md)
+  for what it does and how to load it unpacked.
+
 ## Configuration
 
 Copy the example environment file and adjust as needed:
@@ -174,10 +194,25 @@ Every restaurant is scraped live (and cached for 7 days):
 
 ## Scripts
 
-| Command      | Description                          |
-| ------------ | ------------------------------------ |
-| `yarn build` | Compile TypeScript to `dist/`.       |
-| `yarn start` | Build and run the CLI.               |
+Root project (CLI + scraper/build tooling):
+
+| Command                | Description                                          |
+| ----------------------- | ----------------------------------------------------- |
+| `yarn build`            | Compile TypeScript to `dist/`.                        |
+| `yarn start`            | Build and run the CLI.                                |
+| `yarn build:data`       | Build, then scrape every enabled restaurant and write `web/public/data/` for the web app (cached results reused where valid). |
+| `yarn build:data:fresh` | Same as `build:data`, bypassing the scraper cache.    |
+
+[`web/`](web/) (React app, run from inside that directory):
+
+| Command       | Description                                        |
+| -------------- | --------------------------------------------------- |
+| `yarn dev`     | Start the Vite dev server.                          |
+| `yarn build`   | Type-check and build for production.                |
+| `yarn preview` | Preview the production build locally.               |
+
+[`extension/`](extension/) has no build step — see
+[`extension/README.md`](extension/README.md) for how to load it unpacked.
 
 ## Disclaimer
 
