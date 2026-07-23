@@ -86,13 +86,6 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
 
     for (const [name, n] of Object.entries(data)) {
         if (n.variantOf) {
-            const variant: ItemVariant = {
-                label: n.variantOption ?? name,
-                calories: n.calories,
-                protein: n.protein,
-                fat: n.fat,
-                carbs: n.carbs
-            }
             let item = variantItemByBase.get(n.variantOf)
             if (!item) {
                 // First variant of this base seen — reserve the base's slot in
@@ -111,7 +104,22 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
                 variantItemByBase.set(n.variantOf, item)
                 out.push(item)
             }
-            item.variants!.push(variant)
+            // Disambiguate a repeated option label. Any collision here is a
+            // genuinely distinct entry (a source listing the same name+size
+            // twice with different macros — identical dups are already dropped
+            // upstream by addItem), so both are kept, the later ones suffixed,
+            // rather than shown as two indistinguishable options.
+            let label = n.variantOption ?? name
+            for (let i = 2; item.variants!.some((v) => v.label === label); i++) {
+                label = `${n.variantOption ?? name} (${i})`
+            }
+            item.variants!.push({
+                label,
+                calories: n.calories,
+                protein: n.protein,
+                fat: n.fat,
+                carbs: n.carbs
+            })
         } else {
             out.push({
                 name,
