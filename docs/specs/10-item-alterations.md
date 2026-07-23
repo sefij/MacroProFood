@@ -1,7 +1,10 @@
-# 10 — Item alterations (variant selection) 📝
+# 10 — Item alterations (variant selection) ✅
 
-> Status: **Planned** (design). Prerequisite for adding Pizza Hut (spec 11,
-> pending) without flooding the menu with ~11 rows per pizza.
+> Status: **Done**. Shipped as: data + optimizer plumbing (`96c246c`), variant
+> selector UI (`8a94be6`), Pizza Hut as first producer (`8c07d46`), and
+> retrofits of Nando's (`6182c5a`) and Domino's (`ba25162`). Wingstop (also a
+> candidate) stays shelved. The design below is what was built; two small
+> refinements landed during implementation — see "Shipped refinements".
 
 ## Goal
 
@@ -104,6 +107,22 @@ sees the same flat list, so there is zero risk to the (carefully tuned) search.
   otherwise unchanged (including the single-restaurant-meal rule from spec 07).
 - **`Results`** already renders flat `MenuItem`s → variant names show through
   with no change.
+
+## Shipped refinements (not in the original design)
+
+- **Single-option groups collapse.** A retrofit can leave a "group" with one
+  option (most Domino's Main Menu pizzas list a single crust). `toSnapshotItems`
+  folds those back to a plain item, merging the option into the name —
+  `(Small)` when plain, em-dash-joined when the option already has parens
+  (`Bacon Double Cheese — Classic (Per Slice, Large)`).
+- **Duplicate option labels disambiguated.** A source can list the same
+  name+size twice with different macros (Nando's Spicy Rice / Coleslaw). Both
+  are kept; the later option label is suffixed (`Regular (2)`) so the selector
+  never shows two indistinguishable options. (`addItem` already drops *identical*
+  dups upstream, so any collision here is genuinely distinct.)
+- **PDF pipeline variant hook.** `PdfNutritionScraper` gained an optional
+  `config.variant(row, category)` returning `{ base, groupLabel, option }`;
+  when set it routes through `addVariant`. Domino's uses it.
 
 ## Rollout (phased, each independently shippable)
 

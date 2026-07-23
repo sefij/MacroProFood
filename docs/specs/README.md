@@ -16,4 +16,4 @@ are noted at the top of each spec — 02 (categories) is the foundation for 03,
 | 07 | [Menu mode inside normal mode](07-menu-mode-in-normal-mode.md)    | Done    |
 | 08 | [TypeScript 5/7 evaluation](08-typescript-migration.md)           | Planned |
 | 09 | [Add Nando's as a restaurant](09-nandos-restaurant.md)             | Done    |
-| 10 | [Item alterations (variant selection)](10-item-alterations.md)     | Planned |
+| 10 | [Item alterations (variant selection)](10-item-alterations.md)     | Done    |
