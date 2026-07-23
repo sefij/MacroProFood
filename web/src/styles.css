@@ -664,9 +664,40 @@ footer.foot br { line-height: 2; }
     padding: 9px 0;
 }
 .menu-row + .menu-row { border-top: 1px solid var(--border); }
+.menu-row.has-variants { align-items: flex-start; }
 .menu-row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.menu-row-info .mi-name { font-size: 0.9rem; }
-.menu-row-macros { color: var(--muted); font-size: 0.76rem; }
+.menu-row-info .mi-name { font-size: 0.9rem; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.menu-row-macros { color: var(--muted); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.mi-range {
+    color: var(--muted); font-weight: 400; font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Variant (size) selector — spec 10 */
+.variant-picker { margin-top: 8px; }
+.variant-label {
+    display: block; font-size: 0.6rem; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted); margin-bottom: 5px;
+}
+.variant-seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.variant-seg-btn {
+    background: var(--surface-2); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 12px; font-size: 0.76rem; cursor: pointer;
+    font-family: inherit; font-variant-numeric: tabular-nums;
+}
+.variant-seg-btn.active { color: var(--text); border-color: var(--accent); background: #2a2114; }
+.variant-seg-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.variant-select {
+    width: 100%; max-width: 320px;
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 9px;
+    padding: 7px 30px 7px 11px; font-size: 0.82rem; cursor: pointer;
+    font-family: inherit; appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%2399a0ad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat; background-position: right 11px center;
+}
+.variant-select:focus { outline: none; border-color: var(--accent); }
 
 .btn-add {
     flex: none;

@@ -1,10 +1,21 @@
 import { useMemo, useState } from 'react'
-import type { MenuItem, RestaurantIndexEntry, SnapshotItem } from '../macro'
+import type { ItemVariant, MenuItem, RestaurantIndexEntry, SnapshotItem } from '../macro'
 import { round } from '../format'
 import { categoryIcon } from '../category'
 import { menuItemKey, type MenuState } from '../menu'
 
 const prettyName = (name: string) => name.replace(/_/g, ' ')
+
+/** The default-selected variant index: the median-calorie option (ties → lower). */
+function medianVariantIndex (variants: ItemVariant[]): number {
+    const order = variants
+        .map((v, i) => [v.calories, i] as const)
+        .sort((a, b) => a[0] - b[0])
+    return order[Math.floor((order.length - 1) / 2)][1]
+}
+
+const macroLine = (m: { calories: number; protein: number; fat: number; carbs: number }) =>
+    `${round(m.calories)} cal · ${round(m.protein, 1)}p · ${round(m.fat, 1)}f · ${round(m.carbs, 1)}c`
 
 interface MenuItemListProps {
     /** The restaurant's full item list to search/browse. */
@@ -56,53 +67,16 @@ export function MenuItemList ({ items, restaurantName, meal, onAdd, onRemove }: 
                         <span className="menu-group-count">{catItems.length}</span>
                     </summary>
                     <ul className="menu-list">
-                        {catItems.map((it) => {
-                            const item: MenuItem = {
-                                restaurant: restaurantName,
-                                name: it.name,
-                                calories: it.calories,
-                                protein: it.protein,
-                                fat: it.fat,
-                                carbs: it.carbs,
-                                category: it.category
-                            }
-                            const qty = meal.get(menuItemKey(item))?.qty ?? 0
-                            const icon = categoryIcon(it.category)
-                            return (
-                                <li className="menu-row" key={it.name}>
-                                    <div className="menu-row-info">
-                                        <span className="mi-name">
-                                            {prettyName(it.name)}
-                                            {icon && (
-                                                <span className="cat-badge" title={it.category}>
-                                                    {icon}
-                                                </span>
-                                            )}
-                                        </span>
-                                        <span className="menu-row-macros">
-                                            {round(it.calories)} cal · {round(it.protein, 1)}p ·{' '}
-                                            {round(it.fat, 1)}f · {round(it.carbs, 1)}c
-                                        </span>
-                                    </div>
-                                    {qty === 0 ? (
-                                        <button
-                                            type="button"
-                                            className="btn-add"
-                                            onClick={() => onAdd(item)}
-                                            aria-label={`Add ${prettyName(it.name)}`}
-                                        >
-                                            +
-                                        </button>
-                                    ) : (
-                                        <div className="stepper">
-                                            <button type="button" onClick={() => onRemove(item)}>−</button>
-                                            <span>{qty}</span>
-                                            <button type="button" onClick={() => onAdd(item)}>+</button>
-                                        </div>
-                                    )}
-                                </li>
-                            )
-                        })}
+                        {catItems.map((it) => (
+                            <MenuRow
+                                key={it.name}
+                                item={it}
+                                restaurantName={restaurantName}
+                                meal={meal}
+                                onAdd={onAdd}
+                                onRemove={onRemove}
+                            />
+                        ))}
                     </ul>
                 </details>
             ))}
@@ -111,6 +85,119 @@ export function MenuItemList ({ items, restaurantName, meal, onAdd, onRemove }: 
                 <p className="small muted">No items match "{search}".</p>
             )}
         </>
+    )
+}
+
+interface MenuRowProps {
+    item: SnapshotItem
+    restaurantName: string
+    meal: MenuState
+    onAdd: (item: MenuItem) => void
+    onRemove: (item: MenuItem) => void
+}
+
+/**
+ * One item row. A simple item shows its macros directly; a variant item
+ * (spec 10) adds a size selector — a segmented control for ≤4 options, a
+ * dropdown beyond that — with the median-calorie option selected by default,
+ * a calorie range on the name line, and a macro line reflecting the current
+ * choice. The `+`/stepper always acts on the *selected* variant, which is
+ * added to the meal as a flat `MenuItem` named `"<base> (<option>)"` (so each
+ * size is its own meal line and reads correctly in the tracked-meal panel).
+ */
+function MenuRow ({ item, restaurantName, meal, onAdd, onRemove }: MenuRowProps) {
+    const variants = item.variants
+    const [sel, setSel] = useState(() =>
+        variants ? medianVariantIndex(variants) : 0
+    )
+
+    const chosen = variants?.[sel]
+    const menuItem: MenuItem = {
+        restaurant: restaurantName,
+        name: chosen ? `${item.name} (${chosen.label})` : item.name,
+        calories: chosen ? chosen.calories : item.calories,
+        protein: chosen ? chosen.protein : item.protein,
+        fat: chosen ? chosen.fat : item.fat,
+        carbs: chosen ? chosen.carbs : item.carbs,
+        category: item.category
+    }
+
+    const qty = meal.get(menuItemKey(menuItem))?.qty ?? 0
+    const icon = categoryIcon(item.category)
+    const label = prettyName(item.name)
+
+    let range: string | null = null
+    if (variants && variants.length > 0) {
+        const cals = variants.map((v) => v.calories)
+        range = `${round(Math.min(...cals))}–${round(Math.max(...cals))} kcal`
+    }
+
+    return (
+        <li className={`menu-row${variants ? ' has-variants' : ''}`}>
+            <div className="menu-row-info">
+                <span className="mi-name">
+                    {label}
+                    {range && <span className="mi-range">{range}</span>}
+                    {icon && (
+                        <span className="cat-badge" title={item.category}>
+                            {icon}
+                        </span>
+                    )}
+                </span>
+                <span className="menu-row-macros">{macroLine(menuItem)}</span>
+
+                {variants && chosen && (
+                    <div className="variant-picker">
+                        <span className="variant-label">{item.variantLabel ?? 'Option'}</span>
+                        {variants.length <= 4 ? (
+                            <div className="variant-seg" role="group" aria-label={item.variantLabel ?? 'Option'}>
+                                {variants.map((v, i) => (
+                                    <button
+                                        key={v.label}
+                                        type="button"
+                                        className={`variant-seg-btn${i === sel ? ' active' : ''}`}
+                                        aria-pressed={i === sel}
+                                        onClick={() => setSel(i)}
+                                    >
+                                        {v.label}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <select
+                                className="variant-select"
+                                value={sel}
+                                aria-label={item.variantLabel ?? 'Option'}
+                                onChange={(e) => setSel(Number(e.target.value))}
+                            >
+                                {variants.map((v, i) => (
+                                    <option key={v.label} value={i}>
+                                        {v.label} — {round(v.calories)} kcal
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {qty === 0 ? (
+                <button
+                    type="button"
+                    className="btn-add"
+                    onClick={() => onAdd(menuItem)}
+                    aria-label={`Add ${prettyName(menuItem.name)}`}
+                >
+                    +
+                </button>
+            ) : (
+                <div className="stepper">
+                    <button type="button" onClick={() => onRemove(menuItem)}>−</button>
+                    <span>{qty}</span>
+                    <button type="button" onClick={() => onAdd(menuItem)}>+</button>
+                </div>
+            )}
+        </li>
     )
 }
 

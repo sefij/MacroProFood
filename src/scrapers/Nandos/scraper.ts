@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
-import { addItem } from '../add-item'
+import { addItem, addVariant } from '../add-item'
 
 /**
  * Live Nando's UK scraper.
@@ -175,8 +175,12 @@ export class NandosScraper extends SourceScraper {
                         console.log(chalk.yellow(`  ⚠ dropped "${name}" — implausible macros`))
                         continue
                     }
-                    const key = variant.suffix ? `${name} (${variant.suffix})` : name
-                    const outcome = addItem(items, key, built)
+                    // A sized item (Regular/Large, from a `choose-size-*`
+                    // modifier) becomes one item with a size selector (spec 10);
+                    // an unsized item stays a plain entry.
+                    const outcome = variant.suffix
+                        ? addVariant(items, name, 'Size', variant.suffix, built)
+                        : addItem(items, name, built)
                     if (outcome.kind === 'duplicate') duplicates++
                     else if (outcome.kind === 'renamed') renamed++
                 }

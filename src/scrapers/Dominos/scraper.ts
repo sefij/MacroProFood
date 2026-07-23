@@ -1,7 +1,8 @@
 import {
     PdfNutritionScraper,
     PdfScraperConfig,
-    NutritionRow
+    NutritionRow,
+    RowVariant
 } from '../pdf/pdf-nutrition-scraper'
 
 /**
@@ -49,6 +50,7 @@ const DOMINOS_CONFIG: PdfScraperConfig = {
         { role: 'name', match: /^[A-Za-z]/ }
     ],
     buildKey: buildDominosKey,
+    variant: dominosVariant,
     category: dominosCategory,
     // Guard against feed errors: a single macro can't out-energise the whole
     // item (protein/carbs ≈ 4 kcal/g, fat ≈ 9 kcal/g), with slack for rounding.
@@ -101,6 +103,35 @@ function pizzaServingBasis (category: string): string {
         .replace(/\s*[–-]\s*/g, ', ')
         .replace(/\s+/g, ' ')
         .trim()
+}
+
+/**
+ * Maps a pizza row to a variant of its base pizza (spec 10): base is the
+ * pizza name, the option is its crust and size/serving basis — the same
+ * distinguishing suffix {@link buildDominosKey} composes, minus the base.
+ * `"Pepperoni"` → option `"Thin & Crispy (Per Whole)"`, `"GF Cheese & Tomato"`
+ * → option `"Small"`. Rows with no crust and no size/serving (sides, wraps,
+ * dips, …) return `null` and fall back to {@link buildDominosKey} as plain
+ * items. Verified against a live pull: no pizza mixes Per Slice and Per Whole,
+ * so an item's options never mix serving bases.
+ */
+function dominosVariant (row: NutritionRow, category: string): RowVariant | null {
+    const name = clean(row.name)
+    if (!name) return null
+
+    const crust = clean(row.crust)
+    // Size, else the serving basis carried in the section title (Per Whole /
+    // Per Slice, Large / …). Kept unparenthesised here so the option reads
+    // cleanly whether or not a crust precedes it.
+    const sizeText = clean(row.size) || pizzaServingBasis(category)
+
+    let option: string
+    if (crust && sizeText) option = `${crust} (${sizeText})`
+    else if (crust) option = crust
+    else if (sizeText) option = sizeText
+    else return null
+
+    return { base: name, groupLabel: 'Crust & size', option }
 }
 
 /** Trims and collapses the internal whitespace left by multi-line merges. */

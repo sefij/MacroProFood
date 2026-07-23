@@ -60,14 +60,29 @@ export function toRestaurantsData (
         if (!snap || snap.items.length === 0) continue
         const items: RestaurantsData[string] = {}
         for (const it of snap.items) {
-            items[it.name] = {
-                calories: it.calories,
-                protein: it.protein,
-                fat: it.fat,
-                carbs: it.carbs,
-                ProteinTCalRatio: it.protein / it.calories || 1,
-                CarbToCalRatio: it.carbs / it.calories || 1,
-                category: it.category
+            // A variant item (spec 10) expands back into one flat optimizer
+            // entry per option, keyed "<base> (<option>)" — exactly what a
+            // pre-alterations scraper produced — so the optimizer stays
+            // variant-unaware. A simple item contributes a single entry.
+            const flat = it.variants
+                ? it.variants.map((v) => ({
+                    name: `${it.name} (${v.label})`,
+                    calories: v.calories,
+                    protein: v.protein,
+                    fat: v.fat,
+                    carbs: v.carbs
+                }))
+                : [it]
+            for (const f of flat) {
+                items[f.name] = {
+                    calories: f.calories,
+                    protein: f.protein,
+                    fat: f.fat,
+                    carbs: f.carbs,
+                    ProteinTCalRatio: f.protein / f.calories || 1,
+                    CarbToCalRatio: f.carbs / f.calories || 1,
+                    category: it.category
+                }
             }
         }
         out[snap.restaurant] = items

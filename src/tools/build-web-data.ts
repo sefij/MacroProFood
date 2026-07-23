@@ -21,6 +21,7 @@ import chalk from 'chalk'
 import { ScrapingOperator } from '../scrapers/scraping-oprerator'
 import {
     DataIndex,
+    ItemVariant,
     RestaurantData,
     RestaurantIndexEntry,
     RestaurantSnapshot,
@@ -54,22 +55,111 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'Itsu', key: 'ITSU', restaurant: 'itsu', icon: '🍱', source: 'live' },
     { scrapeKey: 'YoSushi', key: 'YOSUSHI', restaurant: 'YO! Sushi', icon: '🍣', source: 'live' },
     { scrapeKey: 'SlimChickens', key: 'SLIMCHICKENS', restaurant: 'Slim Chickens', icon: '🐓', source: 'live' },
-    { scrapeKey: 'BurgerKing', key: 'BURGERKING', restaurant: 'Burger King', icon: '👑', source: 'live' }
+    { scrapeKey: 'BurgerKing', key: 'BURGERKING', restaurant: 'Burger King', icon: '👑', source: 'live' },
+    { scrapeKey: 'PizzaHut', key: 'PIZZAHUT', restaurant: 'Pizza Hut', icon: '🛖', source: 'live' }
 ]
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'web', 'public', 'data')
 
-/** Converts the optimizer-shaped `RestaurantData` into a flat item list. */
+/** Picks a variant group's default option — the median-calorie one (ties → lower). */
+function medianVariant (variants: ItemVariant[]): ItemVariant {
+    const sorted = [...variants].sort((a, b) => a.calories - b.calories)
+    return sorted[Math.floor((sorted.length - 1) / 2)]
+}
+
+/**
+ * Converts the optimizer-shaped `RestaurantData` into the web snapshot's item
+ * list, regrouping any variant entries (spec 10) back into single variant
+ * items.
+ *
+ * Flat entries stamped with `variantOf` (emitted via `addVariant`) are
+ * collected under their base name into one {@link SnapshotItem} carrying a
+ * `variants` list. The item's inline macros hold the default (median-calorie)
+ * variant so flat consumers still show a sensible representative. Ordinary
+ * entries pass through unchanged, keeping their first-seen position.
+ */
 function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
     if (!data) return []
-    return Object.entries(data).map(([name, n]) => ({
-        name,
-        calories: n.calories,
-        protein: n.protein,
-        fat: n.fat,
-        carbs: n.carbs,
-        category: n.category
-    }))
+
+    const out: SnapshotItem[] = []
+    const variantItemByBase = new Map<string, SnapshotItem>()
+
+    for (const [name, n] of Object.entries(data)) {
+        if (n.variantOf) {
+            let item = variantItemByBase.get(n.variantOf)
+            if (!item) {
+                // First variant of this base seen — reserve the base's slot in
+                // reading order; inline macros are finalised after all variants
+                // are gathered (see below).
+                item = {
+                    name: n.variantOf,
+                    calories: 0,
+                    protein: 0,
+                    fat: 0,
+                    carbs: 0,
+                    category: n.category,
+                    variantLabel: n.variantGroupLabel,
+                    variants: []
+                }
+                variantItemByBase.set(n.variantOf, item)
+                out.push(item)
+            }
+            // Disambiguate a repeated option label. Any collision here is a
+            // genuinely distinct entry (a source listing the same name+size
+            // twice with different macros — identical dups are already dropped
+            // upstream by addItem), so both are kept, the later ones suffixed,
+            // rather than shown as two indistinguishable options.
+            let label = n.variantOption ?? name
+            for (let i = 2; item.variants!.some((v) => v.label === label); i++) {
+                label = `${n.variantOption ?? name} (${i})`
+            }
+            item.variants!.push({
+                label,
+                calories: n.calories,
+                protein: n.protein,
+                fat: n.fat,
+                carbs: n.carbs
+            })
+        } else {
+            out.push({
+                name,
+                calories: n.calories,
+                protein: n.protein,
+                fat: n.fat,
+                carbs: n.carbs,
+                category: n.category
+            })
+        }
+    }
+
+    for (const item of variantItemByBase.values()) {
+        if (item.variants!.length === 1) {
+            // A "group" of one isn't a choice — collapse it back to a plain
+            // item, folding the lone option into the name so its detail isn't
+            // lost: "GF Cheese & Tomato (Small)". An option that already
+            // carries its own parentheses (e.g. "Classic (Per Slice, Large)")
+            // is em-dash-joined instead, to avoid nesting "(Classic (…))".
+            const only = item.variants![0]
+            item.name = only.label.includes('(')
+                ? `${item.name} — ${only.label}`
+                : `${item.name} (${only.label})`
+            item.calories = only.calories
+            item.protein = only.protein
+            item.fat = only.fat
+            item.carbs = only.carbs
+            delete item.variants
+            delete item.variantLabel
+        } else {
+            // Inline (representative) macros = the median-calorie default.
+            const def = medianVariant(item.variants!)
+            item.calories = def.calories
+            item.protein = def.protein
+            item.fat = def.fat
+            item.carbs = def.carbs
+        }
+    }
+
+    return out
 }
 
 /** Resolves the ISO `updatedAt` for a restaurant given its freshly scraped items. */

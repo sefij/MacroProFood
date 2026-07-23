@@ -28,6 +28,73 @@ export interface PdfCell {
     str: string
 }
 
+/**
+ * A raw positioned text fragment, before any line clustering — the primitive
+ * {@link extractPdfLines} builds on. Unlike {@link PdfCell} it keeps the
+ * fragment's baseline `y`, its advance `width`, and whether it was rotated,
+ * which the line clusterer discards. Needed for layouts with rotated text
+ * (e.g. a table whose category/product labels are drawn vertically), where
+ * baseline clustering can't reconstruct the structure.
+ */
+export interface PdfItem {
+    /** 1-based page number. */
+    page: number
+    /** Left/anchor x (PDF user-space). */
+    x: number
+    /** Baseline y (PDF user-space, larger = higher on the page). */
+    y: number
+    /** Advance width of the run. For rotated text this is its *vertical* extent. */
+    width: number
+    /** Glyph height in points. */
+    height: number
+    /** True when the text is rotated off the horizontal (any non-zero shear/rotation). */
+    rotated: boolean
+    str: string
+}
+
+/**
+ * Loads a PDF and returns every non-empty text fragment as a flat
+ * {@link PdfItem} list (page ascending, then top→bottom, then left→right),
+ * preserving rotation and raw geometry. This is the lower-level sibling of
+ * {@link extractPdfLines}; use it when a document's structure is carried by
+ * rotated text that line clustering would mangle.
+ */
+export async function extractPdfItems (data: Uint8Array): Promise<PdfItem[]> {
+    const pdfjs = await importEsm('pdfjs-dist/legacy/build/pdf.mjs')
+    const doc = await pdfjs.getDocument({
+        data,
+        useSystemFonts: true,
+        isEvalSupported: false
+    }).promise
+
+    const items: PdfItem[] = []
+    try {
+        for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+            const page = await doc.getPage(pageNum)
+            const text = await page.getTextContent()
+            for (const item of text.items) {
+                if (!('str' in item) || item.str.trim() === '') continue
+                const t = item.transform
+                items.push({
+                    page: pageNum,
+                    x: t[4],
+                    y: t[5],
+                    width: item.width,
+                    height: Math.hypot(t[2], t[3]),
+                    // A horizontal run has t = [s, 0, 0, s, x, y]; any non-zero
+                    // t[1]/t[2] means the run is sheared/rotated off-axis.
+                    rotated: Math.abs(t[1]) > 0.01 || Math.abs(t[2]) > 0.01,
+                    str: item.str
+                })
+            }
+            page.cleanup()
+        }
+    } finally {
+        await doc.destroy()
+    }
+    return items
+}
+
 /** A run of text fragments sharing a baseline, ordered left→right. */
 export interface PdfLine {
     /** 1-based page number. */

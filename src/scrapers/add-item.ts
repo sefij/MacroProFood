@@ -84,3 +84,27 @@ export function addItem (
     console.log(chalk.yellow(`  ⚠ "${name}" collides — added as "${newKey}"`))
     return { kind: 'renamed', key: newKey }
 }
+
+/**
+ * Inserts one variant of a base item (spec 10) — e.g. `addVariant(items,
+ * "Margherita", "Size", "Large Pan", nutrition)`.
+ *
+ * The entry is stored flat, keyed `"<base> (<option>)"`, so the optimizer and
+ * every existing consumer treat it as an ordinary item (a picked variant reads
+ * "Margherita (Large Pan)" in results). The base/group/option names are also
+ * stamped onto the nutrition so `build-web-data` can regroup the flat entries
+ * into one variant {@link SnapshotItem} without parsing keys. Collision
+ * handling is inherited from {@link addItem} on the composed key.
+ */
+export function addVariant (
+    items: RestaurantData,
+    baseName: string,
+    groupLabel: string,
+    optionLabel: string,
+    nutrition: NutritionData
+): AddItemOutcome {
+    nutrition.variantOf = baseName
+    nutrition.variantGroupLabel = groupLabel
+    nutrition.variantOption = optionLabel
+    return addItem(items, `${baseName} (${optionLabel})`, nutrition)
+}
