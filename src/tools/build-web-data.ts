@@ -21,6 +21,7 @@ import chalk from 'chalk'
 import { ScrapingOperator } from '../scrapers/scraping-oprerator'
 import {
     DataIndex,
+    ItemVariant,
     RestaurantData,
     RestaurantIndexEntry,
     RestaurantSnapshot,
@@ -59,17 +60,79 @@ const REGISTRY: RestaurantMeta[] = [
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'web', 'public', 'data')
 
-/** Converts the optimizer-shaped `RestaurantData` into a flat item list. */
+/** Picks a variant group's default option — the median-calorie one (ties → lower). */
+function medianVariant (variants: ItemVariant[]): ItemVariant {
+    const sorted = [...variants].sort((a, b) => a.calories - b.calories)
+    return sorted[Math.floor((sorted.length - 1) / 2)]
+}
+
+/**
+ * Converts the optimizer-shaped `RestaurantData` into the web snapshot's item
+ * list, regrouping any variant entries (spec 10) back into single variant
+ * items.
+ *
+ * Flat entries stamped with `variantOf` (emitted via `addVariant`) are
+ * collected under their base name into one {@link SnapshotItem} carrying a
+ * `variants` list. The item's inline macros hold the default (median-calorie)
+ * variant so flat consumers still show a sensible representative. Ordinary
+ * entries pass through unchanged, keeping their first-seen position.
+ */
 function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
     if (!data) return []
-    return Object.entries(data).map(([name, n]) => ({
-        name,
-        calories: n.calories,
-        protein: n.protein,
-        fat: n.fat,
-        carbs: n.carbs,
-        category: n.category
-    }))
+
+    const out: SnapshotItem[] = []
+    const variantItemByBase = new Map<string, SnapshotItem>()
+
+    for (const [name, n] of Object.entries(data)) {
+        if (n.variantOf) {
+            const variant: ItemVariant = {
+                label: n.variantOption ?? name,
+                calories: n.calories,
+                protein: n.protein,
+                fat: n.fat,
+                carbs: n.carbs
+            }
+            let item = variantItemByBase.get(n.variantOf)
+            if (!item) {
+                // First variant of this base seen — reserve the base's slot in
+                // reading order; inline macros are finalised after all variants
+                // are gathered (see below).
+                item = {
+                    name: n.variantOf,
+                    calories: 0,
+                    protein: 0,
+                    fat: 0,
+                    carbs: 0,
+                    category: n.category,
+                    variantLabel: n.variantGroupLabel,
+                    variants: []
+                }
+                variantItemByBase.set(n.variantOf, item)
+                out.push(item)
+            }
+            item.variants!.push(variant)
+        } else {
+            out.push({
+                name,
+                calories: n.calories,
+                protein: n.protein,
+                fat: n.fat,
+                carbs: n.carbs,
+                category: n.category
+            })
+        }
+    }
+
+    // Finalise each variant item's inline (representative) macros to its median.
+    for (const item of variantItemByBase.values()) {
+        const def = medianVariant(item.variants!)
+        item.calories = def.calories
+        item.protein = def.protein
+        item.fat = def.fat
+        item.carbs = def.carbs
+    }
+
+    return out
 }
 
 /** Resolves the ISO `updatedAt` for a restaurant given its freshly scraped items. */

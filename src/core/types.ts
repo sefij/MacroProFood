@@ -16,6 +16,19 @@ export interface NutritionData {
     CarbToCalRatio: number
     /** Menu section the item was scraped under, e.g. "Burgers", "Desserts". Omitted when the source offers none. */
     category?: string
+    /**
+     * Variant grouping metadata (see spec 10). Set only for entries emitted via
+     * `addVariant` — a variant carries its base name here so `build-web-data`
+     * can regroup the flat entries into one variant {@link SnapshotItem} without
+     * parsing names. The optimizer ignores these fields entirely: a variant is
+     * still a plain flat entry keyed `"<base> (<option>)"`, exactly like any
+     * other item.
+     */
+    variantOf?: string
+    /** The variant group's selector heading, e.g. "Size". */
+    variantGroupLabel?: string
+    /** This variant's option label, e.g. "Large Pan". */
+    variantOption?: string
 }
 
 export interface MenuItem {
@@ -36,12 +49,19 @@ export interface RestaurantsData {
     [restaurantName: string]: RestaurantData | undefined
 }
 
+/** Macro-only view of {@link NutritionData} — the four macros, none of the per-item metadata. */
+type MacroTotals = Omit<
+    NutritionData,
+    'ProteinTCalRatio' | 'CarbToCalRatio' | 'category' | 'variantOf' | 'variantGroupLabel' | 'variantOption'
+>
+
 export interface OptimizationResult {
     items: MenuItem[]
-    // A combo's total/accuracy have no single category, so 'category' is
-    // dropped along with the ratio fields rather than inherited as optional.
-    totalNutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio' | 'category'>
-    accuracy: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio' | 'category'>
+    // A combo's total/accuracy have no single category (nor per-item variant
+    // metadata), so those are dropped along with the ratio fields rather than
+    // inherited as optional.
+    totalNutrition: MacroTotals
+    accuracy: MacroTotals
 }
 
 export interface OptimizationResults {
@@ -60,7 +80,25 @@ export interface TargetMacros {
 // React app under web/). One file per restaurant + an index.json summary.
 // ---------------------------------------------------------------------------
 
-/** A single menu item as stored in the web snapshot files. */
+/** One selectable variant of a menu item (a size/crust/count), with its own absolute macros. */
+export interface ItemVariant {
+    /** Option label shown in the selector, e.g. "Large Pan", "Regular", "6 wings". */
+    label: string
+    calories: number
+    protein: number
+    fat: number
+    carbs: number
+}
+
+/**
+ * A single menu item as stored in the web snapshot files.
+ *
+ * Simple items carry their macros inline (the common case, unchanged). A
+ * *variant item* (spec 10) additionally carries a {@link variants} list — the
+ * inline macros then hold the default/representative variant (the
+ * median-calorie one), so consumers that read the flat macros still show a
+ * sensible value, while variant-aware UI reads {@link variants}.
+ */
 export interface SnapshotItem {
     name: string
     calories: number
@@ -68,6 +106,10 @@ export interface SnapshotItem {
     fat: number
     carbs: number
     category?: string
+    /** Present on a variant item: the selectable options. Absent on simple items. */
+    variants?: ItemVariant[]
+    /** The variant selector's heading, e.g. "Size". Present iff {@link variants} is. */
+    variantLabel?: string
 }
 
 /** How a restaurant's data is sourced. */
