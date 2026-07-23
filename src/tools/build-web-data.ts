@@ -55,7 +55,8 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'Itsu', key: 'ITSU', restaurant: 'itsu', icon: '🍱', source: 'live' },
     { scrapeKey: 'YoSushi', key: 'YOSUSHI', restaurant: 'YO! Sushi', icon: '🍣', source: 'live' },
     { scrapeKey: 'SlimChickens', key: 'SLIMCHICKENS', restaurant: 'Slim Chickens', icon: '🐓', source: 'live' },
-    { scrapeKey: 'BurgerKing', key: 'BURGERKING', restaurant: 'Burger King', icon: '👑', source: 'live' }
+    { scrapeKey: 'BurgerKing', key: 'BURGERKING', restaurant: 'Burger King', icon: '👑', source: 'live' },
+    { scrapeKey: 'PizzaHut', key: 'PIZZAHUT', restaurant: 'Pizza Hut', icon: '🛖', source: 'live' }
 ]
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'web', 'public', 'data')

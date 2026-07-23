@@ -10,8 +10,8 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 ## Features
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
-  Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi, Slim Chickens and
-  Burger King (UK menus).
+  Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi, Slim Chickens,
+  Burger King and Pizza Hut (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -84,6 +84,7 @@ cp .env.example .env
 | `DISABLE_YOSUSHI`   | Set to `true` to skip the YO! Sushi scraper.              |
 | `DISABLE_SLIMCHICKENS` | Set to `true` to skip the Slim Chickens scraper.      |
 | `DISABLE_BURGERKING`| Set to `true` to skip the Burger King scraper.            |
+| `DISABLE_PIZZAHUT`  | Set to `true` to skip the Pizza Hut scraper.              |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -163,6 +164,7 @@ Every restaurant is scraped live (and cached for 7 days):
 | YO! Sushi    | Live scrape of menus.tenkites.com               |
 | Slim Chickens| Live scrape of menus.tenkites.com               |
 | Burger King  | Public Sanity CMS dataset (GROQ query)          |
+| Pizza Hut    | Published allergen/nutrition PDF                |
 
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
@@ -191,6 +193,14 @@ Every restaurant is scraped live (and cached for 7 days):
   tenkites as a per-branch picker rather than one flat page; this scraper
   resolves the first "standard menu" branch from that picker and scrapes it
   as representative of the UK menu, rather than every branch individually.
+- **Pizza Hut** is the first restaurant to use **item alterations** — each
+  pizza is one item with a size selector rather than ~11 separate rows.
+  Sourced from Pizza Hut's published allergen/nutrition PDF, using the
+  **whole-product** macros (you order a whole pizza, not a serving). Scope is
+  **Pizzas, Sides and Chicken** — Melts, Flatzz, Dips, Desserts and Drinks are
+  omitted (they extract unreliably from the PDF's layout, and Drinks are
+  excluded by default anyway). A couple of items near the Sides/Chicken/Dips
+  section seams may land in an adjacent category.
 
 ## Scripts
 
