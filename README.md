@@ -11,7 +11,7 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
   Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi, Slim Chickens,
-  Burger King and Pizza Hut (UK menus).
+  Burger King, Pizza Hut and Chipotle (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -85,6 +85,7 @@ cp .env.example .env
 | `DISABLE_SLIMCHICKENS` | Set to `true` to skip the Slim Chickens scraper.      |
 | `DISABLE_BURGERKING`| Set to `true` to skip the Burger King scraper.            |
 | `DISABLE_PIZZAHUT`  | Set to `true` to skip the Pizza Hut scraper.              |
+| `DISABLE_CHIPOTLE`  | Set to `true` to skip the Chipotle scraper.               |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -165,6 +166,7 @@ Every restaurant is scraped live (and cached for 7 days):
 | Slim Chickens| Live scrape of menus.tenkites.com               |
 | Burger King  | Public Sanity CMS dataset (GROQ query)          |
 | Pizza Hut    | Published allergen/nutrition PDF                |
+| Chipotle     | Deliveroo dish list + published ingredient PDF (composed) |
 
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
@@ -201,6 +203,41 @@ Every restaurant is scraped live (and cached for 7 days):
   omitted (they extract unreliably from the PDF's layout, and Drinks are
   excluded by default anyway). A couple of items near the Sides/Chicken/Dips
   section seams may land in an adjacent category.
+- **Chipotle** is the first restaurant with **no published per-dish menu at
+  all** — being build-your-own, Chipotle only publishes a per-*ingredient*
+  nutrition PDF. Its items are **composed**: named, orderable dishes come from
+  **Deliveroo's own menu listing** (chipotle-islington), and each dish's
+  macros are the sum of its ingredients' live PDF values, per a **hand-curated
+  recipe table** (not automated text-matching — see
+  [`docs/specs/11-composed-menu-items.md`](docs/specs/11-composed-menu-items.md)).
+  This means a Chipotle item's macros are only as accurate as (a) Deliveroo's
+  description matching what's actually in the dish, and (b) the recipe having
+  been kept in sync with Chipotle's real recipe — unlike every other
+  restaurant here, no single published source states these dishes' macros
+  directly. Only dishes with a fixed, reconcilable composition are included;
+  kids' items, a few "High Protein" dishes whose stated protein doesn't
+  reconcile against their own listed ingredients, and canned/bottled drinks
+  (no PDF data for them) are left out.
+- **Chipotle's build-your-own formats** (Bowl, Burrito, Salad, Tacos,
+  Quesadilla) are separately composable in **Menu Mode**: a step-by-step
+  picker (Protein → Rice → Beans → Toppings, …) built from Deliveroo's own
+  live ordering-flow data (not hand-guessed), cross-referenced against the
+  same ingredient PDF — see
+  [`docs/specs/12-chipotle-build-your-own.md`](docs/specs/12-chipotle-build-your-own.md).
+  The full picker (every option, unbounded toppings) is Menu Mode only, but
+  a bounded expansion over just the *required* choices (protein, rice,
+  beans, …) also feeds the **automatic optimizer** in the web app —
+  ~150 candidate rows across the 5 formats, comparable in size to a normal
+  restaurant's menu, **ranked by whichever macro your target leans on
+  most** (protein/fat/carbs) rather than a fixed heuristic — a high-carb
+  target and a high-protein target get a different, better-matched slice of
+  candidates for the same dish. This doesn't reach the CLI (Menu Mode itself
+  never has either); only the web app expands build-your-own trees. The
+  optimizer core also gained a hard search-time budget after this expansion
+  briefly hung the automatic search for hard targets — see spec 12's "A
+  hang, its cause, and the fix" for the full story (it turned out to
+  protect several other restaurants from the same latent issue, not just
+  Chipotle).
 
 ## Scripts
 

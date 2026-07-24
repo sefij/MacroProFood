@@ -4,6 +4,7 @@ import { buildClipboardToken, trackMealBookmarklet } from '../bookmarklets'
 import { round } from '../format'
 import { categoryIcon } from '../category'
 import { MenuItemList } from './MenuBuilder'
+import { BuildYourOwnEditor, parseBuildRowLabels } from './BuildYourOwn'
 import { MacroStatusGrid } from './MacroStatusGrid'
 import { menuItemKey, type MenuState } from '../menu'
 
@@ -30,6 +31,24 @@ function defaultMeal (): string {
 }
 
 const prettyName = (name: string) => name.replace(/_/g, ' ')
+
+/**
+ * A tracked meal line is editable as a build-your-own item (spec 12) iff its
+ * name matches some `SnapshotItem` in the restaurant's menu that carries
+ * `build` — true whether the line came from a manual Menu Mode pick or the
+ * automatic optimizer (which only ever chose from a capped/target-ranked
+ * subset of the real options — editing re-opens the *full* live tree).
+ */
+function findBuildableSource (
+    item: MenuItem,
+    menuItems: SnapshotItem[]
+): { snapshotItem: SnapshotItem; labels: string[] } | null {
+    for (const candidate of menuItems) {
+        const labels = parseBuildRowLabels(candidate, item.name)
+        if (labels) return { snapshotItem: candidate, labels }
+    }
+    return null
+}
 
 function sumNutrition (items: MenuItem[]): Nutrition {
     return items.reduce(
@@ -126,11 +145,13 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
     const [meal, setMeal] = useState<string>(defaultMeal)
     const [rows, setRows] = useState<Row[]>([])
     const [suggestions, setSuggestions] = useState<MenuItem[] | null>(null)
+    const [editingIndex, setEditingIndex] = useState<number | null>(null)
     const ref = useRef<HTMLElement>(null)
 
     // Reset the editable rows whenever a different combo is picked.
     useEffect(() => {
         setRows(combo.items.map((item) => ({ item, on: true, added: false })))
+        setEditingIndex(null)
         setSuggestions(null)
         setError(null)
     }, [combo])
@@ -178,6 +199,15 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
     const addSuggestion = (item: MenuItem) => {
         setRows((prev) => [...prev, { item, on: true, added: true }])
         setSuggestions((prev) => prev?.filter((s) => s.name !== item.name) ?? null)
+    }
+
+    // A build-your-own row (spec 12) edited in place — including one the
+    // automatic optimizer picked, which only ever chose from a capped,
+    // target-ranked slice of the real options (`buildable-combos.ts`).
+    // Editing re-opens the full live tree, same as building a fresh one.
+    const saveEdit = (index: number, newItem: MenuItem) => {
+        setRows((prev) => prev.map((r, i) => (i === index ? { ...r, item: newItem } : r)))
+        setEditingIndex(null)
     }
 
     // "+ Add from menu" (spec 07) reuses `MenuItemList` — the same
@@ -233,6 +263,8 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
             <ul className="meal-items">
                 {rows.map((r, i) => {
                     const icon = categoryIcon(r.item.category)
+                    const buildable = r.on ? findBuildableSource(r.item, menuItems) : null
+                    const isEditing = editingIndex === i
                     return (
                         <li key={`${r.item.name}-${i}`} className={`meal-item${r.on ? '' : ' off'}`}>
                             <label>
@@ -244,6 +276,24 @@ export function TrackPanel ({ combo, targets, onClose, extAvailable, onSend, sug
                                 </span>
                                 <span className="mi-cal">{round(r.item.calories)} cal</span>
                             </label>
+                            {buildable && !isEditing && (
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost small mi-edit"
+                                    onClick={() => setEditingIndex(i)}
+                                >
+                                    Edit
+                                </button>
+                            )}
+                            {isEditing && buildable && (
+                                <BuildYourOwnEditor
+                                    item={buildable.snapshotItem}
+                                    restaurantName={r.item.restaurant}
+                                    currentName={r.item.name}
+                                    onSave={(newItem) => saveEdit(i, newItem)}
+                                    onCancel={() => setEditingIndex(null)}
+                                />
+                            )}
                         </li>
                     )
                 })}

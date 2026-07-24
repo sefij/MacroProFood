@@ -3,6 +3,7 @@ import type { ItemVariant, MenuItem, RestaurantIndexEntry, SnapshotItem } from '
 import { round } from '../format'
 import { categoryIcon } from '../category'
 import { menuItemKey, type MenuState } from '../menu'
+import { BuildYourOwnRow } from './BuildYourOwn'
 
 const prettyName = (name: string) => name.replace(/_/g, ' ')
 
@@ -67,16 +68,25 @@ export function MenuItemList ({ items, restaurantName, meal, onAdd, onRemove }: 
                         <span className="menu-group-count">{catItems.length}</span>
                     </summary>
                     <ul className="menu-list">
-                        {catItems.map((it) => (
-                            <MenuRow
-                                key={it.name}
-                                item={it}
-                                restaurantName={restaurantName}
-                                meal={meal}
-                                onAdd={onAdd}
-                                onRemove={onRemove}
-                            />
-                        ))}
+                        {catItems.map((it) =>
+                            it.build ? (
+                                <BuildYourOwnRow
+                                    key={it.name}
+                                    item={it}
+                                    restaurantName={restaurantName}
+                                    onAdd={onAdd}
+                                />
+                            ) : (
+                                <MenuRow
+                                    key={it.name}
+                                    item={it}
+                                    restaurantName={restaurantName}
+                                    meal={meal}
+                                    onAdd={onAdd}
+                                    onRemove={onRemove}
+                                />
+                            )
+                        )}
                     </ul>
                 </details>
             ))}

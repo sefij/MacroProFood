@@ -91,13 +91,44 @@ export interface ItemVariant {
 }
 
 /**
+ * One choice within a {@link BuildGroup} (spec 12) — e.g. "Chicken", "White
+ * Rice", "No Beans". `next` holds the group(s) *this specific choice* unlocks,
+ * which can genuinely differ between sibling choices in the same group (a
+ * Sofritas taco offers a Rice/Beans step that a Chicken taco doesn't) — so the
+ * build tree is conditional on the path taken, not a fixed list per item.
+ */
+export interface BuildChoice {
+    label: string
+    calories: number
+    protein: number
+    fat: number
+    carbs: number
+    /** Groups this choice unlocks. Absent/empty for a leaf choice. */
+    next?: BuildGroup[]
+}
+
+/** One step of a build-your-own item's ordering flow (spec 12), e.g. "Protein or Veggie", "Add Your Toppings". */
+export interface BuildGroup {
+    label: string
+    /** 'one' = exactly one choice (a real "None" option covers skippability where Chipotle offers it); 'many' = 0..N; 'exactly' = pick precisely {@link count}. */
+    selection: 'one' | 'many' | 'exactly'
+    /** Required iff `selection === 'exactly'`. */
+    count?: number
+    choices: BuildChoice[]
+}
+
+/**
  * A single menu item as stored in the web snapshot files.
  *
  * Simple items carry their macros inline (the common case, unchanged). A
  * *variant item* (spec 10) additionally carries a {@link variants} list — the
  * inline macros then hold the default/representative variant (the
  * median-calorie one), so consumers that read the flat macros still show a
- * sensible value, while variant-aware UI reads {@link variants}.
+ * sensible value, while variant-aware UI reads {@link variants}. A *build
+ * item* (spec 12 — Chipotle's build-your-own formats) instead carries
+ * {@link build}, the root of its choice tree; there's no single "default"
+ * combination to represent inline, so its macros are `0` until composed.
+ * An item carries at most one of `variants` or `build`, never both.
  */
 export interface SnapshotItem {
     name: string
@@ -110,6 +141,8 @@ export interface SnapshotItem {
     variants?: ItemVariant[]
     /** The variant selector's heading, e.g. "Size". Present iff {@link variants} is. */
     variantLabel?: string
+    /** Present on a build-your-own item (spec 12): the root of its choice tree. */
+    build?: BuildGroup
 }
 
 /** How a restaurant's data is sourced. */

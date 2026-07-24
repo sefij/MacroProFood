@@ -468,14 +468,24 @@ header.hero p {
     overflow: hidden;
 }
 .meal-item + .meal-item { border-top: 1px solid var(--border); }
-.meal-item label {
+.meal-item { display: flex; align-items: center; flex-wrap: wrap; }
+/* Direct-child combinator, deliberately — a descendant selector here would
+   also match every nested <label> inside an open BuildYourOwnEditor's choice
+   tree (`.build-choice` is a <label> too), collapsing each choice pill's
+   width toward zero via the inherited `flex: 1` / `min-width: 0`. */
+.meal-item > label {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
     cursor: pointer;
     font-size: 0.9rem;
+    flex: 1;
+    min-width: 0;
 }
+.mi-edit { flex: none; margin-right: 12px; }
+.build-editor { flex-basis: 100%; margin: 0 0 12px; }
+.build-editor-actions { display: flex; align-items: center; gap: 10px; }
 .meal-item input[type="checkbox"] {
     width: 17px;
     height: 17px;
@@ -698,6 +708,45 @@ footer.foot br { line-height: 2; }
     background-repeat: no-repeat; background-position: right 11px center;
 }
 .variant-select:focus { outline: none; border-color: var(--accent); }
+
+/* Build-your-own picker (spec 12) */
+.build-row { align-items: flex-start; }
+.build-tree {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+.build-step + .build-step, .build-step-nested + .build-step-nested { margin-top: 10px; }
+.build-step-nested { padding-left: 14px; border-left: 2px solid var(--border); }
+.build-step-label {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin-bottom: 6px;
+}
+.build-step-hint { color: var(--accent-2); text-transform: none; letter-spacing: normal; }
+.build-step-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.build-choice {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 12px; font-size: 0.78rem; cursor: pointer;
+}
+.build-choice input { accent-color: var(--accent); margin: 0; }
+.build-choice.selected { color: var(--text); border-color: var(--accent); background: #2a2114; }
+.build-choice.disabled { opacity: 0.5; cursor: not-allowed; }
+.build-choice-kcal { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.7rem; }
+.btn-build-add {
+    align-self: flex-start;
+    background: var(--accent); color: #1a1206;
+    border: 0; border-radius: 999px;
+    padding: 8px 16px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.btn-build-add:disabled { background: var(--surface); color: var(--muted); cursor: not-allowed; }
 
 .btn-add {
     flex: none;

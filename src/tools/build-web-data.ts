@@ -19,7 +19,11 @@ import * as path from 'path'
 import chalk from 'chalk'
 
 import { ScrapingOperator } from '../scrapers/scraping-oprerator'
+import { withCache } from '../cache'
+import { fetchIngredients } from '../scrapers/Chipotle/ingredients'
+import { fetchBuildableFormats } from '../scrapers/Chipotle/buildable'
 import {
+    BuildGroup,
     DataIndex,
     ItemVariant,
     RestaurantData,
@@ -56,7 +60,8 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'YoSushi', key: 'YOSUSHI', restaurant: 'YO! Sushi', icon: '🍣', source: 'live' },
     { scrapeKey: 'SlimChickens', key: 'SLIMCHICKENS', restaurant: 'Slim Chickens', icon: '🐓', source: 'live' },
     { scrapeKey: 'BurgerKing', key: 'BURGERKING', restaurant: 'Burger King', icon: '👑', source: 'live' },
-    { scrapeKey: 'PizzaHut', key: 'PIZZAHUT', restaurant: 'Pizza Hut', icon: '🛖', source: 'live' }
+    { scrapeKey: 'PizzaHut', key: 'PIZZAHUT', restaurant: 'Pizza Hut', icon: '🛖', source: 'live' },
+    { scrapeKey: 'Chipotle', key: 'CHIPOTLE', restaurant: 'Chipotle', icon: '🌯', source: 'live' }
 ]
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'web', 'public', 'data')
@@ -162,6 +167,43 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
     return out
 }
 
+/**
+ * Fetches Chipotle's build-your-own choice trees (spec 12) and wraps each
+ * format as a synthetic {@link SnapshotItem} — `recipes.ts`'s 23 fixed dishes
+ * cover the popular pre-composed orders; these cover "anything you could
+ * actually build at the counter." Cached separately from the main scrape
+ * (`chipotle-buildable`) since it's an independent live fetch (ingredient PDF
+ * + Deliveroo's modifier tree), not part of `RestaurantData`. Inline macros
+ * are `0` — there's no single default combination to represent, only a tree
+ * of choices (see `core/types.ts`'s `SnapshotItem.build` docs).
+ */
+async function chipotleBuildableItems (bypassCache: boolean): Promise<SnapshotItem[]> {
+    let formats: Record<string, BuildGroup>
+    try {
+        formats = await withCache(
+            'chipotle-buildable',
+            async () => {
+                const ingredients = await fetchIngredients()
+                return fetchBuildableFormats(ingredients)
+            },
+            { bypass: bypassCache }
+        )
+    } catch (error) {
+        console.error(chalk.red(`Error building Chipotle build-your-own items: ${error}`))
+        return []
+    }
+
+    return Object.entries(formats).map(([format, build]) => ({
+        name: `${format} (Build Your Own)`,
+        calories: 0,
+        protein: 0,
+        fat: 0,
+        carbs: 0,
+        category: format,
+        build
+    }))
+}
+
 /** Resolves the ISO `updatedAt` for a restaurant given its freshly scraped items. */
 function resolveUpdatedAt (
     meta: RestaurantMeta,
@@ -210,6 +252,9 @@ async function main (): Promise<void> {
 
     for (const meta of REGISTRY) {
         const items = toSnapshotItems(scraped[meta.scrapeKey])
+        if (meta.key === 'CHIPOTLE') {
+            items.push(...(await chipotleBuildableItems(bypassCache)))
+        }
         if (items.length === 0) {
             console.log(chalk.yellow(`  ⚠️  ${meta.restaurant}: no items scraped`))
         }

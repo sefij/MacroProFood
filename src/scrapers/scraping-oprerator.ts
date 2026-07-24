@@ -12,6 +12,7 @@ import { YoSushiScraper } from './YoSushi/scraper'
 import { SlimChickensScraper } from './SlimChickens/scraper'
 import { BurgerKingScraper } from './BurgerKing/scraper'
 import { PizzaHutScraper } from './PizzaHut/scraper'
+import { ChipotleScraper } from './Chipotle/scraper'
 import { RestaurantData, RestaurantsData, SourceScraper } from '../types'
 import { withCache } from '../cache'
 import { RestaurantKey, isScraperDisabled } from '../config'
@@ -125,6 +126,11 @@ export class ScrapingOperator {
             this.cached('pizzahut', () => this.runScraper(new PizzaHutScraper())))
     }
 
+    async scrapeChipotle (): Promise<RestaurantData> {
+        return this.scrapeIfEnabled('CHIPOTLE', 'Chipotle', () =>
+            this.cached('chipotle', () => this.runScraper(new ChipotleScraper())))
+    }
+
     async scrapeAll (): Promise<RestaurantsData> {
         const startTime = performance.now()
 
@@ -144,7 +150,8 @@ export class ScrapingOperator {
             yoSushiResults,
             slimChickensResults,
             burgerKingResults,
-            pizzaHutResults
+            pizzaHutResults,
+            chipotleResults
         ] = await Promise.all([
             this.scrapePopeyes(),
             this.scrapeKFC(),
@@ -159,7 +166,8 @@ export class ScrapingOperator {
             this.scrapeYoSushi(),
             this.scrapeSlimChickens(),
             this.scrapeBurgerKing(),
-            this.scrapePizzaHut()
+            this.scrapePizzaHut(),
+            this.scrapeChipotle()
         ])
 
         this.restaurants.Popeyes = popeyesResults
@@ -176,6 +184,7 @@ export class ScrapingOperator {
         this.restaurants.SlimChickens = slimChickensResults
         this.restaurants.BurgerKing = burgerKingResults
         this.restaurants.PizzaHut = pizzaHutResults
+        this.restaurants.Chipotle = chipotleResults
 
         // Save data to files for debugging and caching
         for (const [restaurant, data] of Object.entries(this.restaurants)) {
@@ -244,6 +253,8 @@ export class ScrapingOperator {
             case 'pizzahut':
             case 'pizza hut':
                 return this.scrapePizzaHut()
+            case 'chipotle':
+                return this.scrapeChipotle()
             default:
                 console.log(chalk.red(`\n❌ Unknown restaurant: ${restaurant}`))
                 return
