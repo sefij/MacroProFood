@@ -172,6 +172,12 @@ Every restaurant is scraped live (and cached for 7 days):
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
   rather than Taco Bell directly, because that's what powers their UK online
   menu. As a result its macros **may differ from official / in-store values**.
+  It's also an **item alterations** producer (spec 10) — a piece-count or
+  meal-size baked into the source's own item name (`"Chicken Bites (3)"`,
+  `"…Meal with Fries (Large)"`) becomes one item with a selector instead of a
+  separate row per size, while other real choices in the name (protein,
+  combo contents) stay part of the item so they're never folded into that
+  selector.
 - **Subway** figures are per 6-inch serving (double them for a footlong); the
   PDF also covers individual ingredients (breads, proteins, sauces, veg), which
   are scraped as their own items.
