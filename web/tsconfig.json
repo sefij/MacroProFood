@@ -14,5 +14,6 @@
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true
   },
-  "include": ["src", "../src/core"]
+  "include": ["src", "../src/core"],
+  "exclude": ["../src/core/**/*.test.ts"]
 }

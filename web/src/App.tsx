@@ -190,7 +190,7 @@ export function App() {
 
     const compute = () => {
         if (!data) return
-        const restaurantsData = toRestaurantsData(data.snapshots, activeKeys, categoryFilters)
+        const restaurantsData = toRestaurantsData(data.snapshots, activeKeys, macros, categoryFilters)
         setResults(findBestCombinations(restaurantsData, macros, 5, 3))
         setPicked(null)
         setTracked(null)
@@ -239,7 +239,10 @@ export function App() {
             (r) => r.restaurant === picked.restaurant
         )?.key
         if (!key) return []
-        const restData = toRestaurantsData(data.snapshots, [key], categoryFilters)
+        // `macros` (the overall meal target), not `widened` below — that's
+        // computed from `remaining` right after this and only pads the
+        // *search* target, not which macro dominates the user's original ask.
+        const restData = toRestaurantsData(data.snapshots, [key], macros, categoryFilters)
         // Inflate the gap so suggestions get headroom past the freed-up macros.
         const pad = (rem: number, target: number) =>
             Math.max(rem * SWAP_OVERAGE, target * SWAP_MIN_HEADROOM)
@@ -461,7 +464,10 @@ export function App() {
             <footer className="foot">
                 Nutrition data is community-captured and may be out of date —
                 always double-check against the restaurant. Macros and
-                credentials never leave your browser.
+                credentials never leave your browser. Chipotle items are
+                composed from a delivery-app dish list plus Chipotle's own
+                ingredient nutrition data, not read from a single published
+                per-dish source — treat those macros as an estimate.
                 <br />
                 <span className="foot-links">
                     <a href="/privacy.html">Privacy Policy</a>

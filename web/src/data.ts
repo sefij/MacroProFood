@@ -6,12 +6,14 @@
 import type {
     DataIndex,
     RestaurantSnapshot,
-    RestaurantsData
+    RestaurantsData,
+    TargetMacros
 } from './macro'
 import {
     filterCategoriesByRestaurant,
     type RestaurantCategoryFilter
 } from '../../src/core/category-filter'
+import { dominantMacro, expandBuildableCombos } from '../../src/core/buildable-combos'
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
 
@@ -47,13 +49,19 @@ export async function loadData (): Promise<LoadedData> {
  * display name (which the optimizer surfaces back in results). `categoryFilters`
  * (keyed by that same display name — see {@link RestaurantCategoryFilter})
  * is applied here so both the main compute path and swap suggestions share
- * the same per-restaurant filtering.
+ * the same per-restaurant filtering. `targets` drives which macro a
+ * build-your-own item's candidate expansion is capped/ranked around (spec
+ * 12's `dominantMacro` — whichever of protein/fat/carbs this request leans
+ * on most); this runs fresh per call, so the expansion is always matched to
+ * the request actually being made, not a fixed default.
  */
 export function toRestaurantsData (
     snapshots: Record<string, RestaurantSnapshot>,
     selectedKeys: string[],
+    targets: TargetMacros,
     categoryFilters: Record<string, RestaurantCategoryFilter> = {}
 ): RestaurantsData {
+    const macro = dominantMacro(targets)
     const out: RestaurantsData = {}
     for (const key of selectedKeys) {
         const snap = snapshots[key]
@@ -63,7 +71,11 @@ export function toRestaurantsData (
             // A variant item (spec 10) expands back into one flat optimizer
             // entry per option, keyed "<base> (<option>)" — exactly what a
             // pre-alterations scraper produced — so the optimizer stays
-            // variant-unaware. A simple item contributes a single entry.
+            // variant-unaware. A build-your-own item (spec 12) expands the
+            // same way, into one entry per required-choices-only combination
+            // (`expandBuildableCombos` — Toppings and other optional groups
+            // excluded; see that module for why). A simple item contributes
+            // a single entry.
             const flat = it.variants
                 ? it.variants.map((v) => ({
                     name: `${it.name} (${v.label})`,
@@ -72,7 +84,15 @@ export function toRestaurantsData (
                     fat: v.fat,
                     carbs: v.carbs
                 }))
-                : [it]
+                : it.build
+                    ? expandBuildableCombos(it.build, macro).map((combo) => ({
+                        name: `${it.name} — ${combo.labels.join(', ')}`,
+                        calories: combo.macros.calories,
+                        protein: combo.macros.protein,
+                        fat: combo.macros.fat,
+                        carbs: combo.macros.carbs
+                    }))
+                    : [it]
             for (const f of flat) {
                 items[f.name] = {
                     calories: f.calories,

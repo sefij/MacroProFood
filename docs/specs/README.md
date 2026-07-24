@@ -17,3 +17,5 @@ are noted at the top of each spec — 02 (categories) is the foundation for 03,
 | 08 | [TypeScript 5/7 evaluation](08-typescript-migration.md)           | Planned |
 | 09 | [Add Nando's as a restaurant](09-nandos-restaurant.md)             | Done    |
 | 10 | [Item alterations (variant selection)](10-item-alterations.md)     | Done    |
+| 11 | [Composed menu items: add Chipotle](11-composed-menu-items.md)     | Done    |
+| 12 | [Chipotle build-your-own order builder](12-chipotle-build-your-own.md) | Done    |
