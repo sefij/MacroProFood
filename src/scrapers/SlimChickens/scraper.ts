@@ -3,7 +3,7 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
-import { addItem } from '../add-item'
+import { addItem, addVariant } from '../add-item'
 import { parseNumber } from '../parse-number'
 
 /**
@@ -31,6 +31,31 @@ import { parseNumber } from '../parse-number'
  * platform quietly does this for every client, so it's worth checking first
  * on any future Ten Kites-hosted restaurant before falling back to the
  * table-scraping approach.
+ *
+ * **Item alterations (spec 10).** Same shape of problem as Taco Bell — no
+ * dedicated size/count source field, but the source's own item names already
+ * encode a piece-count as a **leading** number (`"6 Crispy Wings"`, `"8
+ * Crispy Wings"`, `"10 Crispy Wings"`, unlike Taco Bell's trailing `"(N)"`).
+ * Items are buffered and grouped by the name with that leading count
+ * stripped ({@link parseVariant}); a base name only becomes a variant
+ * selector once 2+ distinct counts actually exist for it, so a name that
+ * happens to start with a digit but has no sibling (e.g. a one-off combo
+ * like `"3 Tender & 3 Crispy Wing"`) stays a plain item under its full,
+ * untouched name. A genuinely different product that happens to share a
+ * stripped base with an unrelated group never collides here in practice —
+ * checked against a live pull — but if one ever did, `addVariant`/`addItem`'s
+ * existing collision handling (same macros = duplicate dropped, different
+ * macros = requalified) still applies underneath, same as everywhere else.
+ *
+ * **Known upstream data quirk — "8 Boneless Bites Meal"**: the source's own
+ * published nutrition briefly makes this option look worse-value than the
+ * 6-piece one (33g protein / 71g carbs at 8pc vs. 40g / 79g at 6pc, with
+ * 10pc back up at 65g / 113g — non-monotonic, unlike every other
+ * count-variant group here, which scale cleanly). Verified directly against
+ * the raw JSON-LD (not a parsing bug on this end — `nutrition.proteinContent`
+ * for "8 Boneless Bites Meal" literally reads `"33 grams"`). Left as scraped
+ * — faithfully reporting whatever the source publishes, even when it looks
+ * internally inconsistent, rather than guessing a "corrected" figure.
  */
 
 const SITE_PICKER_URL = 'https://menus.tenkites.com/brg/slimchickensall'
@@ -105,6 +130,24 @@ function clean (value: string | undefined): string {
     return (value ?? '').replace(/\s+/g, ' ').trim()
 }
 
+interface ParsedVariant {
+    base: string
+    option: string
+}
+
+/**
+ * Recognizes a leading piece-count as a variant signal — e.g. `"6 Crispy
+ * Wings"` → base `"Crispy Wings"`, option `"6 pc"`. A name with no leading
+ * number (or one that turns out to have no sibling sharing its stripped
+ * base) returns `null`/stays a plain item — see module docblock.
+ */
+function parseVariant (name: string): ParsedVariant | null {
+    const match = name.match(/^(\d+)\s+(.+)$/)
+    if (!match) return null
+    const [, count, base] = match
+    return { base: base.trim(), option: `${count} pc` }
+}
+
 function buildNutrition (nutrition: SchemaNutritionInfo | undefined, category: string | undefined): NutritionData | 'implausible' | null {
     if (!nutrition) return null
     const calories = parseNumber(nutrition.calories)
@@ -147,6 +190,11 @@ export class SlimChickensScraper extends SourceScraper {
         let duplicates = 0
         let renamed = 0
 
+        // Buffer first — a name only becomes a variant selector once every
+        // row is in hand and its base name's distinct-option count is known
+        // (see module docblock / parseVariant).
+        const rows: Array<{ name: string, nutrition: NutritionData, variant: ParsedVariant | null }> = []
+
         for (const flat of flatItems) {
             const name = clean(flat.name)
             if (!name) {
@@ -164,9 +212,30 @@ export class SlimChickensScraper extends SourceScraper {
                 console.log(chalk.yellow(`  ⚠ dropped "${name}" — implausible macros`))
                 continue
             }
-            const outcome = addItem(items, name, built)
-            if (outcome.kind === 'duplicate') duplicates++
-            else if (outcome.kind === 'renamed') renamed++
+            rows.push({ name, nutrition: built, variant: parseVariant(name) })
+        }
+
+        const groups = new Map<string, typeof rows>()
+        for (const row of rows) {
+            const key = row.variant ? `variant::${row.variant.base}` : `plain::${row.name}`
+            const list = groups.get(key) ?? []
+            list.push(row)
+            groups.set(key, list)
+        }
+
+        for (const group of groups.values()) {
+            const useVariant =
+                group.length > 1 &&
+                group[0].variant !== null &&
+                new Set(group.map((r) => r.variant!.option)).size > 1
+
+            for (const row of group) {
+                const outcome = useVariant
+                    ? addVariant(items, row.variant!.base, 'Count', row.variant!.option, row.nutrition)
+                    : addItem(items, row.name, row.nutrition)
+                if (outcome.kind === 'duplicate') duplicates++
+                else if (outcome.kind === 'renamed') renamed++
+            }
         }
 
         console.log(chalk.green(`✓ Found ${Object.keys(items).length} Slim Chickens items (live)`))

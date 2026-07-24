@@ -2,15 +2,16 @@
 
 > Status: **Done**. Shipped as: data + optimizer plumbing (`96c246c`), variant
 > selector UI (`8a94be6`), Pizza Hut as first producer (`8c07d46`), and
-> retrofits of Nando's (`6182c5a`), Domino's (`ba25162`) and Taco Bell. Taco
-> Bell's retrofit is the first without a dedicated size/crust source column —
-> the size/count is parsed out of the raw item name itself (`"Chicken Bites
-> (3)"`, `"…Meal with Fries (Large)"`); rows are buffered and grouped by
-> parsed base name, only becoming a variant selector when 2+ distinct options
-> actually exist, so a lone match with no sibling stays a plain item under
-> its full original name. Wingstop (also a candidate) stays shelved. The
-> design below is what was built; two small refinements landed during
-> implementation — see "Shipped refinements".
+> retrofits of Nando's (`6182c5a`), Domino's (`ba25162`), Taco Bell and Slim
+> Chickens. Taco Bell's and Slim Chickens' retrofits are the first without a
+> dedicated size/crust source column — the size/count is parsed out of the
+> raw item name itself (Taco Bell: a trailing `"(N)"`/`"(Large)"`; Slim
+> Chickens: a **leading** count, `"6 Crispy Wings"`/`"8 Crispy Wings"`); rows
+> are buffered and grouped by parsed base name, only becoming a variant
+> selector when 2+ distinct options actually exist, so a lone match with no
+> sibling stays a plain item under its full original name. Wingstop (also a
+> candidate) stays shelved. The design below is what was built; two small
+> refinements landed during implementation — see "Shipped refinements".
 
 ## Goal
 
