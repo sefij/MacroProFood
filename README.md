@@ -201,6 +201,10 @@ Every restaurant is scraped live (and cached for 7 days):
   tenkites as a per-branch picker rather than one flat page; this scraper
   resolves the first "standard menu" branch from that picker and scrapes it
   as representative of the UK menu, rather than every branch individually.
+  It's also an **item alterations** producer (spec 10) — a piece-count
+  baked into the source's own item name as a **leading** number
+  (`"6 Crispy Wings"`, `"8 Crispy Wings"`, `"10 Crispy Wings"`) becomes one
+  item with a selector instead of a separate row per count.
 - **Pizza Hut** is the first restaurant to use **item alterations** — each
   pizza is one item with a size selector rather than ~11 separate rows.
   Sourced from Pizza Hut's published allergen/nutrition PDF, using the
