@@ -67,6 +67,24 @@ export function findBestCombinations (
     return results
 }
 
+/**
+ * Hard wall-clock ceiling on one restaurant's search (checked periodically,
+ * not per-node, to keep the check itself cheap). This is a safety net, not a
+ * tuning knob: a well-pruned search over a normal-sized, differentiated menu
+ * finishes in milliseconds and never comes close to it. It exists because the
+ * admissible-bound prune below assumes candidates are reasonably
+ * differentiated — a large set of near-identical candidates (e.g. many
+ * systematically-generated combinations of the same few ingredients) can
+ * defeat it, since almost every partial combo scores close enough to the
+ * running best to stay unpruned. Without this, that shows up as the whole
+ * search — and the tab's CPU — hanging indefinitely rather than returning a
+ * merely non-exhaustive answer. See spec 12's "Automatic-mode integration"
+ * section for the case that surfaced this (Chipotle's build-your-own combos).
+ */
+const SEARCH_TIME_BUDGET_MS = 1500
+/** How many recursive calls between budget checks — cheap enough not to matter, frequent enough to cut off quickly once exceeded. */
+const BUDGET_CHECK_INTERVAL = 4096
+
 /** Average of the four per-macro accuracy deltas (lower is better). */
 export function avgAccuracyOf (combo: OptimizationResult): number {
     return (
@@ -208,9 +226,21 @@ function optimizeRestaurant (
     const combo: MenuItem[] = []
     const cur = { calories: 0, protein: 0, fat: 0, carbs: 0 }
 
+    // Search-budget bookkeeping (see SEARCH_TIME_BUDGET_MS docs above).
+    const searchStartedAt = Date.now()
+    let nodesVisited = 0
+    let budgetExceeded = false
+
     // Unbounded knapsack: items may repeat, but `startIndex` prevents
     // revisiting the same multiset via different orderings.
     function search (startIndex: number) {
+        if (budgetExceeded) return
+        nodesVisited++
+        if (nodesVisited % BUDGET_CHECK_INTERVAL === 0 && Date.now() - searchStartedAt > SEARCH_TIME_BUDGET_MS) {
+            budgetExceeded = true
+            return
+        }
+
         if (exceeds(cur, targets)) return
 
         recordCombo(score(cur, targets))
