@@ -48,56 +48,56 @@ numbers have to be recovered by rendering pages and reading the pixels.
 
 ## Reading the tables reliably
 
-OCR alone is not trustworthy on this document. Tesseract systematically drops a
-leading digit (`1133` → `133`, `11.7` → `1.7`), which would silently corrupt
-macros — the worst possible failure for nutrition data, since nothing downstream
-would notice. Raw per-cell accuracy tops out around 93%.
+Three OCR approaches were tried and rejected before this. Tesseract
+systematically drops a leading digit (`1133` → `133`, `11.7` → `1.7`) — raw
+per-cell accuracy topped out around 93%, and a column-detection bug (measuring
+a vertical rule's coverage against full page height instead of the table's own
+row band) undercounted pizzas at 11, then 16, out of ~30. PaddleOCR/PP-Structure
+was spiked next — it crashed natively on both Windows and WSL2 until a specific
+paddle/paddleocr/numpy version combination was found, and even working it only
+reached 60% with a worse failure mode (merged rows) than Tesseract. Neither was
+trustworthy enough to ship nutrition data from.
 
-What makes it safe is that each row must satisfy two independent equations:
+`tools/papajohns/extract.mjs` instead renders each page to a PNG and sends it
+to Claude (`claude-opus-5`) with a JSON-schema-constrained structured output
+(`client.messages.parse()`), asking for every product and every size/crust row
+exactly as printed. This was validated against a hand-transcribed ground truth
+for page 7 (100% exact match on every column the scraper uses) before scaling
+to the full document, then spot-checked on a title-OCR-failure page and a
+two-products-per-page layout.
+
+Vision extraction is far more accurate than OCR, but still not treated as
+ground truth on its own — every row must satisfy two independent equations the
+source table itself asserts:
 
     energy   per100g_kcal × totalWeight / 100  ==  totalKcal      (±2%)
     Atwater  4×protein + 4×carbs + 9×fat       ==  per100g_kcal   (±12%)
 
-The Atwater identity was checked against 11 hand-transcribed rows and held
-within 0.7–4.3%, so it's a real constraint. A row is accepted only when both
-equations hold. When they don't, the extractor retries the specific edits that
-match the known fault (restore a dropped leading digit) and accepts a repair
-**only if both equations then hold**; otherwise the row is dropped rather than
-guessed. A wrong leading digit can't survive that, because it shifts the value
-tenfold while the energy check is tight to 2%.
+When a row fails, the extractor tries the same repair OCR needed (restore a
+dropped leading digit) across every numeric field, but **only accepts a repair
+when exactly one candidate across all fields clears both equations**. The first
+version of this accepted the first candidate that passed either check — on a
+real row (page 8, American Hot) that silently "fixed" protein from 9.5 to 29.5g
+(a wild outlier against every sibling row, 8.4–15.7g) when the actual misread
+was fat (1.4 → 11.4g), and separately, two different protein values (29.5 and
+39.5) both independently satisfied the check alone. Satisfying an equation is
+not proof of correctness when more than one edit satisfies it — only a unique
+candidate is safe to auto-accept; everything else is dropped and listed under
+`rejected` rather than guessed.
 
-Note that `TOTAL PRODUCT WEIGHT` is printed in the per-slice block, so the total
-weight does not need deriving from slice counts — that route is available as a
-third cross-check instead.
+## Coverage today
 
-## Coverage today — pizzas only
+`nutrition.json` holds **60 products / 260 variants** across Pizzas, Vegan
+Pizzas, Papadias, Sides, Vegan Sides, Desserts, and Recently Delisted (excluded
+from the scraper's output — see below). All 58 item pages (7-64) are accounted
+for: extracted, self-skipped by the model as a non-table page (CYO ingredient
+pages, allergen keys, dividers, the table of contents — 11 pages), or rejected
+(3 rows, listed under `rejected` with their raw extracted values).
 
-`nutrition.json` holds **16 pizza products / 162 variants**, all from layout-A
-pages (one product per page, sizes and crusts down the rows).
-
-That is still short of what the PDF contains — pizzas run to roughly page 34 and
-these come from pages 7-27, so **pages 12, 13, 15, 19, 21 and 28-34 are still
-being missed**. Each is recorded under `skipped` or `rejected` with its reason.
-The count went 11 -> 16 when column detection was scoped to the table's row band
-instead of the page height; the remaining gaps are a mix of title-OCR failures
-and pages whose grid still isn't recognised.
-
-What's missing, and why — every case is recorded in the file rather than silently
-dropped:
-
-| Gap | Count | Reason |
-| --- | --- | --- |
-| Layout-B pages | ~30 pages | Two products per page with stacked per-100g / per-portion tables (sides, vegan sides, desserts, drinks). No vertical rule spans enough of the page height, so grid detection finds no columns. **Not yet implemented** — the data is there for the taking. |
-| Title OCR failures | pages 12, 15, 19 | Title OCR returns an empty string even though the band contains the heading. Numbers extract fine, so add the heading to `TITLE_OVERRIDES` in the extractor and re-run to recover these. |
-| Rejected rows | 21 rows | Failed the energy and/or Atwater check and could not be repaired. Listed under `rejected` in the JSON with their raw OCR values. |
-| CYO ingredients | several pages | Out of scope by decision. |
-
-The title-OCR fault is the one loose end worth understanding: the band
-demonstrably contains the heading (cropping page 11's band shows "CHICKEN CLUB"
-plainly), but no page-segmentation mode or rescaling tried recovers it. Headline
-type renders ~250px tall at scale 10, well above Tesseract's usable range, and
-scaling down did not help either. Until that's solved, `TITLE_OVERRIDES` is the
-escape hatch, and any page still unnamed is skipped rather than shipped.
+"Recently Delisted" is the source PDF's own category for discontinued products
+kept in for allergen/nutrition compliance — its own page banner says so. They
+extract cleanly but `scraper.ts` drops them: they can't actually be ordered, so
+surfacing them would let the optimizer recommend something off the real menu.
 
 ## Known data quirk
 

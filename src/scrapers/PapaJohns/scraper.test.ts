@@ -72,26 +72,45 @@ test('committed extract: no product is left unnamed', () => {
     assert.deepEqual(unnamed.map((i) => i.name), [], 'products with failed title OCR')
 })
 
+// The extract's `items` array order isn't page order (the extractor's worker
+// pool writes in request-completion order) and, since single-variant products
+// now go through addItem instead of addVariant, items[0] isn't guaranteed to
+// have the addVariant shape either. Pick examples of each shape explicitly.
+const notDelisted = (i: { category: string }) => !/recently delisted/i.test(i.category)
+
 test('scrape(): emits one variant entry per size/crust, grouped under the product', async () => {
     const items = await new PapaJohnsScraper().scrape()
     const keys = Object.keys(items)
     assert.ok(keys.length > 0, 'expected some items')
 
-    const first = extract.items[0]
-    const expectedKey = `${first.name} (${first.variants[0].label})`
+    const multiVariant = extract.items.find((i) => i.variants.length > 1 && notDelisted(i))
+    assert.ok(multiVariant, 'expected at least one multi-variant product in the extract')
+    const expectedKey = `${multiVariant.name} (${multiVariant.variants[0].label})`
     assert.ok(items[expectedKey], `expected key ${expectedKey}`)
 
     const entry = items[expectedKey]
-    assert.equal(entry.variantOf, first.name)
+    assert.equal(entry.variantOf, multiVariant.name)
     assert.equal(entry.variantGroupLabel, 'Size & Crust')
-    assert.equal(entry.variantOption, first.variants[0].label)
+    assert.equal(entry.variantOption, multiVariant.variants[0].label)
+})
+
+test('scrape(): a single-variant product is added as itself, not a one-option variant group', async () => {
+    const items = await new PapaJohnsScraper().scrape()
+
+    const singleVariant = extract.items.find((i) => i.variants.length === 1 && notDelisted(i))
+    assert.ok(singleVariant, 'expected at least one single-variant product in the extract')
+    const entry = items[singleVariant.name]
+    assert.ok(entry, `expected key ${singleVariant.name}`)
+    assert.equal(entry.variantOf, undefined)
+    assert.equal(entry.variantGroupLabel, undefined)
 })
 
 test('scrape(): carries calories and macros through unchanged', async () => {
     const items = await new PapaJohnsScraper().scrape()
-    const first = extract.items[0]
-    const v = first.variants[0]
-    const entry = items[`${first.name} (${v.label})`]
+    const multiVariant = extract.items.find((i) => i.variants.length > 1 && notDelisted(i))
+    assert.ok(multiVariant)
+    const v = multiVariant.variants[0]
+    const entry = items[`${multiVariant.name} (${v.label})`]
     assert.equal(entry.calories, v.calories)
     assert.equal(entry.protein, v.protein)
     assert.equal(entry.fat, v.fat)

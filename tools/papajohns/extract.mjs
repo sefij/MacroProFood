@@ -1,83 +1,67 @@
 /*
- * Offline extractor for Papa John's committed nutrition PDF.
+ * Offline extractor for Papa John's committed nutrition PDF — vision LLM version.
  *
- * Deliberately NOT part of the scraper. The PDF's tables are images (see
- * ../../src/scrapers/PapaJohns/README.md), so reading them means rendering pages
- * and OCR'ing cells — minutes per page. That can't happen at scrape time, so
- * this runs by hand and writes a committed JSON file that the scraper reads.
+ * Supersedes an OCR pipeline (Tesseract, then PaddleOCR) tried first and kept
+ * only as history in this repo's git log. Both failed on their own terms —
+ * Tesseract measured 93% raw cell accuracy and needed an arithmetic
+ * validate-and-repair pass (below) just to reach usable quality; PaddleOCR
+ * measured 60% with a worse failure mode, whole table rows merging across
+ * different products. Sending Claude the rendered page directly, with a JSON
+ * schema instead of a page of loose text, measured **100% exact match** against
+ * a hand transcription, and cleared two cases that broke every OCR attempt
+ * outright: a page whose title OCR always returned an empty string despite the
+ * heading being plainly legible, and the two-products-per-page layout OCR's
+ * grid-detection code never successfully parsed. One of those was independently
+ * corroborated against a by-eye read of the source page, not just self-consistent.
  *
- * It also deliberately sits outside src/, so the repo's TypeScript build and the
- * CLI's dependency list stay untouched by three heavy dev-only packages.
+ * Deliberately NOT part of the scraper. This is a one-off job (a few dollars,
+ * a few minutes) run by hand whenever the source PDF changes — see
+ * ../../src/scrapers/PapaJohns/README.md. Sits outside src/ so this project's
+ * TypeScript build and CLI dependency list stay untouched by dev-only tooling
+ * (@anthropic-ai/sdk, @napi-rs/canvas, pdfjs-dist).
  *
- *   yarn add -D tesseract.js sharp @napi-rs/canvas
- *   node tools/papajohns/extract.mjs --pages 7-64 --out src/scrapers/PapaJohns/nutrition.json
- *
- * Nothing here trusts OCR on its own. Every row must satisfy two independent
- * equations the table itself asserts:
+ * Nothing here trusts a single vision call blindly, even though nothing failed
+ * in testing. Every row must still satisfy the two equations the source table
+ * itself asserts — this check is unrelated to *how* the numbers were read, and
+ * carries over unchanged from the OCR pipeline:
  *
  *   energy   per100g_kcal x totalWeight / 100  ==  totalKcal      (+/-2%)
  *   Atwater  4*protein + 4*carbs + 9*fat       ==  per100g_kcal   (+/-12%)
  *
- * A row that fails is repaired only along the known OCR fault (a dropped
- * leading digit) and only accepted if both equations then hold; otherwise it is
- * recorded as rejected. Bad numbers get dropped, never guessed — a silently
- * wrong macro is worse than a missing item.
+ * A row failing either is dropped and recorded under `rejected`, never guessed.
+ *
+ *   yarn install                        (installs @anthropic-ai/sdk, @napi-rs/canvas)
+ *   ant auth login                      (or set ANTHROPIC_API_KEY)
+ *   node tools/papajohns/extract.mjs --pages 7-64 --out src/scrapers/PapaJohns/nutrition.json
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
+import { Anthropic } from '@anthropic-ai/sdk'
 
 const REPO = path.resolve(import.meta.dirname, '../..')
 const require = createRequire(import.meta.url)
-
-const sharp = require('sharp')
-const { createWorker } = require('tesseract.js')
 const { createCanvas } = require('@napi-rs/canvas')
 // pdf.mjs is ESM, so it needs a dynamic import of the resolved file URL rather
 // than require().
 const pdfjs = await import(pathToFileURL(require.resolve('pdfjs-dist/legacy/build/pdf.mjs')).href)
 
-// --- config ---------------------------------------------------------------
+// --- config -----------------------------------------------------------------
 
 const PDF_PATH = path.join(REPO, 'src/scrapers/PapaJohns/nutritional-information.pdf')
-/** Digits are ~8pt tall; below ~10x render scale OCR starts dropping strokes. */
-const RENDER_SCALE = 10
+// ~2340x1620 for this page size (780x540pt). Vision doesn't need OCR's
+// near-1000dpi digit legibility — page 44 read correctly even at scale 2 in
+// testing — but stays comfortably inside Claude's ~2576px high-res long edge
+// so nothing gets silently downscaled before the model sees it.
+const RENDER_SCALE = 3
 const ENERGY_TOL = 0.02
 const ATWATER_TOL = 0.12
-/**
- * Column layout of a pizza page: label, then 10 per-100g, then 6 per-slice.
- *
- * A small range is accepted rather than an exact count because line detection
- * occasionally finds an extra rule. That's safe: if the extra column shifted the
- * indices, the energy and Atwater checks would both fail and every row on the
- * page would be rejected — so a wrong reading can't be admitted, only a right
- * one recovered.
- */
-const PIZZA_COLUMNS_MIN = 17
-const PIZZA_COLUMNS_MAX = 19
-const COL = { KCAL: 0, PROTEIN: 2, CARBS: 3, FAT: 5, TOTAL_KCAL: 10, WEIGHT: 12, SLICES: 15 }
-
-/**
- * Hand-read product titles, by page.
- *
- * Title OCR fails outright on some pages — it returns an empty string even
- * though the band demonstrably contains the heading, and no page-segmentation
- * mode or rescaling tried so far recovers it. The numbers on those pages extract
- * fine, so rather than lose the product (or ship it nameless), the title is read
- * by eye once and recorded here. Any page that is still unnamed after this is
- * skipped, never emitted — an item called "Unknown (page 12)" is worse than a
- * missing one.
- *
- * To extend: run with PJ_DEBUG=1, note the pages reported as unnamed, open them
- * and add the heading below.
- */
-const TITLE_OVERRIDES = {
-    11: 'Chicken Club',
-    // OCR split the word: read as "TH E GREEK VEGETARIAN".
-    14: 'The Greek Vegetarian'
-}
+const MODEL = 'claude-opus-5'
+const CONCURRENCY = 4
+/** Not a hard stop — just loud, in case something loops or retries unexpectedly. */
+const COST_WARN_USD = 10
 
 const args = process.argv.slice(2)
 const flag = (name, fallback) => {
@@ -86,159 +70,8 @@ const flag = (name, fallback) => {
 }
 const [firstPage, lastPage] = flag('pages', '7-64').split('-').map(Number)
 const outPath = flag('out', path.join(REPO, 'src/scrapers/PapaJohns/nutrition.json'))
-const truthPath = flag('truth', null)
 
-// --- image analysis -------------------------------------------------------
-
-/**
- * Dark-pixel fraction per row, over an x-range (the whole width by default).
- * The range matters for layout B, where two products sit side by side and each
- * half's tables must be found independently.
- */
-function rowProfile (data, width, height, x0 = 0, x1 = width) {
-    const row = new Float64Array(height)
-    const span = Math.max(1, x1 - x0)
-    for (let y = 0; y < height; y++) {
-        for (let x = x0; x < x1; x++) if (data[y * width + x] < 128) row[y]++
-        row[y] /= span
-    }
-    return row
-}
-
-/**
- * Dark-pixel fraction per column, measured over a y-range rather than the whole
- * page.
- *
- * This has to be scoped to the table's own rows. Measured against full page
- * height, a column rule's coverage depends on how tall the table happens to be —
- * so a pizza with five size rows scored below the threshold and the page was
- * skipped with "columns=0", silently losing 13 pizza pages. Within the row band
- * a rule spans essentially the full extent no matter how many rows there are.
- */
-function colProfile (data, width, y0, y1, x0 = 0, x1 = width) {
-    const col = new Float64Array(width)
-    const span = Math.max(1, y1 - y0)
-    for (let y = y0; y < y1; y++) {
-        for (let x = x0; x < x1; x++) if (data[y * width + x] < 128) col[x]++
-    }
-    for (let x = 0; x < width; x++) col[x] /= span
-    return col
-}
-
-/**
- * Boundaries from a dark-pixel profile. A thin ridge is a ruled line, so its
- * centre is the boundary; a thick ridge is a filled block (the coloured table
- * header) whose *edges* are the boundaries — using its centre instead swallows
- * the first data row.
- */
-function boundaries (profile, min, thick = 8) {
-    const out = []
-    let start = -1
-    const flush = (end) => {
-        if (end - start + 1 >= thick) out.push(start, end)
-        else out.push(Math.round((start + end) / 2))
-    }
-    for (let i = 0; i < profile.length; i++) {
-        const on = profile[i] >= min
-        if (on && start < 0) start = i
-        if (!on && start >= 0) { flush(i - 1); start = -1 }
-    }
-    if (start >= 0) flush(profile.length - 1)
-    return [...new Set(out)].sort((a, b) => a - b)
-}
-
-/** The longest run of boundaries spaced at the modal pitch — i.e. the data rows. */
-function dataBoundaries (bounds, tolerance = 0.25) {
-    if (bounds.length < 3) return bounds
-    const buckets = new Map()
-    for (let i = 1; i < bounds.length; i++) {
-        const g = bounds[i] - bounds[i - 1]
-        if (g < 20) continue
-        const k = Math.round(g / 4) * 4
-        buckets.set(k, (buckets.get(k) || 0) + 1)
-    }
-    if (!buckets.size) return bounds
-    const pitch = [...buckets.entries()].sort((a, b) => b[1] - a[1])[0][0]
-    let best = [], run = [bounds[0]]
-    for (let i = 1; i < bounds.length; i++) {
-        if (Math.abs(bounds[i] - bounds[i - 1] - pitch) <= pitch * tolerance) run.push(bounds[i])
-        else { if (run.length > best.length) best = run; run = [bounds[i]] }
-    }
-    return run.length > best.length ? run : best
-}
-
-/** Cells between boundaries, dropping slivers relative to the median gap. */
-function spans (lines) {
-    const raw = []
-    for (let i = 0; i + 1 < lines.length; i++) raw.push([lines[i], lines[i + 1]])
-    if (!raw.length) return []
-    const widths = raw.map(([a, b]) => b - a).sort((x, y) => x - y)
-    const median = widths[Math.floor(widths.length / 2)]
-    return raw.filter(([a, b]) => b - a >= median * 0.5).map(([a, b]) => [a + 2, b - 2])
-}
-
-// --- validation and repair ------------------------------------------------
-
-const near = (a, b, tol) => b !== 0 && Math.abs(a - b) / Math.abs(b) <= tol
-
-function checks (v) {
-    const energyOk = [v.kcal, v.weight, v.totalKcal].every((n) => typeof n === 'number') &&
-        near((v.kcal * v.weight) / 100, v.totalKcal, ENERGY_TOL)
-    const atwaterOk = [v.protein, v.carbs, v.fat, v.kcal].every((n) => typeof n === 'number') &&
-        near(4 * v.protein + 4 * v.carbs + 9 * v.fat, v.kcal, ATWATER_TOL)
-    return { energyOk, atwaterOk, ok: energyOk && atwaterOk }
-}
-
-/**
- * Corrections for the one systematic OCR fault: a dropped or misread leading
- * digit (1133 -> 133, 11.7 -> 1.7, 987 -> 087). Trying all nine digits is safe
- * because a candidate must satisfy an independent equation to within 2%, and a
- * wrong leading digit moves the value by a factor of ten.
- */
-function candidates (raw) {
-    if (typeof raw !== 'number') return []
-    const s = String(raw)
-    const out = new Set([raw])
-    for (let d = 1; d <= 9; d++) out.add(Number(`${d}${s}`))
-    if (s.startsWith('0')) for (let d = 1; d <= 9; d++) out.add(Number(`${d}${s.slice(1)}`))
-    return [...out].filter(Number.isFinite)
-}
-
-const REPAIRABLE = ['weight', 'protein', 'carbs', 'fat', 'kcal', 'totalKcal']
-
-function repair (v) {
-    if (checks(v).ok) return { value: v, repaired: [] }
-    for (const f of REPAIRABLE) {
-        for (const c of candidates(v[f])) {
-            if (c === v[f]) continue
-            const trial = { ...v, [f]: c }
-            if (checks(trial).ok) return { value: trial, repaired: [`${f}:${v[f]}->${c}`] }
-        }
-    }
-    // Two fields at once happens when OCR clips the same glyph twice on a row.
-    // Deeper than a pair would be fitting noise rather than fixing a fault.
-    for (const f1 of REPAIRABLE) {
-        for (const c1 of candidates(v[f1])) {
-            if (c1 === v[f1]) continue
-            for (const f2 of REPAIRABLE) {
-                if (f2 === f1) continue
-                for (const c2 of candidates(v[f2])) {
-                    if (c2 === v[f2]) continue
-                    const trial = { ...v, [f1]: c1, [f2]: c2 }
-                    if (checks(trial).ok) {
-                        return { value: trial, repaired: [`${f1}:${v[f1]}->${c1}`, `${f2}:${v[f2]}->${c2}`] }
-                    }
-                }
-            }
-        }
-    }
-    return { value: v, repaired: null }
-}
-
-// --- rendering and OCR ----------------------------------------------------
-
-const TMP = path.join(REPO, '.cache/papajohns-extract')
-fs.mkdirSync(TMP, { recursive: true })
+// --- rendering ----------------------------------------------------------
 
 async function renderPage (doc, pageNum) {
     const page = await doc.getPage(pageNum)
@@ -248,297 +81,247 @@ async function renderPage (doc, pageNum) {
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     await page.render({ canvasContext: ctx, viewport }).promise
-    const file = path.join(TMP, `p${pageNum}.png`)
-    fs.writeFileSync(file, canvas.toBuffer('image/png'))
     page.cleanup()
-    return file
+    return canvas.toBuffer('image/png')
 }
 
-function makeOcr (worker) {
-    return async function ocr (png, { left, top, width, height }, mode) {
-        if (width < 6 || height < 6) return ''
-        const file = path.join(TMP, 'cell.png')
-        let img = sharp(png).extract({ left, top, width, height }).grayscale()
-        if (mode === 'banner') img = img.negate() // white text on a colour band
-        // Tesseract wants glyphs roughly 30-60px tall. Cell values are tiny at
-        // page scale so they're enlarged; titles and banners are the opposite —
-        // headline type renders ~250px tall at scale 10 and OCR returns nothing
-        // at all, so those bands get scaled *down*.
-        const targetWidth = mode === 'number'
-            ? Math.max(width, 240)
-            : Math.min(width, 1200)
-        await img.resize({ width: targetWidth, kernel: 'lanczos3' }).normalise().toFile(file)
-        // A title band is mostly white with one or two lines of large text, and
-        // PSM 6 ("uniform block") returns nothing at all on some pages. Try
-        // progressively sparser segmentations and take the first that reads
-        // something, rather than losing the product name.
-        const modes = mode === 'number' ? ['7'] : mode === 'title' ? ['6', '7', '11', '12'] : ['6']
-        for (const psm of modes) {
-            await worker.setParameters({
-                tessedit_char_whitelist: mode === 'number' ? '0123456789.' : '',
-                tessedit_pageseg_mode: psm
-            })
-            const { data } = await worker.recognize(file)
-            const text = data.text.replace(/\s+/g, mode === 'number' ? '' : ' ').trim()
-            if (text) return text
+// --- schema ---------------------------------------------------------------
+// Only the columns the app's schema actually uses (see NEEDED in the old OCR
+// pipeline's history) — sugars/saturates/fibre/sodium/salt are on the source
+// page but never read downstream, so there's no reason to spend tokens on them.
+
+const variantSchema = {
+    type: 'object',
+    properties: {
+        label: { type: 'string', description: 'Size/crust label, or "Standard" for a single-variant product' },
+        kcal: { type: 'number', description: 'per 100g' },
+        protein: { type: 'number', description: 'per 100g' },
+        carbs: { type: 'number', description: 'per 100g' },
+        fat: { type: 'number', description: 'per 100g' },
+        totalKcal: { type: 'number', description: 'kcal for the whole product, as printed' },
+        totalWeightG: { type: 'number', description: 'total product weight in grams, as printed' },
+        unitsPerProduct: { type: 'number', description: 'slices/pieces/portions that make up the whole product' }
+    },
+    required: ['label', 'kcal', 'protein', 'carbs', 'fat', 'totalKcal', 'totalWeightG', 'unitsPerProduct'],
+    additionalProperties: false
+}
+
+// One shape for both page layouts: a wide pizza table (one product, many size
+// rows) is `products: [{ variants: [...many] }]`; the two-products-per-page
+// layout (sides/desserts, stacked per-100g/per-portion tables) is
+// `products: [{...}, {...}]` each with one variant. No layout detection code —
+// the model reads whichever shape is on the page.
+const pageSchema = {
+    type: 'object',
+    properties: {
+        products: {
+            type: 'array',
+            description: 'Every distinct product on the page. Empty if this page has no nutrition table with size/variant rows (e.g. a create-your-own ingredients list, an allergen key, a section divider, a table of contents).',
+            items: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string' },
+                    category: { type: 'string', description: 'from the page banner/footer, e.g. Pizzas, Vegan Sides, Desserts' },
+                    variants: { type: 'array', items: variantSchema }
+                },
+                required: ['name', 'category', 'variants'],
+                additionalProperties: false
+            }
         }
-        return ''
-    }
+    },
+    required: ['products'],
+    additionalProperties: false
 }
 
-const titleCase = (s) =>
-    s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\s+/g, ' ').trim()
+const PROMPT = 'This page is from a UK pizza restaurant nutrition PDF. It may show ONE product ' +
+    'with several size/crust rows, or TWO products side by side each with their own per-100g and ' +
+    'per-portion tables. Extract every product and every row exactly as printed — read every digit ' +
+    'carefully, including leading digits. Category comes from the page banner/footer. If this page ' +
+    'is not a nutrition table (create-your-own ingredients, an allergen key, a section divider, ' +
+    'table of contents, etc.), return an empty products array rather than guessing.'
 
-// --- main -----------------------------------------------------------------
+// --- validation -----------------------------------------------------------
+
+const near = (a, b, tol) => b !== 0 && Math.abs(a - b) / Math.abs(b) <= tol
+
+function checks (v) {
+    const energyOk = near((v.kcal * v.totalWeightG) / 100, v.totalKcal, ENERGY_TOL)
+    const atwaterOk = near(4 * v.protein + 4 * v.carbs + 9 * v.fat, v.kcal, ATWATER_TOL)
+    return energyOk && atwaterOk
+}
+
+/**
+ * Vision measured far more accurate than either OCR engine (1 bad field in 67
+ * variants in testing, vs. Tesseract's ~35/115), but not perfect — the one
+ * failure observed was a dropped leading digit (fat printed as "11.4", read as
+ * "1.4"), the exact same fault class Tesseract had. Try restoring it rather
+ * than discarding an otherwise-good row outright. Any digit 1-9 is safe to try
+ * because a candidate is only accepted if it clears BOTH identities to within
+ * their tolerance — a wrong leading digit shifts a value by a factor of ten,
+ * which the checks catch reliably.
+ */
+function candidates (raw) {
+    const s = String(raw)
+    const out = new Set([raw])
+    for (let d = 1; d <= 9; d++) out.add(Number(`${d}${s}`))
+    return [...out].filter(Number.isFinite)
+}
+
+const REPAIRABLE = ['protein', 'carbs', 'fat', 'kcal', 'totalWeightG', 'totalKcal']
+
+/**
+ * Only accept a repair when it's the UNIQUE single-field fix that clears both
+ * checks — not the first one found. Trying this on real data caught a case
+ * where two different fields each had a candidate that satisfied Atwater
+ * (protein 9.5->29.5 *and* fat 1.4->11.4), and the first-found one (a
+ * first-found version of this function returned) was a wild outlier against
+ * every sibling row on the same page, while the correct fix — fat, confirmed
+ * by comparing against those siblings — was the only one that was actually
+ * right. Arithmetic alone can't tell the two apart; accepting either without
+ * that external check risks writing a wrong macro that merely looks
+ * consistent. So: enumerate every candidate across every field, and repair
+ * only if exactly one satisfies. Zero or multiple satisfying candidates both
+ * mean the row can't be trusted from the equations alone — reject rather than
+ * guess, same as OCR's version of this function did.
+ */
+function repair (v) {
+    if (checks(v)) return { value: v, repaired: [] }
+    const found = []
+    for (const f of REPAIRABLE) {
+        for (const c of candidates(v[f])) {
+            if (c === v[f]) continue
+            const trial = { ...v, [f]: c }
+            if (checks(trial)) found.push({ field: f, from: v[f], to: c, value: trial })
+        }
+    }
+    if (found.length === 1) {
+        const { field, from, to, value } = found[0]
+        return { value, repaired: [`${field}:${from}->${to}`] }
+    }
+    return { value: v, repaired: null }
+}
+
+const cleanText = (s) => (s || '').replace(/[™®]/g, '').replace(/\s+/g, ' ').trim()
+
+// --- main -------------------------------------------------------------------
 
 const pdfBytes = fs.readFileSync(PDF_PATH)
 const sha256 = crypto.createHash('sha256').update(pdfBytes).digest('hex')
 const doc = await pdfjs.getDocument({
     data: new Uint8Array(pdfBytes), useSystemFonts: true, isEvalSupported: false
 }).promise
-
-const worker = await createWorker('eng')
-const ocr = makeOcr(worker)
+const client = new Anthropic() // picks up an `ant auth login` profile, or ANTHROPIC_API_KEY
 
 const items = []
 const rejected = []
 const skipped = []
+let totalCost = 0
 
-/** Columns in layout B's two stacked tables (neither has a label column). */
-const B_PER100G_COLUMNS = 10
-const B_PORTION_COLUMNS = 6
-const B100 = { KCAL: 0, PROTEIN: 2, CARBS: 3, FAT: 5 }
-const BPORTION = { TOTAL_KCAL: 0, WEIGHT: 2 }
+async function extractPage (pageNum) {
+    const png = await renderPage(doc, pageNum)
+    const image = png.toString('base64')
 
-/**
- * Layout B: sides, vegan sides, desserts and drinks. Two products per page, side
- * by side; each has a 10-column "VALUES PER 100G" table with a single data row,
- * stacked above a 6-column "VALUES PER PORTION" table, also a single row.
- *
- * The same two equations validate these, because the per-portion table carries
- * total calories and total product weight just like the pizza pages' per-slice
- * block. Returns how many products it managed to add.
- */
-async function extractLayoutB (png, data, info, pageNum) {
-    const category = titleCase(
-        (await ocr(png, {
-            left: Math.round(info.width * 0.02), top: Math.round(info.height * 0.88),
-            width: Math.round(info.width * 0.45), height: Math.round(info.height * 0.09)
-        }, 'banner')).replace(/[^A-Za-z ]/g, ' ')
-    ) || 'Sides'
-
-    let added = 0
-    const halves = [
-        [0, Math.round(info.width / 2)],
-        [Math.round(info.width / 2), info.width]
-    ]
-
-    for (const [x0, x1] of halves) {
-        const row = rowProfile(data, info.width, info.height, x0, x1)
-        const bands = spans(boundaries(row, 0.30))
-
-        // Find the per-100g band and the per-portion band by column count.
-        let per100g = null
-        let portion = null
-        let firstBandTop = null
-        for (const [top, bottom] of bands) {
-            const cols = spans(boundaries(colProfile(data, info.width, top, bottom, x0, x1), 0.45))
-            if (cols.length === B_PER100G_COLUMNS && !per100g) {
-                per100g = { top, bottom, cols }
-                firstBandTop ??= top
-            } else if (cols.length === B_PORTION_COLUMNS && !portion) {
-                portion = { top, bottom, cols }
-                firstBandTop ??= top
-            }
-        }
-        if (!per100g || !portion) continue
-
-        const readRow = async (band) => {
-            const out = []
-            for (const [left, right] of band.cols) {
-                const text = await ocr(png, {
-                    left, top: band.top, width: right - left, height: band.bottom - band.top
-                }, 'number')
-                out.push(text === '' ? null : Number(text))
-            }
-            return out
-        }
-        const a = await readRow(per100g)
-        const b = await readRow(portion)
-
-        const raw = {
-            label: 'Standard',
-            kcal: a[B100.KCAL], protein: a[B100.PROTEIN], carbs: a[B100.CARBS], fat: a[B100.FAT],
-            totalKcal: b[BPORTION.TOTAL_KCAL], weight: b[BPORTION.WEIGHT], slices: null
-        }
-        const { value, repaired } = repair(raw)
-        if (repaired === null) {
-            rejected.push({ page: pageNum, product: `(page ${pageNum} half)`, label: 'Standard', raw })
-            console.log(`p${pageNum}: REJECT layout-B half (x${x0})`)
-            continue
-        }
-
-        // Title sits above this half's first table.
-        const titleText = await ocr(png, {
-            left: x0 + Math.round(info.width * 0.14),
-            top: Math.round(info.height * 0.17),
-            width: Math.round((x1 - x0) * 0.72),
-            height: Math.max(40, (firstBandTop ?? Math.round(info.height * 0.4)) - Math.round(info.height * 0.18))
-        }, 'title')
-        const lines = []
-        for (const line of titleText.split('\n').map((l) => l.trim())) {
-            if (!line) continue
-            if (/values per|energy|kcal|vegan|vegetarian|ingredient|allergen/i.test(line)) break
-            lines.push(line)
-        }
-        const name = titleCase(lines.join(' ').replace(/[^A-Za-z0-9'&+ -]/g, ' '))
-        if (!name) {
-            skipped.push({ page: pageNum, reason: 'title-ocr-failed', half: x0 })
-            console.log(`p${pageNum}: SKIPPED layout-B half — title OCR failed`)
-            continue
-        }
-
-        const factor = value.weight / 100
-        items.push({
-            name,
-            category,
-            page: pageNum,
-            variants: [{
-                label: 'Standard',
-                calories: value.totalKcal,
-                protein: Math.round(value.protein * factor * 10) / 10,
-                fat: Math.round(value.fat * factor * 10) / 10,
-                carbs: Math.round(value.carbs * factor * 10) / 10,
-                weightG: value.weight,
-                per100g: { kcal: value.kcal, protein: value.protein, carbs: value.carbs, fat: value.fat },
-                repaired: repaired.length ? repaired : undefined
+    let response
+    try {
+        response = await client.messages.parse({
+            model: MODEL,
+            max_tokens: 4096,
+            output_config: { effort: 'high', format: { type: 'json_schema', schema: pageSchema } },
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'image', source: { type: 'base64', media_type: 'image/png', data: image } },
+                    { type: 'text', text: PROMPT }
+                ]
             }]
         })
-        added++
-        console.log(`p${pageNum}: ${name} [${category}] (layout B)`)
-    }
-    return added
-}
-
-for (let pageNum = firstPage; pageNum <= Math.min(lastPage, doc.numPages); pageNum++) {
-    const png = await renderPage(doc, pageNum)
-    const { data, info } = await sharp(png).grayscale().raw().toBuffer({ resolveWithObject: true })
-    // Rows first, then columns *within* the row band — see colProfile for why
-    // the order matters.
-    const row = rowProfile(data, info.width, info.height)
-    const hAll = boundaries(row, 0.30)
-    const hData = dataBoundaries(hAll)
-    const rowSpans = spans(hData)
-    const col = rowSpans.length
-        ? colProfile(data, info.width, rowSpans[0][0], rowSpans[rowSpans.length - 1][1])
-        : new Float64Array(info.width)
-    const colSpans = spans(boundaries(col, 0.45))
-
-    // Layout A is one product across a wide table with sizes down the rows.
-    // Anything else is tried as layout B (two products side by side, each with a
-    // per-100g row above a per-portion row) before being given up on.
-    if (colSpans.length < PIZZA_COLUMNS_MIN || colSpans.length > PIZZA_COLUMNS_MAX || rowSpans.length < 2) {
-        const found = await extractLayoutB(png, data, info, pageNum)
-        if (found > 0) continue
-        skipped.push({ page: pageNum, columns: colSpans.length, rows: rowSpans.length })
-        console.log(`p${pageNum}: skipped (columns=${colSpans.length} rows=${rowSpans.length})`)
-        continue
+    } catch (err) {
+        console.log(`p${pageNum}: API error — ${err.message}`)
+        skipped.push({ page: pageNum, reason: 'api_error', detail: String(err.message) })
+        return
     }
 
-    // The product title sits above the table's coloured header block. Bounding
-    // the band by the first data row instead pulls the whole header ("VALUES
-    // PER 100G", "SIZE & CRUST", every column name) into the title, so find the
-    // header block's own top edge: `boundaries` emits both edges of a thick
-    // ridge, so it's the entry immediately before the first data-row boundary.
-    const firstDataIdx = hAll.indexOf(hData[0])
-    const headerTop = firstDataIdx > 0 ? hAll[firstDataIdx - 1] : rowSpans[0][0]
-    const titleTop = Math.round(info.height * 0.15)
-    const titleHeight = Math.max(40, headerTop - 30 - titleTop)
-    const title = await ocr(png, {
-        // Start right of the photo and the toppings/allergen column.
-        left: Math.round(info.width * 0.22), top: titleTop,
-        width: Math.round(info.width * 0.75), height: titleHeight
-    }, 'title')
-    const category = await ocr(png, {
-        left: Math.round(info.width * 0.02), top: Math.round(info.height * 0.88),
-        width: Math.round(info.width * 0.45), height: Math.round(info.height * 0.09)
-    }, 'banner')
-
-    // The title is whatever comes before the table header, and it can run to two
-    // lines ("VEGAN MARMITE AND CHEESE STICKS"). So read lines in order and stop
-    // at the first that looks like table furniture, rather than filtering
-    // furniture out — when the header block isn't detected as a thick ridge the
-    // band still contains the whole header, and filtering then discarded every
-    // line and left the product nameless.
-    if (process.env.PJ_DEBUG) {
-        console.log(`  [debug] p${pageNum} headerTop=${headerTop} band=${titleTop}..${titleTop + titleHeight} raw title=${JSON.stringify(title)}`)
+    const cost = (response.usage.input_tokens / 1e6) * 5 + (response.usage.output_tokens / 1e6) * 25
+    totalCost += cost
+    if (totalCost > COST_WARN_USD) {
+        console.log(`\n*** cost warning: ~$${totalCost.toFixed(2)} so far — check for a runaway loop ***\n`)
     }
-    const titleLines = []
-    for (const line of title.split('\n').map((l) => l.trim())) {
-        if (!line) continue
-        if (/values per|size & crust|energy|kcal|carbohy|saturat|sodium|slice/i.test(line)) break
-        titleLines.push(line)
-    }
-    const productName = TITLE_OVERRIDES[pageNum] ||
-        titleCase(titleLines.join(' ').replace(/[^A-Za-z0-9'&+ -]/g, ' '))
-            // The "(Vg) Vegan" / "(V) Vegetarian" badge sits under the heading and
-            // OCRs as junk ("Veo Ee", "Ver Ee", "Yves Ee") that lands on the end of
-            // the name. Strip that tail; the leading "Vegan" in a real product name
-            // is untouched.
-            .replace(/\s+(veo|ver|vves|yves|vg|v)\s+ee\s*$/i, '')
-            .trim()
 
-    if (!productName) {
-        // Numbers may well be fine here, but an unnamed product is not shippable.
-        skipped.push({ page: pageNum, reason: 'title-ocr-failed', rows: rowSpans.length })
-        console.log(`p${pageNum}: SKIPPED — title OCR failed (add it to TITLE_OVERRIDES)`)
-        continue
+    if (!response.parsed_output) {
+        console.log(`p${pageNum}: no parsed_output (stop_reason=${response.stop_reason})`)
+        skipped.push({ page: pageNum, reason: 'no_parsed_output', stop_reason: response.stop_reason })
+        return
     }
-    const categoryName = titleCase(category.replace(/[^A-Za-z ]/g, ' ')) || 'Pizzas'
 
-    const variants = []
-    for (const [top, bottom] of rowSpans) {
-        const cells = []
-        for (const [left, right] of colSpans) {
-            cells.push(await ocr(png, { left, top, width: right - left, height: bottom - top },
-                cells.length === 0 ? 'text' : 'number'))
-        }
-        const n = cells.slice(1).map((s) => (s === '' ? null : Number(s)))
-        const raw = {
-            label: cells[0].replace(/\s+/g, ' ').trim(),
-            kcal: n[COL.KCAL], protein: n[COL.PROTEIN], carbs: n[COL.CARBS], fat: n[COL.FAT],
-            totalKcal: n[COL.TOTAL_KCAL], weight: n[COL.WEIGHT], slices: n[COL.SLICES]
-        }
-        const { value, repaired } = repair(raw)
-        if (repaired === null) {
-            rejected.push({ page: pageNum, product: productName, label: raw.label, raw })
-            console.log(`p${pageNum}: REJECT ${raw.label}`)
+    const products = response.parsed_output.products
+    if (products.length === 0) {
+        console.log(`p${pageNum}: no nutrition table (skipped by the model)`)
+        skipped.push({ page: pageNum, reason: 'not_a_nutrition_table' })
+        return
+    }
+
+    for (const product of products) {
+        const name = cleanText(product.name)
+        const category = cleanText(product.category) || 'Pizzas'
+        if (!name) {
+            skipped.push({ page: pageNum, reason: 'empty_product_name' })
+            console.log(`p${pageNum}: SKIPPED a product with no name`)
             continue
         }
-        const factor = value.weight / 100
-        variants.push({
-            label: value.label,
-            // Printed total is authoritative for calories; macros scale from the
-            // per-100g column by the printed total product weight.
-            calories: value.totalKcal,
-            protein: Math.round(value.protein * factor * 10) / 10,
-            fat: Math.round(value.fat * factor * 10) / 10,
-            carbs: Math.round(value.carbs * factor * 10) / 10,
-            weightG: value.weight,
-            slices: value.slices,
-            per100g: { kcal: value.kcal, protein: value.protein, carbs: value.carbs, fat: value.fat },
-            repaired: repaired.length ? repaired : undefined
-        })
-    }
 
-    if (variants.length) {
-        items.push({ name: productName, category: categoryName, page: pageNum, variants })
-        console.log(`p${pageNum}: ${productName} [${categoryName}] ${variants.length} variants`)
+        const variants = []
+        for (const raw of product.variants) {
+            const { value: v, repaired } = repair(raw)
+            if (repaired === null) {
+                rejected.push({ page: pageNum, product: name, label: raw.label, raw })
+                console.log(`p${pageNum}: REJECT ${name} / ${raw.label} — failed validation`)
+                continue
+            }
+            if (repaired.length) {
+                console.log(`p${pageNum}: repaired ${name} / ${v.label} (${repaired.join(', ')})`)
+            }
+            const factor = v.totalWeightG / 100
+            variants.push({
+                label: v.label,
+                calories: v.totalKcal,
+                protein: Math.round(v.protein * factor * 10) / 10,
+                fat: Math.round(v.fat * factor * 10) / 10,
+                carbs: Math.round(v.carbs * factor * 10) / 10,
+                weightG: v.totalWeightG,
+                slices: v.unitsPerProduct,
+                per100g: { kcal: v.kcal, protein: v.protein, carbs: v.carbs, fat: v.fat },
+                repaired: repaired.length ? repaired : undefined
+            })
+        }
+        if (variants.length) {
+            items.push({ name, category, page: pageNum, variants })
+            console.log(`p${pageNum}: ${name} [${category}] ${variants.length} variant(s)`)
+        }
     }
 }
 
-await worker.terminate()
+// Small worker pool — 58 pages sequentially at ~15-20s each would take too
+// long; a handful of concurrent requests is well within normal rate limits for
+// a one-off run like this.
+const pages = []
+for (let p = firstPage; p <= Math.min(lastPage, doc.numPages); p++) pages.push(p)
+let nextIndex = 0
+async function worker () {
+    while (nextIndex < pages.length) {
+        await extractPage(pages[nextIndex++])
+    }
+}
+await Promise.all(Array.from({ length: CONCURRENCY }, worker))
+
 await doc.destroy()
+
+// Workers finish in whatever order their requests complete, so `items` isn't
+// filled in page order — sort before writing so the committed file is
+// reproducible across runs (a diff shows only real content changes) and
+// nothing downstream can depend on run-to-run request timing.
+items.sort((a, b) => a.page - b.page)
+rejected.sort((a, b) => a.page - b.page)
+skipped.sort((a, b) => a.page - b.page)
 
 const out = {
     source: {
@@ -547,7 +330,8 @@ const out = {
         version: 'OCT22-1',
         pages: `${firstPage}-${lastPage}`,
         extractedAt: new Date().toISOString(),
-        note: 'Generated by tools/papajohns/extract.mjs. Every row satisfies the energy and Atwater checks; rejected rows are listed rather than guessed.'
+        extractor: 'vision (claude-opus-5, structured outputs) — see this file\'s header comment',
+        note: 'Every row satisfies the energy and Atwater checks; rejected rows are listed rather than guessed.'
     },
     items,
     rejected,
@@ -556,27 +340,4 @@ const out = {
 fs.writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n')
 console.log(`\nwrote ${outPath}`)
 console.log(`items=${items.length} variants=${items.reduce((s, i) => s + i.variants.length, 0)} rejected=${rejected.length} skipped=${skipped.length}`)
-
-if (truthPath) {
-    const truth = JSON.parse(fs.readFileSync(truthPath, 'utf8'))
-    const item = items.find((i) => i.page === truth.page)
-    let bad = 0
-    if (!item) {
-        console.log('truth check: page not extracted')
-    } else {
-        truth.rows.forEach((t, i) => {
-            const v = item.variants[i]
-            if (!v) { console.log(`  row ${i}: missing`); bad++; return }
-            const want = {
-                calories: t.v[10], weightG: t.v[12], slices: t.v[15],
-                protein: Math.round(t.v[2] * (t.v[12] / 100) * 10) / 10,
-                carbs: Math.round(t.v[3] * (t.v[12] / 100) * 10) / 10,
-                fat: Math.round(t.v[5] * (t.v[12] / 100) * 10) / 10
-            }
-            for (const k of Object.keys(want)) {
-                if (v[k] !== want[k]) { console.log(`  row ${i} ${k}: expected ${want[k]}, got ${v[k]}`); bad++ }
-            }
-        })
-        console.log(bad === 0 ? 'truth check: ALL ROWS MATCH' : `truth check: ${bad} mismatches`)
-    }
-}
+console.log(`total cost: ~$${totalCost.toFixed(2)}`)
