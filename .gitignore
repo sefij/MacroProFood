@@ -17,3 +17,5 @@ mfp-error-*.png
 web/public/data/
 
 MacroProCompanion.zip
+# tesseract.js drops its language model here when tools/papajohns/extract.mjs runs.
+eng.traineddata

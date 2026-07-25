@@ -23,9 +23,10 @@
     "test": "tsc && node --test \"dist/**/*.test.js\""
   },
   "devDependencies": {
+    "@napi-rs/canvas": "0.1.88",
     "@types/lodash": "^4.17.21",
-    "@types/node": "^25.0.3"
+    "@types/node": "^25.0.3",
+    "sharp": "^0.35.3",
+    "tesseract.js": "^7.0.0"
   }
 }
-
-

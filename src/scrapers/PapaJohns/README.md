@@ -70,6 +70,29 @@ Note that `TOTAL PRODUCT WEIGHT` is printed in the per-slice block, so the total
 weight does not need deriving from slice counts — that route is available as a
 third cross-check instead.
 
+## Coverage today — pizzas only
+
+`nutrition.json` holds **11 pizza products / 115 usable variants**, all from
+layout-A pages (one product per page, sizes and crusts down the rows). 35 of
+those variants needed a leading-digit repair, each confirmed by both equations.
+
+What's missing, and why — every case is recorded in the file rather than silently
+dropped:
+
+| Gap | Count | Reason |
+| --- | --- | --- |
+| Layout-B pages | ~30 pages | Two products per page with stacked per-100g / per-portion tables (sides, vegan sides, desserts, drinks). No vertical rule spans enough of the page height, so grid detection finds no columns. **Not yet implemented** — the data is there for the taking. |
+| Title OCR failures | pages 12, 15, 19 | Title OCR returns an empty string even though the band contains the heading. Numbers extract fine, so add the heading to `TITLE_OVERRIDES` in the extractor and re-run to recover these. |
+| Rejected rows | 21 rows | Failed the energy and/or Atwater check and could not be repaired. Listed under `rejected` in the JSON with their raw OCR values. |
+| CYO ingredients | several pages | Out of scope by decision. |
+
+The title-OCR fault is the one loose end worth understanding: the band
+demonstrably contains the heading (cropping page 11's band shows "CHICKEN CLUB"
+plainly), but no page-segmentation mode or rescaling tried recovers it. Headline
+type renders ~250px tall at scale 10, well above Tesseract's usable range, and
+scaling down did not help either. Until that's solved, `TITLE_OVERRIDES` is the
+escape hatch, and any page still unnamed is skipped rather than shipped.
+
 ## Known data quirk
 
 Papa John's own per-100g figures are internally inconsistent across sizes of the
