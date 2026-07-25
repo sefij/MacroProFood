@@ -269,6 +269,12 @@ export class ScrapingOperator {
                 return this.scrapePizzaHut()
             case 'chipotle':
                 return this.scrapeChipotle()
+            case 'papajohns':
+            case 'papa johns':
+            case "papa john's":
+            case 'papa-johns':
+            case 'pj':
+                return this.scrapePapaJohns()
             default:
                 console.log(chalk.red(`\n❌ Unknown restaurant: ${restaurant}`))
                 return
