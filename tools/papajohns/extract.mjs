@@ -481,6 +481,12 @@ for (let pageNum = firstPage; pageNum <= Math.min(lastPage, doc.numPages); pageN
     }
     const productName = TITLE_OVERRIDES[pageNum] ||
         titleCase(titleLines.join(' ').replace(/[^A-Za-z0-9'&+ -]/g, ' '))
+            // The "(Vg) Vegan" / "(V) Vegetarian" badge sits under the heading and
+            // OCRs as junk ("Veo Ee", "Ver Ee", "Yves Ee") that lands on the end of
+            // the name. Strip that tail; the leading "Vegan" in a real product name
+            // is untouched.
+            .replace(/\s+(veo|ver|vves|yves|vg|v)\s+ee\s*$/i, '')
+            .trim()
 
     if (!productName) {
         // Numbers may well be fine here, but an unnamed product is not shippable.

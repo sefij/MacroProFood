@@ -72,9 +72,15 @@ third cross-check instead.
 
 ## Coverage today — pizzas only
 
-`nutrition.json` holds **11 pizza products / 115 usable variants**, all from
-layout-A pages (one product per page, sizes and crusts down the rows). 35 of
-those variants needed a leading-digit repair, each confirmed by both equations.
+`nutrition.json` holds **16 pizza products / 162 variants**, all from layout-A
+pages (one product per page, sizes and crusts down the rows).
+
+That is still short of what the PDF contains — pizzas run to roughly page 34 and
+these come from pages 7-27, so **pages 12, 13, 15, 19, 21 and 28-34 are still
+being missed**. Each is recorded under `skipped` or `rejected` with its reason.
+The count went 11 -> 16 when column detection was scoped to the table's row band
+instead of the page height; the remaining gaps are a mix of title-OCR failures
+and pages whose grid still isn't recognised.
 
 What's missing, and why — every case is recorded in the file rather than silently
 dropped:
