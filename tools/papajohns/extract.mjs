@@ -90,17 +90,39 @@ const truthPath = flag('truth', null)
 
 // --- image analysis -------------------------------------------------------
 
-function profiles (data, width, height) {
-    const col = new Float64Array(width)
+/**
+ * Dark-pixel fraction per row, over an x-range (the whole width by default).
+ * The range matters for layout B, where two products sit side by side and each
+ * half's tables must be found independently.
+ */
+function rowProfile (data, width, height, x0 = 0, x1 = width) {
     const row = new Float64Array(height)
+    const span = Math.max(1, x1 - x0)
     for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            if (data[y * width + x] < 128) { col[x]++; row[y]++ }
-        }
+        for (let x = x0; x < x1; x++) if (data[y * width + x] < 128) row[y]++
+        row[y] /= span
     }
-    for (let x = 0; x < width; x++) col[x] /= height
-    for (let y = 0; y < height; y++) row[y] /= width
-    return { col, row }
+    return row
+}
+
+/**
+ * Dark-pixel fraction per column, measured over a y-range rather than the whole
+ * page.
+ *
+ * This has to be scoped to the table's own rows. Measured against full page
+ * height, a column rule's coverage depends on how tall the table happens to be —
+ * so a pizza with five size rows scored below the threshold and the page was
+ * skipped with "columns=0", silently losing 13 pizza pages. Within the row band
+ * a rule spans essentially the full extent no matter how many rows there are.
+ */
+function colProfile (data, width, y0, y1, x0 = 0, x1 = width) {
+    const col = new Float64Array(width)
+    const span = Math.max(1, y1 - y0)
+    for (let y = y0; y < y1; y++) {
+        for (let x = x0; x < x1; x++) if (data[y * width + x] < 128) col[x]++
+    }
+    for (let x = 0; x < width; x++) col[x] /= span
+    return col
 }
 
 /**
@@ -282,19 +304,142 @@ const items = []
 const rejected = []
 const skipped = []
 
+/** Columns in layout B's two stacked tables (neither has a label column). */
+const B_PER100G_COLUMNS = 10
+const B_PORTION_COLUMNS = 6
+const B100 = { KCAL: 0, PROTEIN: 2, CARBS: 3, FAT: 5 }
+const BPORTION = { TOTAL_KCAL: 0, WEIGHT: 2 }
+
+/**
+ * Layout B: sides, vegan sides, desserts and drinks. Two products per page, side
+ * by side; each has a 10-column "VALUES PER 100G" table with a single data row,
+ * stacked above a 6-column "VALUES PER PORTION" table, also a single row.
+ *
+ * The same two equations validate these, because the per-portion table carries
+ * total calories and total product weight just like the pizza pages' per-slice
+ * block. Returns how many products it managed to add.
+ */
+async function extractLayoutB (png, data, info, pageNum) {
+    const category = titleCase(
+        (await ocr(png, {
+            left: Math.round(info.width * 0.02), top: Math.round(info.height * 0.88),
+            width: Math.round(info.width * 0.45), height: Math.round(info.height * 0.09)
+        }, 'banner')).replace(/[^A-Za-z ]/g, ' ')
+    ) || 'Sides'
+
+    let added = 0
+    const halves = [
+        [0, Math.round(info.width / 2)],
+        [Math.round(info.width / 2), info.width]
+    ]
+
+    for (const [x0, x1] of halves) {
+        const row = rowProfile(data, info.width, info.height, x0, x1)
+        const bands = spans(boundaries(row, 0.30))
+
+        // Find the per-100g band and the per-portion band by column count.
+        let per100g = null
+        let portion = null
+        let firstBandTop = null
+        for (const [top, bottom] of bands) {
+            const cols = spans(boundaries(colProfile(data, info.width, top, bottom, x0, x1), 0.45))
+            if (cols.length === B_PER100G_COLUMNS && !per100g) {
+                per100g = { top, bottom, cols }
+                firstBandTop ??= top
+            } else if (cols.length === B_PORTION_COLUMNS && !portion) {
+                portion = { top, bottom, cols }
+                firstBandTop ??= top
+            }
+        }
+        if (!per100g || !portion) continue
+
+        const readRow = async (band) => {
+            const out = []
+            for (const [left, right] of band.cols) {
+                const text = await ocr(png, {
+                    left, top: band.top, width: right - left, height: band.bottom - band.top
+                }, 'number')
+                out.push(text === '' ? null : Number(text))
+            }
+            return out
+        }
+        const a = await readRow(per100g)
+        const b = await readRow(portion)
+
+        const raw = {
+            label: 'Standard',
+            kcal: a[B100.KCAL], protein: a[B100.PROTEIN], carbs: a[B100.CARBS], fat: a[B100.FAT],
+            totalKcal: b[BPORTION.TOTAL_KCAL], weight: b[BPORTION.WEIGHT], slices: null
+        }
+        const { value, repaired } = repair(raw)
+        if (repaired === null) {
+            rejected.push({ page: pageNum, product: `(page ${pageNum} half)`, label: 'Standard', raw })
+            console.log(`p${pageNum}: REJECT layout-B half (x${x0})`)
+            continue
+        }
+
+        // Title sits above this half's first table.
+        const titleText = await ocr(png, {
+            left: x0 + Math.round(info.width * 0.14),
+            top: Math.round(info.height * 0.17),
+            width: Math.round((x1 - x0) * 0.72),
+            height: Math.max(40, (firstBandTop ?? Math.round(info.height * 0.4)) - Math.round(info.height * 0.18))
+        }, 'title')
+        const lines = []
+        for (const line of titleText.split('\n').map((l) => l.trim())) {
+            if (!line) continue
+            if (/values per|energy|kcal|vegan|vegetarian|ingredient|allergen/i.test(line)) break
+            lines.push(line)
+        }
+        const name = titleCase(lines.join(' ').replace(/[^A-Za-z0-9'&+ -]/g, ' '))
+        if (!name) {
+            skipped.push({ page: pageNum, reason: 'title-ocr-failed', half: x0 })
+            console.log(`p${pageNum}: SKIPPED layout-B half — title OCR failed`)
+            continue
+        }
+
+        const factor = value.weight / 100
+        items.push({
+            name,
+            category,
+            page: pageNum,
+            variants: [{
+                label: 'Standard',
+                calories: value.totalKcal,
+                protein: Math.round(value.protein * factor * 10) / 10,
+                fat: Math.round(value.fat * factor * 10) / 10,
+                carbs: Math.round(value.carbs * factor * 10) / 10,
+                weightG: value.weight,
+                per100g: { kcal: value.kcal, protein: value.protein, carbs: value.carbs, fat: value.fat },
+                repaired: repaired.length ? repaired : undefined
+            }]
+        })
+        added++
+        console.log(`p${pageNum}: ${name} [${category}] (layout B)`)
+    }
+    return added
+}
+
 for (let pageNum = firstPage; pageNum <= Math.min(lastPage, doc.numPages); pageNum++) {
     const png = await renderPage(doc, pageNum)
     const { data, info } = await sharp(png).grayscale().raw().toBuffer({ resolveWithObject: true })
-    const { col, row } = profiles(data, info.width, info.height)
-    const colSpans = spans(boundaries(col, 0.45))
+    // Rows first, then columns *within* the row band — see colProfile for why
+    // the order matters.
+    const row = rowProfile(data, info.width, info.height)
     const hAll = boundaries(row, 0.30)
     const hData = dataBoundaries(hAll)
     const rowSpans = spans(hData)
+    const col = rowSpans.length
+        ? colProfile(data, info.width, rowSpans[0][0], rowSpans[rowSpans.length - 1][1])
+        : new Float64Array(info.width)
+    const colSpans = spans(boundaries(col, 0.45))
 
-    // Layout A only for now: one product, one wide table, sizes down the rows.
-    // Other layouts (two products per page, per-portion tables) are recorded as
-    // skipped rather than half-parsed.
+    // Layout A is one product across a wide table with sizes down the rows.
+    // Anything else is tried as layout B (two products side by side, each with a
+    // per-100g row above a per-portion row) before being given up on.
     if (colSpans.length < PIZZA_COLUMNS_MIN || colSpans.length > PIZZA_COLUMNS_MAX || rowSpans.length < 2) {
+        const found = await extractLayoutB(png, data, info, pageNum)
+        if (found > 0) continue
         skipped.push({ page: pageNum, columns: colSpans.length, rows: rowSpans.length })
         console.log(`p${pageNum}: skipped (columns=${colSpans.length} rows=${rowSpans.length})`)
         continue
