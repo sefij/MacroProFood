@@ -11,7 +11,7 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
   Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi, Slim Chickens,
-  Burger King, Pizza Hut and Chipotle (UK menus).
+  Burger King, Pizza Hut, Chipotle and Papa Johns (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -86,6 +86,7 @@ cp .env.example .env
 | `DISABLE_BURGERKING`| Set to `true` to skip the Burger King scraper.            |
 | `DISABLE_PIZZAHUT`  | Set to `true` to skip the Pizza Hut scraper.              |
 | `DISABLE_CHIPOTLE`  | Set to `true` to skip the Chipotle scraper.               |
+| `DISABLE_PAPAJOHNS` | Set to `true` to skip Papa Johns (fetches a PDF live, with a committed fallback copy). |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -148,7 +149,9 @@ yarn start -- -c 1800 -p 140 -f 60 -r 180 -x Desserts Drinks
 
 ## Data sources & accuracy
 
-Every restaurant is scraped live (and cached for 7 days):
+Every restaurant is scraped live (and cached for 7 days). Papa Johns is
+scraped live too, but is the one restaurant with a committed fallback source
+file — explained below the table:
 
 | Restaurant   | Source                                          |
 | ------------ | ----------------------------------------------- |
@@ -167,7 +170,33 @@ Every restaurant is scraped live (and cached for 7 days):
 | Burger King  | Public Sanity CMS dataset (GROQ query)          |
 | Pizza Hut    | Published allergen/nutrition PDF                |
 | Chipotle     | Deliveroo dish list + published ingredient PDF (composed) |
+| Papa Johns   | Live-fetched nutrition PDF, with a committed fallback copy (see below) |
 
+- **Papa Johns** fetches its nutrition PDF live like everything else here,
+  but is the **only restaurant with a committed fallback source file**. Its
+  PDF sits behind Akamai, and `axios`/`curl` reliably get `403 Access Denied`
+  on it from every environment tried — that turned out to be an HTTP-client
+  TLS fingerprint check rather than a real IP/geo block, since Node's native
+  `fetch()` gets the file fine from the same network path, so `scraper.ts`
+  uses `fetch()` and fetches live on every run. The fallback exists because
+  a fingerprint bypass is inherently less stable than a real unblock, and
+  this project's CI doesn't have a last-known-good safety net wired up for
+  Papa Johns the way it does for 8 other restaurants (see
+  [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md) for
+  the specific gap) — so a failed live fetch reads the committed copy
+  instead of returning nothing. Parsing itself
+  is otherwise ordinary (no OCR, no LLM): the current PDF has a normal text
+  layer, read the same way as Domino's/Wendy's/Subway/Pizza Hut, just without
+  the shared header-driven pipeline (this document's headers span several
+  lines and some pages draw two products side by side, which that pipeline's
+  single-header-row detection doesn't fit). Every row still satisfies two
+  independent checks the source table asserts (`per-100g kcal × weight ÷ 100
+  == total kcal`, and Atwater `4P + 4C + 9F == per-100g kcal`); rows that
+  fail without a uniquely-safe repair are logged and dropped rather than
+  guessed. Covers the full menu (74 products / 423 variants). See
+  [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md) —
+  including its history with an earlier, image-only copy of this PDF that
+  did need OCR/a vision LLM, in case a future republish regresses to that.
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
   rather than Taco Bell directly, because that's what powers their UK online
@@ -259,6 +288,8 @@ Root project (CLI + scraper/build tooling):
 | `yarn start`            | Build and run the CLI.                                |
 | `yarn build:data`       | Build, then scrape every enabled restaurant and write `web/public/data/` for the web app (cached results reused where valid). |
 | `yarn build:data:fresh` | Same as `build:data`, bypassing the scraper cache.    |
+| `yarn papajohns:check [path\|url]` | Check whether a newer Papa Johns PDF exists (tries the official URL by default) — reports only, replaces nothing. |
+| `yarn papajohns:update [path\|url]` | Same check, but replaces the committed PDF and its README's provenance block if genuinely newer. See [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md). |
 
 [`web/`](web/) (React app, run from inside that directory):
 

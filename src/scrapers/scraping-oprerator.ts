@@ -13,6 +13,7 @@ import { SlimChickensScraper } from './SlimChickens/scraper'
 import { BurgerKingScraper } from './BurgerKing/scraper'
 import { PizzaHutScraper } from './PizzaHut/scraper'
 import { ChipotleScraper } from './Chipotle/scraper'
+import { PapaJohnsScraper } from './PapaJohns/scraper'
 import { RestaurantData, RestaurantsData, SourceScraper } from '../types'
 import { withCache } from '../cache'
 import { RestaurantKey, isScraperDisabled } from '../config'
@@ -126,6 +127,16 @@ export class ScrapingOperator {
             this.cached('pizzahut', () => this.runScraper(new PizzaHutScraper())))
     }
 
+    /**
+     * Papa John's reads a committed extract rather than scraping live — its
+     * source PDF is Akamai/geo-blocked and image-only. See
+     * ./PapaJohns/README.md.
+     */
+    async scrapePapaJohns (): Promise<RestaurantData> {
+        return this.scrapeIfEnabled('PAPAJOHNS', 'Papa Johns', () =>
+            this.cached('papajohns', () => this.runScraper(new PapaJohnsScraper())))
+    }
+
     async scrapeChipotle (): Promise<RestaurantData> {
         return this.scrapeIfEnabled('CHIPOTLE', 'Chipotle', () =>
             this.cached('chipotle', () => this.runScraper(new ChipotleScraper())))
@@ -151,7 +162,8 @@ export class ScrapingOperator {
             slimChickensResults,
             burgerKingResults,
             pizzaHutResults,
-            chipotleResults
+            chipotleResults,
+            papaJohnsResults
         ] = await Promise.all([
             this.scrapePopeyes(),
             this.scrapeKFC(),
@@ -167,7 +179,8 @@ export class ScrapingOperator {
             this.scrapeSlimChickens(),
             this.scrapeBurgerKing(),
             this.scrapePizzaHut(),
-            this.scrapeChipotle()
+            this.scrapeChipotle(),
+            this.scrapePapaJohns()
         ])
 
         this.restaurants.Popeyes = popeyesResults
@@ -185,6 +198,7 @@ export class ScrapingOperator {
         this.restaurants.BurgerKing = burgerKingResults
         this.restaurants.PizzaHut = pizzaHutResults
         this.restaurants.Chipotle = chipotleResults
+        this.restaurants.PapaJohns = papaJohnsResults
 
         // Save data to files for debugging and caching
         for (const [restaurant, data] of Object.entries(this.restaurants)) {
@@ -255,6 +269,12 @@ export class ScrapingOperator {
                 return this.scrapePizzaHut()
             case 'chipotle':
                 return this.scrapeChipotle()
+            case 'papajohns':
+            case 'papa johns':
+            case "papa john's":
+            case 'papa-johns':
+            case 'pj':
+                return this.scrapePapaJohns()
             default:
                 console.log(chalk.red(`\n❌ Unknown restaurant: ${restaurant}`))
                 return
