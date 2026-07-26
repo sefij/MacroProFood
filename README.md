@@ -185,7 +185,7 @@ which is the one exception and is explained below the table:
   independent checks the source table asserts (`per-100g kcal × weight ÷ 100
   == total kcal`, and Atwater `4P + 4C + 9F == per-100g kcal`); rows that
   fail without a uniquely-safe repair are logged and dropped rather than
-  guessed. Covers the full menu (69 products / 418 variants). See
+  guessed. Covers the full menu (74 products / 423 variants). See
   [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md) —
   including its history with an earlier, image-only copy of this PDF that
   did need OCR/a vision LLM, in case a future republish regresses to that.

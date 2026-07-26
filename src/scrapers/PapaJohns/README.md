@@ -58,6 +58,22 @@ pages draw **two** products side by side, each with its own pair of tables.
 - A row's numbers occasionally wrap onto the next baseline (a long crust
   label pushes the portion cells down a few points) — detected and merged
   rather than silently truncating the row to 10 values.
+- A handful of promotional/kids-menu pages (e.g. "Space Ranger Roni" /
+  "Sheriffs Round Up") print the column-header row without the usual "VALUES
+  PER 100G" super-label above it — detected by falling back to the
+  `ENERGY, ENERGY, PROTEIN, FAT` header pattern itself when that label is
+  entirely absent from the page.
+- A page occasionally prints a redundant "per single serving" summary row
+  alongside the true whole-product portion row. They aren't interchangeable:
+  for most products either scaling is internally self-consistent (pick the
+  larger, whole-product one), but for a few only the *smaller* row actually
+  satisfies its own energy equation — every candidate is tried against the
+  check itself, never assumed from size.
+- "Sulphites / SO₂" (a common allergen note) renders its subscript "2" as its
+  own text run, which can land on the same baseline as a real numeric row by
+  coincidence. Stripped by dropping any leading cell separated from the rest
+  of the row by an implausibly wide gap (real column gaps top out around
+  30-45pt; this sits ~170pt off).
 
 Every row is still checked against the two equations the source table itself
 asserts:
@@ -78,7 +94,7 @@ Only a unique fix is trustworthy; everything else is logged and dropped.
 
 ## Coverage today
 
-**69 products / 418 variants**, across Pizzas, Sourdough Pizzas, Vegan
+**74 products / 423 variants**, across Pizzas, Sourdough Pizzas, Vegan
 Pizzas, Papadias, Sides, Sourdough Sides, Vegan Sides, Desserts and Sourdough
 Desserts. "Recently Delisted" (the source PDF's own category for
 discontinued products, kept in for allergen/compliance reasons per its own
@@ -87,10 +103,18 @@ can't actually be ordered, so surfacing them would let the optimizer
 recommend something off the real menu. "CYO Ingredients" and "Drinks" pages
 carry no "VALUES PER 100G" table at all and are skipped as non-item pages.
 
-13 rows across the rest of the menu fail both equations with no unique repair
-— logged to the console and dropped rather than guessed. Spot-checking one
-against the rendered page confirmed it's a genuine source inconsistency (see
-below), not a parsing bug.
+11 rows across the rest of the menu fail both equations with no unique
+repair — logged to the console and dropped rather than guessed, most as one
+missing size/crust within an otherwise-complete pizza. Two whole products are
+lost this way (both single-row, so their one failing row takes the product
+with it): **Cinnapie Sticks** (page 61) misses its own Atwater equation by
+34% (4×7.2 + 4×56.2 + 9×9.7 = 341 vs a printed 520kcal/100g — no plausible
+single-field fix closes a gap that size) and **Cinnamon Scrolls** (also page
+61) misses its energy equation by 2.78% (330kcal/100g × 332g should be
+1096kcal; the PDF prints 1066) — just outside the ±2% tolerance, plausibly
+rounding noise rather than a real error, but not confidently repairable
+either way. Both were spot-checked against the rendered page to rule out a
+parsing bug before accepting them as genuine source inconsistencies.
 
 ## Known data quirk
 

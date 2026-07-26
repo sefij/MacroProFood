@@ -121,6 +121,22 @@ function withY (line: PdfLine): PositionedCell[] {
     return line.cells.map((c) => ({ ...c, y: line.y }))
 }
 
+/**
+ * Drops leading cells separated from the rest of an (x-sorted) row by an
+ * abnormally wide gap. A chemical formula subscript — "SO₂" (Sulphur
+ * Dioxide, a common allergen) renders its "2" as its own text run — can land
+ * on the same baseline as a real numeric row purely by coincidence, at the
+ * sidebar's x rather than the table's. Real inter-column gaps top out around
+ * 30-45pt in this document; a gap this wide is never a real column boundary.
+ */
+const STRAY_CELL_GAP = 80
+
+function stripLeadingOutliers<T extends { x: number, xEnd: number }> (cells: T[]): T[] {
+    let start = 0
+    while (start < cells.length - 1 && cells[start + 1].x - cells[start].xEnd > STRAY_CELL_GAP) start++
+    return cells.slice(start)
+}
+
 /** Clusters cells into row-groups by baseline proximity, each sorted left→right. */
 function clusterByY (cells: PositionedCell[], tol: number): PositionedCell[][] {
     const sorted = [...cells].sort((a, b) => b.y - a.y || a.x - b.x)
@@ -196,9 +212,11 @@ function findProducts (pageLines: PdfLine[], tablesCount: 1 | 2): PageProduct[] 
 
 /** Combined-layout rows: each data line already carries all 16 figures for one product. */
 function readCombinedRow (line: PdfLine, product: PageProduct, needsLabel: boolean, pageLines: PdfLine[]): Row | null {
-    const numeric = cellsInRange(line.cells, product.xMin, product.xMax)
-        .filter((c) => isNum(c.str))
-        .sort((a, b) => a.x - b.x)
+    const numeric = stripLeadingOutliers(
+        cellsInRange(line.cells, product.xMin, product.xMax)
+            .filter((c) => isNum(c.str))
+            .sort((a, b) => a.x - b.x)
+    )
     const nums = numeric.slice(0, 16).map((c) => parseFloat(c.str))
     if (nums.length < 16) return null
 
@@ -227,11 +245,17 @@ function readCombinedRow (line: PdfLine, product: PageProduct, needsLabel: boole
  * live somewhere in `rowGroups` (already clustered by baseline across the
  * whole page) as a 10-cell and a 6-cell group. A page occasionally prints a
  * redundant "per single serving" summary alongside the true whole-product
- * portion row — both self-consistent, so the one with the larger total kcal
- * (matching the greater weight) is the real whole-product figure.
+ * portion row. They are *not* interchangeably valid: for some products both
+ * satisfy the energy identity (an even 2×/1× scaling of the same per-100g
+ * figures — pick the larger, whole-product one), but for others only the
+ * *smaller* row is actually self-consistent (e.g. "Plain Chicken Poppers":
+ * the larger candidate implies 392kcal from its own per-100g×weight, an 11%
+ * mismatch against its printed 353kcal, while the smaller candidate matches
+ * its own printed total exactly). So every candidate is tried against the
+ * validity check itself, not assumed from size.
  */
 function readStackedProduct (rowGroups: PositionedCell[][], product: PageProduct): Row | null {
-    const sideGroups = rowGroups.map((g) => cellsInRange(g, product.xMin, product.xMax))
+    const sideGroups = rowGroups.map((g) => stripLeadingOutliers(cellsInRange(g, product.xMin, product.xMax)))
     const p100Rows = sideGroups.filter((r) => r.length === 10)
     const portRows = sideGroups.filter((r) => r.length === 6)
     for (const g of sideGroups) {
@@ -239,14 +263,59 @@ function readStackedProduct (rowGroups: PositionedCell[][], product: PageProduct
     }
     if (p100Rows.length === 0 || portRows.length === 0) return null
 
-    const bestPortRow = portRows.reduce((a, b) => (parseFloat(b[0].str) > parseFloat(a[0].str) ? b : a))
-    const nums = [...p100Rows[0], ...bestPortRow].map((c) => parseFloat(c.str))
+    const p100Nums = p100Rows[0].map((c) => parseFloat(c.str))
+    const candidates = portRows.map((r) => [...p100Nums, ...r.map((c) => parseFloat(c.str))])
+    const passing = candidates.filter(checks)
+    const nums = passing.length > 0
+        // Multiple genuinely-valid candidates (an even serving split) → the
+        // larger is the whole product; a single valid candidate is used as-is.
+        ? passing.reduce((a, b) => (b[10] > a[10] ? b : a))
+        // None pass — fall back to the largest so it still reaches the
+        // repair/rejection pipeline (and gets reported) instead of vanishing
+        // silently here.
+        : candidates.reduce((a, b) => (b[10] > a[10] ? b : a))
     return { label: 'Standard', nums }
+}
+
+/**
+ * Counts occurrences of the standard column-header run (ENERGY, ENERGY,
+ * PROTEIN, FAT — the start of every per-100g/per-portion table's header,
+ * appearing once per product on a page) within one line's x-sorted cells.
+ * A handful of promotional/kids-menu pages (e.g. "Space Sheriffs Ranger Roni
+ * Round Up") print this header row without the usual "VALUES PER 100G"
+ * super-label above it, so that text can't be relied on alone to find every
+ * table on the page.
+ */
+function countHeaderRuns (line: PdfLine): number {
+    const cells = [...line.cells].sort((a, b) => a.x - b.x)
+    let count = 0
+    for (let i = 0; i + 3 < cells.length; i++) {
+        if (cells[i].str === 'ENERGY' && cells[i + 1].str === 'ENERGY' &&
+            cells[i + 2].str === 'PROTEIN' && cells[i + 3].str === 'FAT') count++
+    }
+    return count
 }
 
 function parsePage (pageLines: PdfLine[]): ParsedProduct[] {
     const h100Lines = pageLines.filter((l) => l.cells.some((c) => c.str === 'VALUES PER 100G'))
-    if (h100Lines.length === 0) return []
+
+    let h100Y: number[]
+    let h100CellCount: number
+    if (h100Lines.length > 0) {
+        h100Y = h100Lines.map((l) => l.y)
+        h100CellCount = pageLines.reduce(
+            (n, l) => n + l.cells.filter((c) => c.str === 'VALUES PER 100G').length, 0
+        )
+    } else {
+        h100Y = []
+        h100CellCount = 0
+        for (const line of pageLines) {
+            const runs = countHeaderRuns(line)
+            for (let i = 0; i < runs; i++) h100Y.push(line.y)
+            h100CellCount += runs
+        }
+        if (h100CellCount === 0) return []
+    }
 
     const bannerLine = [...pageLines].filter((l) => l.cells.some((c) => c.height >= 35))
         .sort((a, b) => a.y - b.y)[0]
@@ -254,7 +323,6 @@ function parsePage (pageLines: PdfLine[]): ParsedProduct[] {
     if (SKIP_CATEGORY.test(category)) return []
 
     const hPortionLines = pageLines.filter((l) => l.cells.some((c) => /^VALUES PER (PORTION|SLICE)$/.test(c.str)))
-    const h100Y = h100Lines.map((l) => l.y)
     const hPortionY = hPortionLines.map((l) => l.y)
     let minDist = Infinity
     for (const a of h100Y) for (const b of hPortionY) minDist = Math.min(minDist, Math.abs(a - b))
@@ -263,10 +331,6 @@ function parsePage (pageLines: PdfLine[]): ParsedProduct[] {
     // headers are combined while the rows still land on two close baselines,
     // so this is a preference, not a guarantee; both paths are tried below.
     const combined = minDist < 20
-
-    const h100CellCount = pageLines.reduce(
-        (n, l) => n + l.cells.filter((c) => c.str === 'VALUES PER 100G').length, 0
-    )
     const tablesCount: 1 | 2 = h100CellCount >= 2 ? 2 : 1
     const products = findProducts(pageLines, tablesCount)
 
@@ -407,6 +471,9 @@ export class PapaJohnsScraper extends SourceScraper {
                         validRows.push({ label: row.label, nums: fix.nums })
                     } else {
                         rejected++
+                        console.log(
+                            chalk.gray(`  ⚠ rejected "${product.title}" / ${row.label} — failed validation, no unique repair`)
+                        )
                     }
                 }
                 if (validRows.length === 0) continue
