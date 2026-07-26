@@ -86,7 +86,7 @@ cp .env.example .env
 | `DISABLE_BURGERKING`| Set to `true` to skip the Burger King scraper.            |
 | `DISABLE_PIZZAHUT`  | Set to `true` to skip the Pizza Hut scraper.              |
 | `DISABLE_CHIPOTLE`  | Set to `true` to skip the Chipotle scraper.               |
-| `DISABLE_PAPAJOHNS` | Set to `true` to skip Papa Johns (reads a committed extract, not a live scrape). |
+| `DISABLE_PAPAJOHNS` | Set to `true` to skip Papa Johns (parses a committed PDF, not a live scrape). |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -169,22 +169,26 @@ which is the one exception and is explained below the table:
 | Burger King  | Public Sanity CMS dataset (GROQ query)          |
 | Pizza Hut    | Published allergen/nutrition PDF                |
 | Chipotle     | Deliveroo dish list + published ingredient PDF (composed) |
-| Papa Johns   | Committed PDF extract (not live — see below)     |
+| Papa Johns   | Committed nutrition PDF, parsed like the other PDF scrapers (not live — see below) |
 
-- **Papa Johns** is the **only restaurant not scraped live**, for two reasons
-  that between them rule the normal approach out. Its nutrition PDF sits behind
-  Akamai and is geo-fenced to the UK, so any datacenter IP — including the
-  GitHub runner that drives the weekly refresh — gets `403 Access Denied`, even
-  through a real headless browser. And the PDF has no extractable text at all:
-  the tables are images (162 text fragments across 64 pages, all of them the
-  page footer), so the shared PDF pipeline can't read it. The PDF is therefore
-  captured by hand and committed, and the numbers are recovered offline by
-  `tools/papajohns/extract.mjs` into a committed JSON extract that the scraper
-  reads. Every figure in it satisfies two independent checks the source table
-  asserts (`per-100g kcal × weight ÷ 100 == total kcal`, and Atwater
-  `4P + 4C + 9F == per-100g kcal`); rows that failed are listed as rejected
-  rather than guessed. Coverage is partial — pizza pages only for now. See
-  [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md).
+- **Papa Johns** is the **only restaurant not scraped live**: its nutrition
+  PDF sits behind Akamai and is geo-fenced to the UK, so any datacenter
+  IP — including the GitHub runner that drives the weekly refresh — gets
+  `403 Access Denied`, even through a real headless browser. The PDF is
+  therefore captured by hand from a UK connection and committed, and
+  `scraper.ts` reads that local file directly at scrape time — parsing itself
+  is otherwise ordinary (no OCR, no LLM): the current PDF has a normal text
+  layer, read the same way as Domino's/Wendy's/Subway/Pizza Hut, just without
+  the shared header-driven pipeline (this document's headers span several
+  lines and some pages draw two products side by side, which that pipeline's
+  single-header-row detection doesn't fit). Every row still satisfies two
+  independent checks the source table asserts (`per-100g kcal × weight ÷ 100
+  == total kcal`, and Atwater `4P + 4C + 9F == per-100g kcal`); rows that
+  fail without a uniquely-safe repair are logged and dropped rather than
+  guessed. Covers the full menu (69 products / 418 variants). See
+  [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md) —
+  including its history with an earlier, image-only copy of this PDF that
+  did need OCR/a vision LLM, in case a future republish regresses to that.
 - **Taco Bell** is scraped live from a **third-party service
   ([nutritionix.com](https://www.nutritionix.com/taco-bell-uk/menu/premium))**
   rather than Taco Bell directly, because that's what powers their UK online

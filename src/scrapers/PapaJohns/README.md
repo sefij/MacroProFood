@@ -1,10 +1,11 @@
 # Papa John's UK — source data
 
 `nutritional-information.pdf` is committed here, which no other restaurant in
-this project needs. Two independent reasons, both worth knowing before anyone
-tries to "fix" it by fetching live.
+this project needs — `scraper.ts` reads this local file instead of fetching
+one. One reason, worth knowing before anyone tries to "fix" it by fetching
+live.
 
-## 1. The source can't be fetched from a server
+## The source can't be fetched from a server
 
 `https://www.papajohns.co.uk/static/assets/pdfs/nutritional-information.pdf` is
 the official URL. It sits behind Akamai and is geo-fenced to the UK:
@@ -18,93 +19,121 @@ the official URL. It sits behind Akamai and is geo-fenced to the UK:
 That rules out fetching it at scrape time: `.github/workflows/refresh-data.yml`
 runs on GitHub-hosted runners, which are datacenter IPs and would hit the same
 wall. A UK residential connection can download it fine in a browser, which is
-why the file is captured by hand.
+why the file is captured by hand and committed.
 
-**Provenance caveat:** this copy came from a third-party mirror
-(`ribbyhall.co.uk/uploads/Back End Links/nutritional-information-papa-johns.pdf`)
-because the official URL is unreachable from here. It carries Papa John's own
-`©2022 Papa John's International, Inc.` footer and the `OCT22-1` version tag on
-its item pages, but it has **not** been byte-compared against the official file.
-Anyone with UK access should re-download from the official URL and replace this
-copy; if the sha256 differs, prefer the official one.
+    sha256  17d6f89243776c7321d0e8286add3e4c37c240e8ea70fb043d1366caeca9603f
+    size    11,936,318 bytes
+    pages   86 (menu items start on page 7)
+    version JUNE26-1
 
-    sha256  af22af9f79e5a6ab4157ccf945efa8ec04980118bceedc7936bff83ad69ecd31
-    size    7,179,292 bytes
-    pages   64 (menu items start on page 7)
-    version OCT22-1
+Anyone with UK access can re-download from the official URL and replace this
+copy — check the version stamp printed on each item page (bottom-right,
+e.g. `JUNE26-1`) and the sha256 above before assuming a newer copy is actually
+newer; the PDF has been captured twice now (see History) and the version tag
+is the reliable signal, not the download date.
 
-## 2. The PDF has no extractable text
+## Reading the table
 
-Unlike Domino's, Wendy's, Subway and Pizza Hut — all of which have real text and
-are parsed with `src/scrapers/pdf/` — this document's tables are **images**:
+Unlike the copy this scraper originally shipped against, the current PDF has
+a **real text layer** — every number is selectable, extractable text, not a
+picture of a number. So this is parsed the same way as Domino's, Wendy's,
+Subway and Pizza Hut (`src/scrapers/pdf/`, or `extractPdfLines` directly):
+positioned text, no OCR, no vision model, no offline step. Parsing the full
+86-page document takes under a second.
 
-- 162 text fragments across all 64 pages, and they're just the per-page
-  copyright footer.
-- Page 7 draws **271 `paintImageXObject`** ops against 2 `showText`.
-- Each cell's value is its own small image, roughly 15×8pt.
+It doesn't use the shared header-driven pipeline (`extractTables`), though,
+because the layout doesn't fit its one-header-row assumption: a page's
+"VALUES PER 100G" / "VALUES PER PORTION" headers are stacked across several
+lines (a label row, then a wrapped continuation, then a units row), and some
+pages draw **two** products side by side, each with its own pair of tables.
+`scraper.ts` reads raw positioned lines and reconstructs rows itself:
 
-So `extractPdfLines` / `extractPdfItems` return nothing useful here, and the
-numbers have to be recovered by rendering pages and reading the pixels.
+- **Pizza-family pages** (and some single-row pages) draw both tables side by
+  side, so a product's 16 figures (10 per-100g + 6 per-portion) sit on one
+  line per size/crust row — read directly.
+- **Papadias/Sides/Desserts pages** (one or two products per page) stack the
+  two tables instead, so a product's per-100g row and per-portion row are
+  found independently and paired; two products on one page are split by the
+  x-gap between their title blocks.
+- A row's numbers occasionally wrap onto the next baseline (a long crust
+  label pushes the portion cells down a few points) — detected and merged
+  rather than silently truncating the row to 10 values.
 
-## Reading the tables reliably
-
-Three OCR approaches were tried and rejected before this. Tesseract
-systematically drops a leading digit (`1133` → `133`, `11.7` → `1.7`) — raw
-per-cell accuracy topped out around 93%, and a column-detection bug (measuring
-a vertical rule's coverage against full page height instead of the table's own
-row band) undercounted pizzas at 11, then 16, out of ~30. PaddleOCR/PP-Structure
-was spiked next — it crashed natively on both Windows and WSL2 until a specific
-paddle/paddleocr/numpy version combination was found, and even working it only
-reached 60% with a worse failure mode (merged rows) than Tesseract. Neither was
-trustworthy enough to ship nutrition data from.
-
-`tools/papajohns/extract.mjs` instead renders each page to a PNG and sends it
-to Claude (`claude-opus-5`) with a JSON-schema-constrained structured output
-(`client.messages.parse()`), asking for every product and every size/crust row
-exactly as printed. This was validated against a hand-transcribed ground truth
-for page 7 (100% exact match on every column the scraper uses) before scaling
-to the full document, then spot-checked on a title-OCR-failure page and a
-two-products-per-page layout.
-
-Vision extraction is far more accurate than OCR, but still not treated as
-ground truth on its own — every row must satisfy two independent equations the
-source table itself asserts:
+Every row is still checked against the two equations the source table itself
+asserts:
 
     energy   per100g_kcal × totalWeight / 100  ==  totalKcal      (±2%)
     Atwater  4×protein + 4×carbs + 9×fat       ==  per100g_kcal   (±12%)
 
-When a row fails, the extractor tries the same repair OCR needed (restore a
-dropped leading digit) across every numeric field, but **only accepts a repair
-when exactly one candidate across all fields clears both equations**. The first
-version of this accepted the first candidate that passed either check — on a
-real row (page 8, American Hot) that silently "fixed" protein from 9.5 to 29.5g
-(a wild outlier against every sibling row, 8.4–15.7g) when the actual misread
-was fat (1.4 → 11.4g), and separately, two different protein values (29.5 and
-39.5) both independently satisfied the check alone. Satisfying an equation is
-not proof of correctness when more than one edit satisfies it — only a unique
-candidate is safe to auto-accept; everything else is dropped and listed under
-`rejected` rather than guessed.
+A row that fails either is dropped — *unless* exactly one candidate fix makes
+both hold. The source PDF occasionally drops a decimal point (e.g. prints
+`135` where every sibling row reads `13.5`); the scraper tries un-dropping one
+(÷10) or the inverse (×10) on each numeric field and accepts a fix only when
+it's the **unique** candidate that clears both equations. Accepting the first
+candidate that merely passes the tolerance isn't safe: during an earlier
+version of this scraper (reading an older, image-only copy of this same PDF
+via OCR), that approach once silently "fixed" the wrong field, and separately,
+two different values for the same field both independently passed the check.
+Only a unique fix is trustworthy; everything else is logged and dropped.
 
 ## Coverage today
 
-`nutrition.json` holds **60 products / 260 variants** across Pizzas, Vegan
-Pizzas, Papadias, Sides, Vegan Sides, Desserts, and Recently Delisted (excluded
-from the scraper's output — see below). All 58 item pages (7-64) are accounted
-for: extracted, self-skipped by the model as a non-table page (CYO ingredient
-pages, allergen keys, dividers, the table of contents — 11 pages), or rejected
-(3 rows, listed under `rejected` with their raw extracted values).
+**69 products / 418 variants**, across Pizzas, Sourdough Pizzas, Vegan
+Pizzas, Papadias, Sides, Sourdough Sides, Vegan Sides, Desserts and Sourdough
+Desserts. "Recently Delisted" (the source PDF's own category for
+discontinued products, kept in for allergen/compliance reasons per its own
+page footer) parses cleanly but is dropped by `scraper.ts` — those items
+can't actually be ordered, so surfacing them would let the optimizer
+recommend something off the real menu. "CYO Ingredients" and "Drinks" pages
+carry no "VALUES PER 100G" table at all and are skipped as non-item pages.
 
-"Recently Delisted" is the source PDF's own category for discontinued products
-kept in for allergen/nutrition compliance — its own page banner says so. They
-extract cleanly but `scraper.ts` drops them: they can't actually be ordered, so
-surfacing them would let the optimizer recommend something off the real menu.
+13 rows across the rest of the menu fail both equations with no unique repair
+— logged to the console and dropped rather than guessed. Spot-checking one
+against the rendered page confirmed it's a genuine source inconsistency (see
+below), not a parsing bug.
 
 ## Known data quirk
 
-Papa John's own per-100g figures are internally inconsistent across sizes of the
-same recipe (All The Meats: protein 17.4 → 13.1 → 11.7 for Medium → Large →
-XXL thin crust). Derived whole-pizza macros inherit that noise. It's in the
-source, not in the extraction.
+Papa John's own figures are internally inconsistent in a couple of ways, both
+in the source, not the extraction:
+
+- Per-100g figures vary across sizes of the same recipe (a thin-crust pizza's
+  protein-per-100g isn't identical at Medium vs Large vs XXL) — derived
+  whole-pizza macros inherit that noise.
+- A handful of rows don't satisfy their own printed energy/Atwater equations
+  at all (not just a dropped decimal) — these are the 13 rejected rows above.
+
+## History: an image-only predecessor, and why OCR/vision aren't used
+
+The copy this scraper originally shipped against (`OCT22-1`, captured via a
+third-party mirror since the official URL was unreachable even by hand at the
+time) had **no extractable text at all** — its tables were images: 162 text
+fragments across 64 pages, all of them the page footer; a page drew ~271
+`paintImageXObject` ops against 2 `showText`. Recovering numbers meant
+rendering pages and reading pixels, which was tried two ways before this
+document was superseded by a text-layer copy:
+
+- **OCR (Tesseract).** Systematically dropped a leading digit (`1133` →
+  `133`), capping raw per-cell accuracy around 93%; a column-detection bug
+  (measuring a vertical rule's coverage against full page height instead of
+  the table's own row band) undercounted pizzas at 11, then 16, of ~30.
+- **PaddleOCR/PP-Structure.** Crashed natively on both Windows and WSL2 until
+  a specific paddle/paddleocr/numpy version combination was found, and even
+  working it only reached 60% accuracy with a worse failure mode (merged
+  rows) than Tesseract.
+- **Vision LLM (Claude Opus 5, structured outputs).** Validated to 100% exact
+  match against a hand-transcribed page before scaling to a full 58-page run
+  (~$2.25 in API cost) — this is what shipped, briefly, as **60 products /
+  260 variants, pizzas-only-complete**, before a user cross-check against a
+  since-updated PDF (`JUNE26-1`, with a real text layer) showed the old
+  `OCT22-1` figures were simply stale, not wrong — Papa John's had
+  reformulated recipes in the interim. The `JUNE26-1` PDF made all of the
+  above moot: real text needs none of it.
+
+If the source ever regresses to an image-only PDF again, the vision-LLM
+approach (render page → `client.messages.parse()` with a JSON-schema output,
+gated by the same two equations) is the one worth reaching for first — see
+this file's git history for the last working version of that pipeline.
 
 ## If a better source turns up
 

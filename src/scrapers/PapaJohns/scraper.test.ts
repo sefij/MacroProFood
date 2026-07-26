@@ -1,120 +1,88 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { PapaJohnsScraper } from './scraper'
-import nutrition from './nutrition.json'
 
 /**
- * These cover the scraper's own job — shaping the committed extract into menu
- * items — plus two invariants of the committed data itself.
- *
- * The data invariants matter more than they look. `nutrition.json` is generated
- * by an OCR pipeline (tools/papajohns/extract.mjs), so a regenerated file is
- * exactly where a silently wrong macro would enter. Asserting the same two
- * equations the extractor gates on means a bad regeneration fails the build
- * rather than shipping as food data.
+ * Papa Johns reads a local, committed PDF (see README.md for why) rather than
+ * fetching one, so — unlike every other PDF scraper here — these tests run
+ * against the real document on every run instead of a fixture. That's the
+ * point: a regenerated/replaced PDF that breaks parsing fails the build
+ * instead of shipping silently wrong macros.
  */
 
-const extract = nutrition as unknown as {
-    items: { name: string; category: string; variants: {
-        label: string; calories: number; protein: number; fat: number; carbs: number
-        weightG: number; per100g?: { kcal: number; protein: number; carbs: number; fat: number }
-    }[] }[]
-}
+const near = (a: number, b: number, tol: number): boolean => Math.abs(a - b) / Math.abs(b) <= tol
 
-const near = (a: number, b: number, tol: number) => Math.abs(a - b) / Math.abs(b) <= tol
+test('scrape(): needs no browser — initialize is a no-op', async () => {
+    const scraper = new PapaJohnsScraper()
+    await scraper.initialize()
+    const items = await scraper.scrape()
+    assert.ok(Object.keys(items).length > 0)
+})
 
-test('committed extract: every variant is self-consistent on energy', () => {
-    // per-100g kcal x total weight / 100 must equal the printed total calories.
+test('scrape(): covers every menu category, not just pizzas', async () => {
+    const items = await new PapaJohnsScraper().scrape()
+    const categories = new Set(Object.values(items).map((v) => v.category))
+    for (const expected of ['Pizzas', 'Papadias', 'Sides', 'Desserts']) {
+        assert.ok(categories.has(expected), `expected a "${expected}" item, got categories: ${[...categories]}`)
+    }
+})
+
+test('scrape(): sizes and crusts are grouped as variants of one pizza', async () => {
+    const items = await new PapaJohnsScraper().scrape()
+    const variantEntries = Object.entries(items).filter(([, v]) => v.variantOf === 'ALL THE MEATS')
+    assert.ok(variantEntries.length > 5, 'expected several All The Meats size/crust variants')
+    for (const [key, entry] of variantEntries) {
+        assert.equal(entry.variantGroupLabel, 'Size & Crust')
+        assert.ok(key.startsWith('ALL THE MEATS ('), key)
+    }
+})
+
+test('scrape(): a single-row product (a Papadia) has no spurious variant group', async () => {
+    const items = await new PapaJohnsScraper().scrape()
+    const fajita = items['FAJITA CHICKEN']
+    assert.ok(fajita, 'expected a plain "FAJITA CHICKEN" key')
+    assert.equal(fajita.variantOf, undefined)
+    assert.equal(fajita.variantGroupLabel, undefined)
+    assert.equal(fajita.category, 'Papadias')
+})
+
+test('scrape(): whole-product macros match the printed table exactly (hand-verified)', async () => {
+    // Cross-checked against the rendered PDF page and against a user-reported
+    // real-world value during development — this pins both to a regression.
+    const items = await new PapaJohnsScraper().scrape()
+    const fajita = items['FAJITA CHICKEN']
+    assert.equal(fajita.calories, 610)
+    assert.equal(fajita.protein, 31.4)
+    assert.equal(fajita.fat, 15.4)
+    assert.equal(fajita.carbs, 82.4)
+})
+
+test('scrape(): every item satisfies the Atwater identity', async () => {
+    // Belt-and-suspenders: the scraper itself gates each row on this (at the
+    // per-100g level, ±12%) before emitting it, so a failure here means the
+    // gate regressed, not just one row. Checked at the whole-product level,
+    // which is the same linear scaling and so the same identity — with a
+    // slightly wider tolerance since two roundings (per-100g, then ×weight)
+    // compound.
+    const items = await new PapaJohnsScraper().scrape()
     let checked = 0
-    for (const item of extract.items) {
-        for (const v of item.variants) {
-            if (!v.per100g) continue
-            checked++
-            assert.ok(
-                near((v.per100g.kcal * v.weightG) / 100, v.calories, 0.02),
-                `${item.name} / ${v.label}: ${v.per100g.kcal}kcal/100g x ${v.weightG}g != ${v.calories}`
-            )
-        }
+    for (const [key, entry] of Object.entries(items)) {
+        checked++
+        assert.ok(Number.isFinite(entry.calories) && entry.calories > 0, key)
+        assert.ok(
+            near(4 * entry.protein + 4 * entry.carbs + 9 * entry.fat, entry.calories, 0.15),
+            `${key}: 4(${entry.protein})+4(${entry.carbs})+9(${entry.fat}) vs ${entry.calories}`
+        )
     }
-    assert.ok(checked > 0, 'expected at least one variant with per-100g figures')
+    assert.ok(checked > 50, `expected a large menu, got ${checked} items`)
 })
 
-test('committed extract: macros satisfy the Atwater identity', () => {
-    for (const item of extract.items) {
-        for (const v of item.variants) {
-            if (!v.per100g) continue
-            const p = v.per100g
-            assert.ok(
-                near(4 * p.protein + 4 * p.carbs + 9 * p.fat, p.kcal, 0.12),
-                `${item.name} / ${v.label}: Atwater ${(4 * p.protein + 4 * p.carbs + 9 * p.fat).toFixed(0)} != ${p.kcal}`
-            )
-        }
-    }
-})
-
-test('committed extract: whole-product macros scale from per-100g by weight', () => {
-    for (const item of extract.items) {
-        for (const v of item.variants) {
-            if (!v.per100g) continue
-            const factor = v.weightG / 100
-            for (const macro of ['protein', 'fat', 'carbs'] as const) {
-                const expected = Math.round(v.per100g[macro] * factor * 10) / 10
-                assert.equal(v[macro], expected, `${item.name} / ${v.label} ${macro}`)
-            }
-        }
-    }
-})
-
-test('committed extract: no product is left unnamed', () => {
-    // An "Unknown (page N)" name means the title OCR failed and the item would
-    // reach the app nameless.
-    const unnamed = extract.items.filter((i) => /^unknown/i.test(i.name))
-    assert.deepEqual(unnamed.map((i) => i.name), [], 'products with failed title OCR')
-})
-
-// The extract's `items` array order isn't page order (the extractor's worker
-// pool writes in request-completion order) and, since single-variant products
-// now go through addItem instead of addVariant, items[0] isn't guaranteed to
-// have the addVariant shape either. Pick examples of each shape explicitly.
-const notDelisted = (i: { category: string }) => !/recently delisted/i.test(i.category)
-
-test('scrape(): emits one variant entry per size/crust, grouped under the product', async () => {
+test('scrape(): "Recently Delisted" products are excluded', async () => {
     const items = await new PapaJohnsScraper().scrape()
-    const keys = Object.keys(items)
-    assert.ok(keys.length > 0, 'expected some items')
-
-    const multiVariant = extract.items.find((i) => i.variants.length > 1 && notDelisted(i))
-    assert.ok(multiVariant, 'expected at least one multi-variant product in the extract')
-    const expectedKey = `${multiVariant.name} (${multiVariant.variants[0].label})`
-    assert.ok(items[expectedKey], `expected key ${expectedKey}`)
-
-    const entry = items[expectedKey]
-    assert.equal(entry.variantOf, multiVariant.name)
-    assert.equal(entry.variantGroupLabel, 'Size & Crust')
-    assert.equal(entry.variantOption, multiVariant.variants[0].label)
-})
-
-test('scrape(): a single-variant product is added as itself, not a one-option variant group', async () => {
-    const items = await new PapaJohnsScraper().scrape()
-
-    const singleVariant = extract.items.find((i) => i.variants.length === 1 && notDelisted(i))
-    assert.ok(singleVariant, 'expected at least one single-variant product in the extract')
-    const entry = items[singleVariant.name]
-    assert.ok(entry, `expected key ${singleVariant.name}`)
-    assert.equal(entry.variantOf, undefined)
-    assert.equal(entry.variantGroupLabel, undefined)
-})
-
-test('scrape(): carries calories and macros through unchanged', async () => {
-    const items = await new PapaJohnsScraper().scrape()
-    const multiVariant = extract.items.find((i) => i.variants.length > 1 && notDelisted(i))
-    assert.ok(multiVariant)
-    const v = multiVariant.variants[0]
-    const entry = items[`${multiVariant.name} (${v.label})`]
-    assert.equal(entry.calories, v.calories)
-    assert.equal(entry.protein, v.protein)
-    assert.equal(entry.fat, v.fat)
-    assert.equal(entry.carbs, v.carbs)
+    // These are the source PDF's own discontinued-product examples — kept in
+    // the PDF for compliance reasons, but not orderable, so must not appear.
+    assert.equal(items['TANDOORI SPICE'], undefined)
+    assert.equal(items['YULETIDE YORKIE'], undefined)
 })
 
 test('scrape(): sets the ratios the optimizer reads', async () => {
@@ -124,13 +92,4 @@ test('scrape(): sets the ratios the optimizer reads', async () => {
         assert.ok(Number.isFinite(entry.CarbToCalRatio))
         assert.ok(entry.calories > 0)
     }
-})
-
-test('scrape(): needs no browser — initialize is a no-op', async () => {
-    // The shared runner calls initialize() before scrape(); Papa John's reads a
-    // local file, so launching Chromium would be pure waste.
-    const scraper = new PapaJohnsScraper()
-    await scraper.initialize()
-    const items = await scraper.scrape()
-    assert.ok(Object.keys(items).length > 0)
 })
