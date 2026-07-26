@@ -2,18 +2,22 @@
  * Checks for, and optionally swaps in, a fresh copy of the Papa John's
  * nutrition PDF.
  *
- * Papa John's own site is Akamai-geofenced to the UK — every datacenter IP,
- * including GitHub Actions runners, gets `403 Access Denied` on it (see
- * src/scrapers/PapaJohns/README.md), so the weekly refresh workflow can never
- * fetch this one automatically. This script tries the official URL directly
- * first — Akamai's block may key on more than IP (TLS/browser fingerprinting
- * a plain HTTP client can't replicate), so this can still fail even from a
- * genuine UK connection; if it does, the fallback is the same as always:
- * download it by hand in a real browser and pass the saved file's path
- * instead. Either way, the goal is making "is there actually a new one, and
- * if so use it" a single command instead of a multi-file hand-edit — worth
- * having because a stale copy (OCT22-1 vs the current JUNE26-1) shipped
- * silently wrong macros for a while before a user caught one value by hand.
+ * Papa John's own site sits behind Akamai — but the block turned out **not**
+ * to be the IP-based geofence it looked like. `axios` (Node's legacy `http`
+ * module under the hood) and `curl` both reliably get `403 Access Denied`
+ * here, from every environment tried; Node's native `fetch()` (built on
+ * `undici`, a different TLS implementation) reliably gets `200` on the exact
+ * same URL, from the exact same network path, with no special headers or
+ * cookies needed. That points at TLS/HTTP-client fingerprinting rather than
+ * IP or geography — so this uses `fetch()`, not `axios`, deliberately. It
+ * could still stop working if Akamai's fingerprint list changes; if it does,
+ * the fallback is the same as always: download the PDF by hand in a real
+ * browser and pass the saved file's path instead.
+ *
+ * Either way, the goal is making "is there actually a new one, and if so use
+ * it" a single command instead of a multi-file hand-edit — worth having
+ * because a stale copy (OCT22-1 vs the current JUNE26-1) shipped silently
+ * wrong macros for a while before a user caught one value by hand.
  *
  * Usage:
  *   yarn papajohns:check                    - try the official URL, report only
@@ -25,7 +29,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
 import * as os from 'os'
-import axios from 'axios'
 import chalk from 'chalk'
 import { extractPdfLines } from '../scrapers/pdf/pdf-lines'
 import { PDF_PATH, findVersionStamp } from '../scrapers/PapaJohns/scraper'
@@ -62,22 +65,23 @@ async function readCandidate (source: string): Promise<Buffer> {
         return fs.readFileSync(source)
     }
     console.log(chalk.blue(`Fetching ${source} …`))
+    let response: Response
     try {
-        const response = await axios.get<ArrayBuffer>(source, {
-            headers: REQUEST_HEADERS,
-            timeout: 30000,
-            responseType: 'arraybuffer'
-        })
-        return Buffer.from(response.data)
+        response = await fetch(source, { headers: REQUEST_HEADERS })
     } catch (error) {
-        const status = axios.isAxiosError(error) ? error.response?.status : undefined
         throw new Error(
-            `Couldn't fetch it directly${status ? ` (HTTP ${status})` : ''} — this is the expected Akamai ` +
-            'geo-block if you\'re not on a UK connection, but can also happen on one (bot-detection isn\'t ' +
-            'purely IP-based). Fall back to downloading it by hand in a real browser, then re-run this ' +
-            'with the saved file\'s path.'
+            `Couldn't reach it at all (network error: ${error instanceof Error ? error.message : error}). ` +
+            'Fall back to downloading it by hand in a real browser, then re-run this with the saved file\'s path.'
         )
     }
+    if (!response.ok) {
+        throw new Error(
+            `Couldn't fetch it directly (HTTP ${response.status}) — Akamai's fingerprint check may have ` +
+            'changed. Fall back to downloading it by hand in a real browser, then re-run this with the ' +
+            'saved file\'s path.'
+        )
+    }
+    return Buffer.from(await response.arrayBuffer())
 }
 
 function updateReadmeProvenance (info: PdfInfo): void {

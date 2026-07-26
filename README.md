@@ -172,11 +172,15 @@ which is the one exception and is explained below the table:
 | Papa Johns   | Committed nutrition PDF, parsed like the other PDF scrapers (not live — see below) |
 
 - **Papa Johns** is the **only restaurant not scraped live**: its nutrition
-  PDF sits behind Akamai and is geo-fenced to the UK, so any datacenter
-  IP — including the GitHub runner that drives the weekly refresh — gets
-  `403 Access Denied`, even through a real headless browser. The PDF is
-  therefore captured by hand from a UK connection and committed, and
-  `scraper.ts` reads that local file directly at scrape time — parsing itself
+  PDF sits behind Akamai, and `axios`/`curl` reliably get `403 Access Denied`
+  on it from every environment tried. That turned out to be an HTTP-client
+  fingerprint check rather than a real IP/geo block — Node's native
+  `fetch()` gets the file fine from the same network path — but relying on a
+  fingerprint bypass in a scheduled job is a worse failure mode than a
+  manual refresh being inconvenient, so `scraper.ts` still reads a committed
+  local file rather than fetching live (see
+  [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md),
+  "Should this go live again?"). Parsing itself
   is otherwise ordinary (no OCR, no LLM): the current PDF has a normal text
   layer, read the same way as Domino's/Wendy's/Subway/Pizza Hut, just without
   the shared header-driven pipeline (this document's headers span several

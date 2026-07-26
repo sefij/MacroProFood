@@ -5,21 +5,32 @@ this project needs — `scraper.ts` reads this local file instead of fetching
 one. One reason, worth knowing before anyone tries to "fix" it by fetching
 live.
 
-## The source can't be fetched from a server
+## Fetching it isn't as blocked as it first looked
 
 `https://www.papajohns.co.uk/static/assets/pdfs/nutritional-information.pdf` is
-the official URL. It sits behind Akamai and is geo-fenced to the UK:
+the official URL. It sits behind Akamai, and for a long time this section said
+that ruled out fetching it from anywhere but a UK residential browser:
 
-- A datacenter IP gets `403 Access Denied` (`Server: AkamaiGHost`) on the PDF,
-  on `/allergens-and-nutrition`, and on the homepage.
+- `axios` (Node's legacy `http` module) and `curl` both reliably get
+  `403 Access Denied` (`Server: AkamaiGHost`) on the PDF, from every
+  environment tried.
 - A plain client is redirected to `papajohns.com/international/` instead.
-- A real headless Chromium session gets the same 403, so this isn't a
-  User-Agent or cookie problem.
 
-That rules out fetching it at scrape time: `.github/workflows/refresh-data.yml`
-runs on GitHub-hosted runners, which are datacenter IPs and would hit the same
-wall. A UK residential connection can download it fine in a browser, which is
-why the file is captured by hand and committed.
+That looked like an IP-based geofence — until Node's **native `fetch()`**
+(built on `undici`, a different TLS implementation than `axios`/`curl`) was
+tried on the exact same URL, from the exact same network path, with no
+special headers or cookies: **`200`, full file, byte-identical to the
+committed copy, reproducibly.** So the block isn't about IP or geography at
+all — it's TLS/HTTP-client fingerprinting, and `undici`'s fingerprint isn't
+on Akamai's list (at least not currently). `scraper.ts` still reads the
+committed file rather than fetching live (see "Should this go live?" below),
+but `tools/update-papajohns-pdf.ts` fetches the official URL directly with
+`fetch()` and it works.
+
+This could stop working the moment Akamai's fingerprint list changes — it's
+not a guarantee, just what's currently true. If it does regress, the
+fallback is what it always was: download the PDF by hand in a real browser
+and pass the saved file's path instead.
 
     sha256  17d6f89243776c7321d0e8286add3e4c37c240e8ea70fb043d1366caeca9603f
     size    11,936,318 bytes
@@ -34,21 +45,17 @@ is the reliable signal, not the download date.
 
 ### Checking for and applying updates
 
-Since this can never be automated end-to-end (the block above is IP-based
-and holds against every option tried, including a real headless browser),
-the goal is making the manual side of it a single command:
-
-    yarn papajohns:check              # is there a newer one? (tries the official URL)
+    yarn papajohns:check              # is there a newer one? (fetches the official URL)
     yarn papajohns:check <path-or-url>  # check a specific file/URL instead, report only
     yarn papajohns:update              # same check, but replace if newer
     yarn papajohns:update <path-or-url> # replace with a specific file/URL if newer
 
-Both read the given source — a local path (from a browser download) or a
-URL, defaulting to the official one — and the committed copy, then print
-their version stamps/page counts/sha256s side by side. `--check` never
-writes anything, even when an update is found (it saves the fetched bytes to
-a temp path and prints the exact `papajohns:update` command to apply it).
-Without `--check`:
+Both fetch the given source — a URL (defaulting to the official one) or a
+local path (from a browser download, still supported as a fallback) — and
+compare it against the committed copy, printing their version stamps/page
+counts/sha256s side by side. `--check` never writes anything, even when an
+update is found (it saves the fetched bytes to a temp path and prints the
+exact `papajohns:update` command to apply it). Without `--check`:
 
 - does nothing if they're byte-identical,
 - refuses to replace automatically if the version stamp is unchanged but the
@@ -57,17 +64,23 @@ Without `--check`:
 - otherwise replaces `nutritional-information.pdf` and rewrites this file's
   provenance block (sha256/size/pages/version) to match.
 
-Trying the official URL directly is worth attempting but not something to
-rely on: Akamai's bot detection can key on TLS/browser fingerprinting that a
-plain HTTP client can't replicate, so it may fail even from a genuine UK
-connection. When it does, download the PDF by hand in a real browser and
-pass the saved path instead — same as always.
-
 Either way, this does **not** run the scraper or commit anything — run
 `yarn build:data` and the test suite afterward and review the diff yourself.
 A version bump can shift page numbers and reformulate recipes (that's
 exactly what happened between `OCT22-1` and `JUNE26-1` — see History), so
 treat a successful swap as the start of a review, not the end of one.
+
+### Should this go live again?
+
+Given `fetch()` works, `scraper.ts` *could* in principle drop the committed
+file and fetch live like every other restaurant, including from
+`refresh-data.yml`. That's a bigger, deliberate change this README doesn't
+make unilaterally — a fingerprint-based bypass is inherently less stable
+than a real unblock, and a CI job silently starting to fail weekly is a
+worse failure mode than a manual refresh that's merely inconvenient. If it's
+ever done, keep the committed PDF as a fallback (`SourceScraper` already has
+a pattern for "live, but fall back to the last-known-good snapshot") rather
+than making a scheduled job hard-depend on a fingerprint quirk.
 
 ## Reading the table
 

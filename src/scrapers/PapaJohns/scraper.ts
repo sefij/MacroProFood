@@ -10,12 +10,17 @@ import { extractPdfLines, PdfCell, PdfLine } from '../pdf/pdf-lines'
  * Papa John's UK — parsed from a committed copy of their nutrition PDF.
  *
  * This is the **only restaurant scraper that reads a local file instead of
- * fetching one**, for one reason: papajohns.co.uk sits behind Akamai and is
- * geo-fenced to the UK, so a datacenter IP (including the GitHub runner that
- * drives the weekly refresh) gets `403 Access Denied` on the PDF and on every
- * page that links it — a real headless browser gets the same 403, so it isn't
- * a User-Agent problem. The PDF is captured by hand from a UK connection and
- * committed instead; see README.md for the provenance and a way to verify it.
+ * fetching one**. papajohns.co.uk sits behind Akamai, and `axios`/`curl`
+ * reliably get `403 Access Denied` on the PDF — but that turned out to be an
+ * HTTP-client/TLS fingerprint check, not an IP geofence: Node's native
+ * `fetch()` gets the file fine, from the same network path, no special
+ * headers needed (see README.md). `tools/update-papajohns-pdf.ts` relies on
+ * that to check for and fetch updates; this scraper still reads the
+ * committed file rather than fetching live, deliberately — a
+ * fingerprint-based bypass is less stable than a real unblock, and this
+ * scraper running in a scheduled job is a worse failure mode than a manual
+ * refresh being merely inconvenient (see README.md, "Should this go live
+ * again?").
  *
  * Past that one difference, this is an ordinary PDF nutrition scraper, same
  * family as Domino's/Wendy's/Subway (`src/scrapers/pdf/`) and Pizza Hut
