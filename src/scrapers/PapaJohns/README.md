@@ -32,17 +32,23 @@ e.g. `JUNE26-1`) and the sha256 above before assuming a newer copy is actually
 newer; the PDF has been captured twice now (see History) and the version tag
 is the reliable signal, not the download date.
 
-### Refreshing it
+### Checking for and applying updates
 
-Since this can never be automated (the block above is IP-based and holds
-against every option tried, including a real headless browser), the goal
-instead is making the manual step a single command rather than a multi-file
-hand-edit:
+Since this can never be automated end-to-end (the block above is IP-based
+and holds against every option tried, including a real headless browser),
+the goal is making the manual side of it a single command:
 
-    yarn papajohns:update <path-to-downloaded-pdf>
+    yarn papajohns:check              # is there a newer one? (tries the official URL)
+    yarn papajohns:check <path-or-url>  # check a specific file/URL instead, report only
+    yarn papajohns:update              # same check, but replace if newer
+    yarn papajohns:update <path-or-url> # replace with a specific file/URL if newer
 
-This reads both the committed copy and the candidate, prints their version
-stamps/page counts/sha256s side by side, and:
+Both read the given source — a local path (from a browser download) or a
+URL, defaulting to the official one — and the committed copy, then print
+their version stamps/page counts/sha256s side by side. `--check` never
+writes anything, even when an update is found (it saves the fetched bytes to
+a temp path and prints the exact `papajohns:update` command to apply it).
+Without `--check`:
 
 - does nothing if they're byte-identical,
 - refuses to replace automatically if the version stamp is unchanged but the
@@ -51,11 +57,17 @@ stamps/page counts/sha256s side by side, and:
 - otherwise replaces `nutritional-information.pdf` and rewrites this file's
   provenance block (sha256/size/pages/version) to match.
 
-It does **not** run the scraper or commit anything — run `yarn build:data`
-and the test suite afterward and review the diff yourself. A version bump can
-shift page numbers and reformulate recipes (that's exactly what happened
-between `OCT22-1` and `JUNE26-1` — see History), so treat a successful swap
-as the start of a review, not the end of one.
+Trying the official URL directly is worth attempting but not something to
+rely on: Akamai's bot detection can key on TLS/browser fingerprinting that a
+plain HTTP client can't replicate, so it may fail even from a genuine UK
+connection. When it does, download the PDF by hand in a real browser and
+pass the saved path instead — same as always.
+
+Either way, this does **not** run the scraper or commit anything — run
+`yarn build:data` and the test suite afterward and review the diff yourself.
+A version bump can shift page numbers and reformulate recipes (that's
+exactly what happened between `OCT22-1` and `JUNE26-1` — see History), so
+treat a successful swap as the start of a review, not the end of one.
 
 ## Reading the table
 
