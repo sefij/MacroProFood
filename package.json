@@ -20,6 +20,7 @@
     "build": "tsc",
     "build:data": "tsc && node dist/tools/build-web-data.js",
     "build:data:fresh": "tsc && node dist/tools/build-web-data.js --no-cache",
+    "papajohns:update": "tsc && node dist/tools/update-papajohns-pdf.js",
     "test": "tsc && node --test \"dist/**/*.test.js\""
   },
   "devDependencies": {

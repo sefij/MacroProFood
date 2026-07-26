@@ -72,7 +72,8 @@ import { extractPdfLines, PdfCell, PdfLine } from '../pdf/pdf-lines'
 
 // Resolved from the repo root (matching config.ts / build-web-data.ts),
 // not __dirname — the compiled dist/ tree doesn't carry non-TS assets along.
-const PDF_PATH = path.resolve(process.cwd(), 'src', 'scrapers', 'PapaJohns', 'nutritional-information.pdf')
+// Exported so tools/update-papajohns-pdf.ts writes to the same place it reads.
+export const PDF_PATH = path.resolve(process.cwd(), 'src', 'scrapers', 'PapaJohns', 'nutritional-information.pdf')
 
 const SKIP_CATEGORY = /CYO INGREDIENTS|DRINKS/i
 const DELISTED_CATEGORY = /RECENTLY DELISTED/i
@@ -186,6 +187,27 @@ function cellsInRange (cells: PdfCell[], xMin: number, xMax: number): PdfCell[] 
 
 function textOf (cells: PdfCell[]): string {
     return cells.map((c) => c.str).join(' ').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Reads the version stamp printed in the top-right corner of every item page
+ * (e.g. "JUNE26-1") — three fixed cells, `<MONTH><YY>`, `-`, `<N>`, always the
+ * topmost line on the page. Used by `tools/update-papajohns-pdf.ts` to tell
+ * whether a freshly hand-downloaded copy is actually newer than the committed
+ * one, without needing full page classification just to find it.
+ */
+export function findVersionStamp (lines: PdfLine[]): string | null {
+    const maxPage = lines.reduce((m, l) => Math.max(m, l.page), 0)
+    for (let page = 1; page <= maxPage; page++) {
+        const pageLines = lines.filter((l) => l.page === page)
+        if (pageLines.length === 0) continue
+        const topLine = pageLines.reduce((a, b) => (b.y > a.y ? b : a))
+        const cells = topLine.cells.map((c) => c.str.trim())
+        if (cells.length >= 3 && /^[A-Z]+\d+$/.test(cells[0]) && cells[1] === '-' && /^\d+$/.test(cells[2])) {
+            return `${cells[0]}-${cells[2]}`
+        }
+    }
+    return null
 }
 
 /** Finds the products on a page: one full-width, or two split by the gap between their titles. */
@@ -445,6 +467,7 @@ export class PapaJohnsScraper extends SourceScraper {
         try {
             const pdf = new Uint8Array(fs.readFileSync(PDF_PATH))
             lines = await extractPdfLines(pdf)
+            console.log(chalk.gray(`   ↳ PDF version ${findVersionStamp(lines) ?? 'unknown'}`))
         } catch (error) {
             console.error(chalk.red(`Error reading Papa Johns PDF: ${error}`))
             return {}

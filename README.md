@@ -280,6 +280,7 @@ Root project (CLI + scraper/build tooling):
 | `yarn start`            | Build and run the CLI.                                |
 | `yarn build:data`       | Build, then scrape every enabled restaurant and write `web/public/data/` for the web app (cached results reused where valid). |
 | `yarn build:data:fresh` | Same as `build:data`, bypassing the scraper cache.    |
+| `yarn papajohns:update <path>` | Swap in a freshly hand-downloaded Papa Johns PDF — verifies it's genuinely different, replaces the committed copy, and updates its README's provenance block. See [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md). |
 
 [`web/`](web/) (React app, run from inside that directory):
 

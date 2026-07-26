@@ -32,6 +32,31 @@ e.g. `JUNE26-1`) and the sha256 above before assuming a newer copy is actually
 newer; the PDF has been captured twice now (see History) and the version tag
 is the reliable signal, not the download date.
 
+### Refreshing it
+
+Since this can never be automated (the block above is IP-based and holds
+against every option tried, including a real headless browser), the goal
+instead is making the manual step a single command rather than a multi-file
+hand-edit:
+
+    yarn papajohns:update <path-to-downloaded-pdf>
+
+This reads both the committed copy and the candidate, prints their version
+stamps/page counts/sha256s side by side, and:
+
+- does nothing if they're byte-identical,
+- refuses to replace automatically if the version stamp is unchanged but the
+  bytes differ (that's not the normal shape of a real update — could be a
+  re-export or a corrupted download; check by hand before overriding),
+- otherwise replaces `nutritional-information.pdf` and rewrites this file's
+  provenance block (sha256/size/pages/version) to match.
+
+It does **not** run the scraper or commit anything — run `yarn build:data`
+and the test suite afterward and review the diff yourself. A version bump can
+shift page numbers and reformulate recipes (that's exactly what happened
+between `OCT22-1` and `JUNE26-1` — see History), so treat a successful swap
+as the start of a review, not the end of one.
+
 ## Reading the table
 
 Unlike the copy this scraper originally shipped against, the current PDF has
