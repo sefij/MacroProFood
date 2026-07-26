@@ -86,7 +86,7 @@ cp .env.example .env
 | `DISABLE_BURGERKING`| Set to `true` to skip the Burger King scraper.            |
 | `DISABLE_PIZZAHUT`  | Set to `true` to skip the Pizza Hut scraper.              |
 | `DISABLE_CHIPOTLE`  | Set to `true` to skip the Chipotle scraper.               |
-| `DISABLE_PAPAJOHNS` | Set to `true` to skip Papa Johns (parses a committed PDF, not a live scrape). |
+| `DISABLE_PAPAJOHNS` | Set to `true` to skip Papa Johns (fetches a PDF live, with a committed fallback copy). |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -149,8 +149,9 @@ yarn start -- -c 1800 -p 140 -f 60 -r 180 -x Desserts Drinks
 
 ## Data sources & accuracy
 
-Every restaurant is scraped live (and cached for 7 days) — except Papa Johns,
-which is the one exception and is explained below the table:
+Every restaurant is scraped live (and cached for 7 days). Papa Johns is
+scraped live too, but is the one restaurant with a committed fallback source
+file — explained below the table:
 
 | Restaurant   | Source                                          |
 | ------------ | ----------------------------------------------- |
@@ -169,18 +170,21 @@ which is the one exception and is explained below the table:
 | Burger King  | Public Sanity CMS dataset (GROQ query)          |
 | Pizza Hut    | Published allergen/nutrition PDF                |
 | Chipotle     | Deliveroo dish list + published ingredient PDF (composed) |
-| Papa Johns   | Committed nutrition PDF, parsed like the other PDF scrapers (not live — see below) |
+| Papa Johns   | Live-fetched nutrition PDF, with a committed fallback copy (see below) |
 
-- **Papa Johns** is the **only restaurant not scraped live**: its nutrition
+- **Papa Johns** fetches its nutrition PDF live like everything else here,
+  but is the **only restaurant with a committed fallback source file**. Its
   PDF sits behind Akamai, and `axios`/`curl` reliably get `403 Access Denied`
-  on it from every environment tried. That turned out to be an HTTP-client
-  fingerprint check rather than a real IP/geo block — Node's native
-  `fetch()` gets the file fine from the same network path — but relying on a
-  fingerprint bypass in a scheduled job is a worse failure mode than a
-  manual refresh being inconvenient, so `scraper.ts` still reads a committed
-  local file rather than fetching live (see
-  [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md),
-  "Should this go live again?"). Parsing itself
+  on it from every environment tried — that turned out to be an HTTP-client
+  TLS fingerprint check rather than a real IP/geo block, since Node's native
+  `fetch()` gets the file fine from the same network path, so `scraper.ts`
+  uses `fetch()` and fetches live on every run. The fallback exists because
+  a fingerprint bypass is inherently less stable than a real unblock, and
+  this project's CI doesn't have a last-known-good safety net wired up for
+  Papa Johns the way it does for 8 other restaurants (see
+  [`src/scrapers/PapaJohns/README.md`](src/scrapers/PapaJohns/README.md) for
+  the specific gap) — so a failed live fetch reads the committed copy
+  instead of returning nothing. Parsing itself
   is otherwise ordinary (no OCR, no LLM): the current PDF has a normal text
   layer, read the same way as Domino's/Wendy's/Subway/Pizza Hut, just without
   the shared header-driven pipeline (this document's headers span several

@@ -1,14 +1,22 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { PapaJohnsScraper } from './scraper'
+import { PapaJohnsScraper, fetchLive } from './scraper'
 
 /**
- * Papa Johns reads a local, committed PDF (see README.md for why) rather than
- * fetching one, so — unlike every other PDF scraper here — these tests run
- * against the real document on every run instead of a fixture. That's the
- * point: a regenerated/replaced PDF that breaks parsing fails the build
- * instead of shipping silently wrong macros.
+ * Papa Johns tries a live fetch before falling back to a committed PDF (see
+ * README.md, "Should this go live again?"), so — unlike every other PDF
+ * scraper here — these tests run against a real document on every run
+ * instead of a fixture. That's the point: a regenerated/replaced PDF that
+ * breaks parsing fails the build instead of shipping silently wrong macros.
+ *
+ * `PAPAJOHNS_SKIP_LIVE_FETCH` forces every scrape() below onto the committed
+ * fallback copy, so the suite is hermetic (deterministic, no dependency on
+ * papajohns.co.uk's live availability) rather than making 8 live requests
+ * per run. `fetchLive()` reads it at call time (inside scrape(), not at
+ * module load), so setting it here — after the import, before any test
+ * runs — is sufficient; import order doesn't matter for this.
  */
+process.env.PAPAJOHNS_SKIP_LIVE_FETCH = '1'
 
 const near = (a: number, b: number, tol: number): boolean => Math.abs(a - b) / Math.abs(b) <= tol
 
@@ -91,5 +99,23 @@ test('scrape(): sets the ratios the optimizer reads', async () => {
         assert.ok(Number.isFinite(entry.ProteinTCalRatio))
         assert.ok(Number.isFinite(entry.CarbToCalRatio))
         assert.ok(entry.calories > 0)
+    }
+})
+
+test('fetchLive(): the live fetch path itself works, not just the fallback', async () => {
+    // Every scrape() test above forces PAPAJOHNS_SKIP_LIVE_FETCH so the suite
+    // doesn't depend on papajohns.co.uk's live availability — but that means
+    // scrape() alone can't tell "live fetch worked" from "silently fell
+    // back," since both produce a full menu. Testing fetchLive() directly
+    // instead makes sure a regression there (or Akamai finally blocking
+    // undici's fingerprint too) fails the build instead of only ever being
+    // caught by the silent fallback in production.
+    delete process.env.PAPAJOHNS_SKIP_LIVE_FETCH
+    try {
+        const pdf = await fetchLive()
+        assert.ok(pdf, 'expected a live-fetched PDF, got null (network issue or a real Akamai block)')
+        assert.equal(Buffer.from(pdf.subarray(0, 4)).toString('latin1'), '%PDF')
+    } finally {
+        process.env.PAPAJOHNS_SKIP_LIVE_FETCH = '1'
     }
 })

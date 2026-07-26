@@ -1,9 +1,10 @@
 # Papa John's UK — source data
 
 `nutritional-information.pdf` is committed here, which no other restaurant in
-this project needs — `scraper.ts` reads this local file instead of fetching
-one. One reason, worth knowing before anyone tries to "fix" it by fetching
-live.
+this project needs. `scraper.ts` fetches the live PDF on every run like an
+ordinary scraper — but unlike every other one here, it falls back to this
+committed copy if that fetch fails for any reason, rather than returning
+nothing. Worth knowing why before anyone "simplifies" it to fetch-only.
 
 ## Fetching it isn't as blocked as it first looked
 
@@ -22,10 +23,9 @@ tried on the exact same URL, from the exact same network path, with no
 special headers or cookies: **`200`, full file, byte-identical to the
 committed copy, reproducibly.** So the block isn't about IP or geography at
 all — it's TLS/HTTP-client fingerprinting, and `undici`'s fingerprint isn't
-on Akamai's list (at least not currently). `scraper.ts` still reads the
-committed file rather than fetching live (see "Should this go live?" below),
-but `tools/update-papajohns-pdf.ts` fetches the official URL directly with
-`fetch()` and it works.
+on Akamai's list (at least not currently). Both `scraper.ts` and
+`tools/update-papajohns-pdf.ts` fetch the official URL directly with
+`fetch()`, and it works.
 
 This could stop working the moment Akamai's fingerprint list changes — it's
 not a guarantee, just what's currently true. If it does regress, the
@@ -70,17 +70,35 @@ A version bump can shift page numbers and reformulate recipes (that's
 exactly what happened between `OCT22-1` and `JUNE26-1` — see History), so
 treat a successful swap as the start of a review, not the end of one.
 
-### Should this go live again?
+### It's live now, with a fallback — why not drop the file entirely?
 
-Given `fetch()` works, `scraper.ts` *could* in principle drop the committed
-file and fetch live like every other restaurant, including from
-`refresh-data.yml`. That's a bigger, deliberate change this README doesn't
-make unilaterally — a fingerprint-based bypass is inherently less stable
-than a real unblock, and a CI job silently starting to fail weekly is a
-worse failure mode than a manual refresh that's merely inconvenient. If it's
-ever done, keep the committed PDF as a fallback (`SourceScraper` already has
-a pattern for "live, but fall back to the last-known-good snapshot") rather
-than making a scheduled job hard-depend on a fingerprint quirk.
+`scraper.ts` fetches the official URL live on every run (`fetchLive()`), so
+in normal operation the committed PDF is never actually read. The reason it
+stays committed rather than being deleted is a specific gap in how this
+project's CI handles a live scraper going quiet, not general caution:
+
+`refresh-data.yml`'s "Seed existing snapshots from R2" step pre-loads the
+*previous* snapshot for 8 restaurants before running the scrapers, so that
+if one of them returns zero items (a transient failure), `build-web-data.ts`
+keeps serving the last-known-good data instead of overwriting it with an
+empty menu (`resolveUpdatedAt` / `readExisting` in `src/tools/
+build-web-data.ts`). **Papa Johns isn't on that seed list.** If `scraper.ts`
+had no local fallback and its fetch ever failed on a scheduled run — Akamai
+finally blocklisting `undici`'s fingerprint, a network blip, anything — the
+next R2 upload would ship an *empty* Papa Johns menu, not just a stale one.
+
+The committed file is what closes that gap without touching CI at all: a
+failed live fetch falls back to it inside the scraper itself, so the rest of
+the pipeline never has to know a fetch failed. The alternative — adding
+`papajohns` (and, since this is a real gap, arguably the 7 other restaurants
+missing from that same list) to the R2 seed step — was considered and
+deliberately not done; it would remove the need for this file, but changes
+shared CI infrastructure for every restaurant instead of staying contained
+to this one scraper. Worth revisiting if that list is ever audited generally.
+
+Since the fallback path only actually runs when the live fetch fails, keep
+it exercised: `yarn papajohns:update` (or the occasional real Akamai hiccup)
+is what keeps it from silently drifting out of date while unused.
 
 ## Reading the table
 

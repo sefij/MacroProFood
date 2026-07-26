@@ -9,18 +9,21 @@ import { extractPdfLines, PdfCell, PdfLine } from '../pdf/pdf-lines'
 /**
  * Papa John's UK — parsed from a committed copy of their nutrition PDF.
  *
- * This is the **only restaurant scraper that reads a local file instead of
- * fetching one**. papajohns.co.uk sits behind Akamai, and `axios`/`curl`
+ * This is the **only restaurant scraper with a committed fallback copy of
+ * its source file**. papajohns.co.uk sits behind Akamai, and `axios`/`curl`
  * reliably get `403 Access Denied` on the PDF — but that turned out to be an
  * HTTP-client/TLS fingerprint check, not an IP geofence: Node's native
  * `fetch()` gets the file fine, from the same network path, no special
- * headers needed (see README.md). `tools/update-papajohns-pdf.ts` relies on
- * that to check for and fetch updates; this scraper still reads the
- * committed file rather than fetching live, deliberately — a
- * fingerprint-based bypass is less stable than a real unblock, and this
- * scraper running in a scheduled job is a worse failure mode than a manual
- * refresh being merely inconvenient (see README.md, "Should this go live
- * again?").
+ * headers needed (see README.md). So `scrape()` tries `fetch()` first, live,
+ * every run — but a fingerprint-based bypass is inherently less stable than
+ * a real unblock (Akamai could add `undici`'s fingerprint to its blocklist
+ * with no warning), and this scraper running unattended in a scheduled job
+ * is a worse failure mode than serving slightly-stale data, so a failed
+ * fetch (network error, non-200, or a response that isn't actually a PDF)
+ * falls back to the committed copy rather than returning nothing — parsing
+ * itself ({@link parsePage} and everything below it) works on raw bytes and
+ * doesn't know or care which source they came from. See README.md, "Should
+ * this go live again?" for the full reasoning.
  *
  * Past that one difference, this is an ordinary PDF nutrition scraper, same
  * family as Domino's/Wendy's/Subway (`src/scrapers/pdf/`) and Pizza Hut
@@ -79,6 +82,45 @@ import { extractPdfLines, PdfCell, PdfLine } from '../pdf/pdf-lines'
 // not __dirname — the compiled dist/ tree doesn't carry non-TS assets along.
 // Exported so tools/update-papajohns-pdf.ts writes to the same place it reads.
 export const PDF_PATH = path.resolve(process.cwd(), 'src', 'scrapers', 'PapaJohns', 'nutritional-information.pdf')
+
+// Exported so tools/update-papajohns-pdf.ts fetches the same URL this does.
+export const OFFICIAL_URL = 'https://www.papajohns.co.uk/static/assets/pdfs/nutritional-information.pdf'
+
+const FETCH_TIMEOUT_MS = 15000
+const FETCH_HEADERS = {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+        '(KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
+    Accept: 'application/pdf,*/*'
+}
+
+/**
+ * Tries the live PDF first; returns null (never throws) on anything short of
+ * a genuine PDF response, so the caller can fall back to the committed copy.
+ * A `%PDF` magic-byte check guards against a 200 that isn't actually the
+ * file (some WAFs serve an HTML challenge page with a 200 instead of a 403).
+ *
+ * `PAPAJOHNS_SKIP_LIVE_FETCH` forces the fallback path unconditionally —
+ * set by scraper.test.ts so the suite stays hermetic (deterministic, no
+ * dependency on papajohns.co.uk being up) rather than making a live request
+ * on every test run; the fallback path is exercised for real there instead
+ * of only in ad-hoc manual checks.
+ */
+export async function fetchLive (): Promise<Uint8Array | null> {
+    if (process.env.PAPAJOHNS_SKIP_LIVE_FETCH) return null
+    try {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+        const response = await fetch(OFFICIAL_URL, { headers: FETCH_HEADERS, signal: controller.signal })
+        clearTimeout(timeout)
+        if (!response.ok) return null
+        const buf = new Uint8Array(await response.arrayBuffer())
+        const magic = Buffer.from(buf.subarray(0, 4)).toString('latin1')
+        return magic === '%PDF' ? buf : null
+    } catch {
+        return null
+    }
+}
 
 const SKIP_CATEGORY = /CYO INGREDIENTS|DRINKS/i
 const DELISTED_CATEGORY = /RECENTLY DELISTED/i
@@ -457,7 +499,7 @@ export class PapaJohnsScraper extends SourceScraper {
     async initialize (): Promise<void> { }
 
     async scrape (): Promise<RestaurantData> {
-        console.log(chalk.blue(`${this.icon} Scraping Papa Johns UK (committed PDF)…`))
+        console.log(chalk.blue(`${this.icon} Scraping Papa Johns UK…`))
 
         const items: RestaurantData = {}
         let variants = 0
@@ -468,14 +510,32 @@ export class PapaJohnsScraper extends SourceScraper {
         let delistedProducts = 0
         let productsEmitted = 0
 
+        const live = await fetchLive()
+        const pdf = live ?? new Uint8Array(fs.readFileSync(PDF_PATH))
+        console.log(chalk.gray(
+            live ? '   ↳ fetched live from papajohns.co.uk' : '   ↳ live fetch failed — using the committed fallback'
+        ))
+
         let lines: PdfLine[]
         try {
-            const pdf = new Uint8Array(fs.readFileSync(PDF_PATH))
             lines = await extractPdfLines(pdf)
             console.log(chalk.gray(`   ↳ PDF version ${findVersionStamp(lines) ?? 'unknown'}`))
         } catch (error) {
-            console.error(chalk.red(`Error reading Papa Johns PDF: ${error}`))
-            return {}
+            if (live) {
+                // The live fetch returned something PDF-shaped but unparseable —
+                // retry once against the known-good committed copy rather than
+                // failing the whole scrape over a bad live response.
+                console.error(chalk.yellow(`Live PDF failed to parse (${error}) — retrying with the committed copy`))
+                try {
+                    lines = await extractPdfLines(new Uint8Array(fs.readFileSync(PDF_PATH)))
+                } catch (fallbackError) {
+                    console.error(chalk.red(`Error reading Papa Johns PDF: ${fallbackError}`))
+                    return {}
+                }
+            } else {
+                console.error(chalk.red(`Error reading Papa Johns PDF: ${error}`))
+                return {}
+            }
         }
 
         const maxPage = lines.reduce((m, l) => Math.max(m, l.page), 0)
