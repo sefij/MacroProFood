@@ -254,7 +254,17 @@ export function MenuBuilder ({
                             onClick={() => onSelectRestaurant(r.key)}
                         >
                             <span className="icon">{r.icon}</span>
-                            <span className="name">{r.restaurant}</span>
+                            <span className="name">
+                                {r.restaurant}
+                                {r.composed && (
+                                    <span
+                                        className="composed-mark"
+                                        title="Menu composed from a delivery-app dish list plus this restaurant's own ingredient nutrition data — see the note below"
+                                    >
+                                        *
+                                    </span>
+                                )}
+                            </span>
                         </button>
                     ))}
             </div>

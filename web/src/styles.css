@@ -171,6 +171,7 @@ header.hero p {
 }
 .chip .icon { font-size: 1.7rem; line-height: 1; }
 .chip .name { font-size: 0.82rem; font-weight: 600; }
+.chip .composed-mark { color: var(--muted); font-weight: 700; margin-left: 1px; cursor: help; }
 .chip .badge {
     font-size: 0.66rem;
     color: var(--muted);

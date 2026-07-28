@@ -42,6 +42,8 @@ interface RestaurantMeta {
     restaurant: string
     icon: string
     source: SnapshotSource
+    /** See {@link RestaurantSnapshot.composed}. */
+    composed?: boolean
     /** For snapshot restaurants: the hand-captured date from store.ts. */
     snapshotDate?: string
 }
@@ -61,12 +63,12 @@ const REGISTRY: RestaurantMeta[] = [
     { scrapeKey: 'SlimChickens', key: 'SLIMCHICKENS', restaurant: 'Slim Chickens', icon: '🐓', source: 'live' },
     { scrapeKey: 'BurgerKing', key: 'BURGERKING', restaurant: 'Burger King', icon: '👑', source: 'live' },
     { scrapeKey: 'PizzaHut', key: 'PIZZAHUT', restaurant: 'Pizza Hut', icon: '🛖', source: 'live' },
-    { scrapeKey: 'Chipotle', key: 'CHIPOTLE', restaurant: 'Chipotle', icon: '🌯', source: 'live' },
+    { scrapeKey: 'Chipotle', key: 'CHIPOTLE', restaurant: 'Chipotle', icon: '🌯', source: 'live', composed: true },
     // Genuinely live: fetches papajohns.co.uk's PDF directly on every run,
     // falling back to a committed copy only if that fetch fails; see
     // ../scrapers/PapaJohns/README.md.
     { scrapeKey: 'PapaJohns', key: 'PAPAJOHNS', restaurant: 'Papa Johns', icon: '🧀', source: 'live' },
-    { scrapeKey: 'FiveGuys', key: 'FIVEGUYS', restaurant: 'Five Guys', icon: '🌭', source: 'live' }
+    { scrapeKey: 'FiveGuys', key: 'FIVEGUYS', restaurant: 'Five Guys', icon: '🌭', source: 'live', composed: true }
 ]
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'web', 'public', 'data')
@@ -278,6 +280,7 @@ async function main (): Promise<void> {
             key: meta.key,
             icon: meta.icon,
             source: meta.source,
+            composed: meta.composed,
             updatedAt,
             items: finalItems
         }
@@ -292,6 +295,7 @@ async function main (): Promise<void> {
             key: meta.key,
             icon: meta.icon,
             source: meta.source,
+            composed: meta.composed,
             updatedAt,
             itemCount: finalItems.length
         })
