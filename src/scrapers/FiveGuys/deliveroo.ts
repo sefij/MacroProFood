@@ -14,10 +14,12 @@
  * whole country.
  *
  * Deliveroo also publishes a `productMeta` calorie figure directly on each
- * named dish here (Chipotle's listings don't carry one) — `recipes.ts`'s
- * docblock uses it as an independent cross-check on every hand-built recipe,
- * but this module doesn't read or expose it; it's a one-time verification
- * aid, not something the running scraper needs.
+ * named dish here (Chipotle's listings don't carry one) — this module parses
+ * it into {@link DeliverooDish.energyKcal}. `recipes.ts`'s docblock used it as
+ * a one-time manual cross-check when each recipe was written; `scraper.ts`
+ * now also uses it as a live guard on every scrape (see its docblock) — a
+ * future recipe edit or an ingredient row Five Guys renames won't just
+ * silently ship wrong macros, it'll log a warning the next time this runs.
  */
 
 import axios from 'axios'
@@ -39,11 +41,14 @@ const HTTP_TIMEOUT_MS = 30000
 export interface DeliverooDish {
     name: string
     description: string
+    /** Deliveroo's own stated calories for the finished dish (from `productMeta`, e.g. "678 kcal") — a cross-check, not a macro source; see scraper.ts. */
+    energyKcal?: number
 }
 
 interface DeliverooRootItem {
     name?: string
     description?: string
+    productMeta?: string
 }
 
 interface NextData {
@@ -67,6 +72,12 @@ function isJunkDescription (description: string): boolean {
     return description === 'None' || /^[\d.]+$/.test(description)
 }
 
+/** Parses `"678 kcal"` → `678`; anything else (absent, malformed) → `undefined`. */
+function parseEnergyKcal (productMeta: string | undefined): number | undefined {
+    const match = productMeta?.match(/(\d+(?:\.\d+)?)\s*kcal/i)
+    return match ? Number(match[1]) : undefined
+}
+
 /**
  * Parses the menu page's raw HTML into its named, pre-composed dish list.
  * Pure and synchronous so it's unit-testable without a network call — see
@@ -88,7 +99,7 @@ export function parseDeliverooDishes (html: string): Map<string, DeliverooDish> 
         const description = item.description?.trim()
         if (!name || !description || isJunkDescription(description)) continue
         // First occurrence wins for an exact repeat name (matches every other scraper's convention).
-        if (!dishes.has(name)) dishes.set(name, { name, description })
+        if (!dishes.has(name)) dishes.set(name, { name, description, energyKcal: parseEnergyKcal(item.productMeta) })
     }
     return dishes
 }

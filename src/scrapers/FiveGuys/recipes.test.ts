@@ -124,7 +124,7 @@ const STATED_KCAL: Record<string, number> = {
     'Five Guys Shake': 625,
     'Little Shake': 313,
     'NEW: Jimmy’s Iced Coffee Shake': 633,
-    'RETURNING: Pistachio': 194
+    'RETURNING: Pistachio': 819 // base + flavour; see recipes.ts's docblock on the earlier, coincidentally-matching 194 kcal figure
 }
 
 test('fries, shakes and OTHER ITEMS sandwiches reconcile exactly against Deliveroo\'s stated calories', () => {

@@ -18,9 +18,19 @@
  *  - **Fries and shakes reconcile exactly.** Regular/Large Salted Fries,
  *    Regular/Large Cajun Fries (base fries + one serving of "Cajun
  *    seasoning"), the plain Five Guys Shake / Little Shake ("Five Guys
- *    Milkshake Base[, Little]" alone), and "NEW: Jimmy's Iced Coffee Shake"
- *    (base + one serving of "Jimmy's Iced Coffee") all match Deliveroo's
- *    stated calories to the kcal.
+ *    Milkshake Base[, Little]" alone), and "NEW: Jimmy's Iced Coffee Shake" /
+ *    "RETURNING: Pistachio" (base + one serving of the named flavour) all
+ *    match Deliveroo's stated calories to the kcal.
+ *  - **"RETURNING: Pistachio" was originally shipped as the standalone
+ *    flavour alone (194 kcal), not base + flavour** — it happened to match
+ *    Deliveroo's *then*-stated calories exactly, which looked like a clean
+ *    reconciliation but wasn't: this project's own scraper.ts docblock
+ *    explains why every recipe's gap is also re-checked live, not just
+ *    hand-verified once. A later scrape's warning (computed 194 vs. a newly-
+ *    stated 819) caught that Deliveroo's own figure had been corrected to a
+ *    full shake — 625 (base) + 194 (Pistachio) = 819 exactly — and this
+ *    recipe was fixed to match. Left here as a concrete example of what the
+ *    live check is for.
  *  - **"Veggie Sandwich", "Cheese Veggie Sandwich", "Grilled Cheese" and
  *    "BLT" are direct 1:1 matches**, not summed — Five Guys' PDF publishes
  *    these as their own complete rows under "OTHER ITEMS" (unlike Chipotle's
@@ -231,5 +241,9 @@ export const RECIPES: Recipe[] = [
         category: 'Shakes',
         ingredients: [{ ingredient: 'Five Guys Milkshake Base' }, { ingredient: 'Jimmy’s Iced Coffee' }]
     },
-    { deliverooName: 'RETURNING: Pistachio', category: 'Shakes', ingredients: [{ ingredient: 'Pistachio***' }] }
+    {
+        deliverooName: 'RETURNING: Pistachio',
+        category: 'Shakes',
+        ingredients: [{ ingredient: 'Five Guys Milkshake Base' }, { ingredient: 'Pistachio***' }]
+    }
 ]

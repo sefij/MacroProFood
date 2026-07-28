@@ -7,15 +7,22 @@ function pageWithItems (items: unknown[]): string {
     return `<html><body><script id="__NEXT_DATA__">${JSON.stringify(nextData)}</script></body></html>`
 }
 
-test('keeps items with a real name and description', () => {
+test('keeps items with a real name and description, and parses their stated calories', () => {
     const html = pageWithItems([
         { name: 'Hamburger', description: 'Two fresh, juicy high-quality beef patties hot off the grill.', productMeta: '678 kcal' }
     ])
     const dishes = parseDeliverooDishes(html)
     assert.deepEqual(dishes.get('Hamburger'), {
         name: 'Hamburger',
-        description: 'Two fresh, juicy high-quality beef patties hot off the grill.'
+        description: 'Two fresh, juicy high-quality beef patties hot off the grill.',
+        energyKcal: 678
     })
+})
+
+test('a dish with no productMeta gets an undefined energyKcal, not a crash', () => {
+    const html = pageWithItems([{ name: 'Grilled Cheese', description: 'American cheese melted on a bun.' }])
+    const dishes = parseDeliverooDishes(html)
+    assert.equal(dishes.get('Grilled Cheese')?.energyKcal, undefined)
 })
 
 test('drops items with no description (build-your-own scaffolding)', () => {
