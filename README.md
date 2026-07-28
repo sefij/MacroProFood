@@ -11,7 +11,7 @@ from **MyFitnessPal** and push the chosen meal straight back to your diary.
 
 - **Multi-restaurant scraping** — Popeyes, KFC, Wendy's, McDonald's, Subway,
   Taco Bell, Wagamama, Domino's, Nando's, itsu, YO! Sushi, Slim Chickens,
-  Burger King, Pizza Hut, Chipotle and Papa Johns (UK menus).
+  Burger King, Pizza Hut, Chipotle, Papa Johns and Five Guys (UK menus).
 - **Macro optimizer** — finds the top combinations of menu items that get as
   close as possible to your target calories/protein/fat/carbs.
 - **MyFitnessPal integration** — auto-fill your targets from the "Remaining"
@@ -87,6 +87,7 @@ cp .env.example .env
 | `DISABLE_PIZZAHUT`  | Set to `true` to skip the Pizza Hut scraper.              |
 | `DISABLE_CHIPOTLE`  | Set to `true` to skip the Chipotle scraper.               |
 | `DISABLE_PAPAJOHNS` | Set to `true` to skip Papa Johns (fetches a PDF live, with a committed fallback copy). |
+| `DISABLE_FIVEGUYS`  | Set to `true` to skip the Five Guys scraper.               |
 | `EXCLUDE_CATEGORIES`| Comma-separated categories to leave out by default, e.g. `Drinks`. Overridden by `-x`. |
 | `MFP_EMAIL`         | MyFitnessPal email (optional — log in interactively).    |
 | `MFP_PASSWORD`      | MyFitnessPal password (optional — log in interactively). |
@@ -171,6 +172,7 @@ file — explained below the table:
 | Pizza Hut    | Published allergen/nutrition PDF                |
 | Chipotle     | Deliveroo dish list + published ingredient PDF (composed) |
 | Papa Johns   | Live-fetched nutrition PDF, with a committed fallback copy (see below) |
+| Five Guys    | Deliveroo dish list + published ingredient PDF (composed) |
 
 - **Papa Johns** fetches its nutrition PDF live like everything else here,
   but is the **only restaurant with a committed fallback source file**. Its

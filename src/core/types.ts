@@ -158,6 +158,15 @@ export interface RestaurantSnapshot {
     icon: string
     /** `snapshot` = hand-captured JSON; `live` = scraped from the website. */
     source: SnapshotSource
+    /**
+     * True when this restaurant has no single published per-dish menu — its
+     * items are composed by cross-referencing a delivery-app dish list against
+     * the restaurant's own separately-published ingredient nutrition (see
+     * spec 11; Chipotle, Five Guys). The web app marks these with an asterisk
+     * and a footer note rather than presenting them as a direct read of one
+     * source, the way every other restaurant's data is.
+     */
+    composed?: boolean
     /** ISO timestamp the data was last refreshed. Drives the staleness badge. */
     updatedAt: string
     items: SnapshotItem[]
@@ -169,6 +178,8 @@ export interface RestaurantIndexEntry {
     key: string
     icon: string
     source: SnapshotSource
+    /** See {@link RestaurantSnapshot.composed}. */
+    composed?: boolean
     updatedAt: string
     itemCount: number
 }

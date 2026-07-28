@@ -464,10 +464,11 @@ export function App() {
             <footer className="foot">
                 Nutrition data is community-captured and may be out of date —
                 always double-check against the restaurant. Macros and
-                credentials never leave your browser. Chipotle items are
-                composed from a delivery-app dish list plus Chipotle's own
-                ingredient nutrition data, not read from a single published
-                per-dish source — treat those macros as an estimate.
+                credentials never leave your browser. * Restaurants marked
+                with an asterisk have no single published per-dish menu —
+                their items are composed by cross-referencing a delivery-app
+                dish list against the restaurant's own, separately-published
+                ingredient nutrition data. Treat those macros as an estimate.
                 <br />
                 <span className="foot-links">
                     <a href="/privacy.html">Privacy Policy</a>
