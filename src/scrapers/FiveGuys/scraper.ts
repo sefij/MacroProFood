@@ -13,28 +13,37 @@
  * macros themselves are refreshed from Five Guys' PDF on every run, not a
  * stale snapshot.
  *
- * Three distinct failure modes, handled differently:
+ * Deliveroo's own stated calories for the finished dish (`productMeta`, e.g.
+ * "678 kcal" — see deliveroo.ts) are then reconciled against that sum:
  *
- *  - **A recipe ingredient no longer has a PDF row** (Five Guys renamed or
- *    dropped it in a republish) is a scraper bug, not a menu change — this
- *    throws and fails the whole scrape loudly rather than silently shipping
- *    a dish with missing macros.
- *  - **A recipe's dish is no longer listed on Deliveroo** (delisted, renamed)
- *    is an ordinary menu change — that one dish is skipped with a warning,
- *    the rest of the scrape proceeds.
- *  - **A dish's computed calories drift too far from Deliveroo's own stated
- *    figure for it** (`productMeta`, e.g. "678 kcal" — see deliveroo.ts) is
- *    logged as a warning, not thrown. `recipes.ts`'s docblock documents every
- *    current recipe's gap from a one-time manual check (fries/shakes/OTHER
- *    ITEMS sandwiches: exact; burgers: ~3-8%; hot dogs: ~12-18%) —
- *    {@link RECONCILIATION_WARNING_THRESHOLD} sits above all of those, so
- *    nothing in the table trips it today. What it catches going forward is a
- *    recipe edit that drops or mistypes an ingredient, or Five Guys quietly
- *    changing a dish's composition — either would otherwise ship silently
- *    wrong macros. It's a warning rather than a throw because Deliveroo's own
- *    figure isn't a certain ground truth either (see the fries/burger/hot dog
- *    variance the manual check already found) — it's a "worth a look" signal
- *    for a human, not a hard gate on the running scraper.
+ *  - **Within {@link RECONCILIATION_WARNING_THRESHOLD} of the sum** — the
+ *    normal case (`recipes.ts`'s docblock documents every current recipe's
+ *    gap: fries/shakes/OTHER ITEMS sandwiches exact, burgers ~3-8%, hot dogs
+ *    ~12-18%, all comfortably under the threshold) — {@link anchorToStatedCalories}
+ *    rescales calories to Deliveroo's exact figure and scales protein/fat/carbs
+ *    by the same ratio, so the shipped numbers stay internally consistent
+ *    (Atwater still adds up) while matching what Deliveroo shows for the
+ *    actual finished dish, not just a sum of separately-published ingredient
+ *    servings. There's no PDF row this project can point to for *why* the raw
+ *    sum runs short (checked — no separate spread/butter/oil ingredient
+ *    exists for burgers or hot dogs anywhere in the document), so this
+ *    project treats Deliveroo's total as the more trustworthy figure for the
+ *    finished dish once the two are already close.
+ *  - **Beyond the threshold** — not seen in the current table, but this is
+ *    the case a recipe edit that drops or mistypes an ingredient, or Five
+ *    Guys quietly changing a dish's composition, would produce — is logged as
+ *    a warning and left **unscaled**. A gap this large is more likely a real
+ *    bug than normal variance, and blindly anchoring it would silently paper
+ *    over broken protein/fat/carbs (scaling a badly-wrong sum just makes a
+ *    proportionally-wrong result) instead of surfacing it for a human to fix.
+ *
+ * A separate, harder failure mode: **a recipe ingredient no longer has a PDF
+ * row at all** (Five Guys renamed or dropped it in a republish) is a scraper
+ * bug, not a menu change — `buildNutrition` throws and fails the whole scrape
+ * loudly rather than silently shipping a dish with missing macros. And **a
+ * recipe's dish no longer listed on Deliveroo** (delisted, renamed) is an
+ * ordinary menu change — that one dish is skipped with a warning, the rest of
+ * the scrape proceeds.
  */
 
 import chalk from 'chalk'
@@ -52,6 +61,29 @@ export const RECONCILIATION_WARNING_THRESHOLD = 0.2
 export function reconciliationGap (calories: number, energyKcal: number | undefined): number | undefined {
     if (energyKcal === undefined || energyKcal <= 0) return undefined
     return Math.abs(calories - energyKcal) / energyKcal
+}
+
+/**
+ * Rescales `nutrition` so its calories match `energyKcal` exactly, scaling
+ * protein/fat/carbs by the same ratio to keep the four numbers proportionally
+ * consistent (Atwater still adds back up). Only meaningful — and only called
+ * — when `reconciliationGap` is within {@link RECONCILIATION_WARNING_THRESHOLD};
+ * see the class docblock on why a larger gap is left unscaled instead.
+ */
+export function anchorToStatedCalories (nutrition: NutritionData, energyKcal: number): NutritionData {
+    const ratio = energyKcal / nutrition.calories
+    const protein = nutrition.protein * ratio
+    const fat = nutrition.fat * ratio
+    const carbs = nutrition.carbs * ratio
+    return {
+        ...nutrition,
+        calories: energyKcal,
+        protein,
+        fat,
+        carbs,
+        ProteinTCalRatio: protein / energyKcal,
+        CarbToCalRatio: carbs / energyKcal
+    }
 }
 
 function buildNutrition (
@@ -105,6 +137,7 @@ export class FiveGuysScraper extends SourceScraper {
         let duplicates = 0
         let renamed = 0
         let flagged = 0
+        let anchored = 0
 
         let ingredients: Map<string, IngredientNutrition>
         let deliverooDishes: Map<string, DeliverooDish>
@@ -123,18 +156,24 @@ export class FiveGuysScraper extends SourceScraper {
                 continue
             }
 
-            const nutrition = buildNutrition(ingredients, recipe.deliverooName, recipe.category, recipe.ingredients)
+            let nutrition = buildNutrition(ingredients, recipe.deliverooName, recipe.category, recipe.ingredients)
 
-            const gap = reconciliationGap(nutrition.calories, dish.energyKcal)
-            if (gap !== undefined && gap > RECONCILIATION_WARNING_THRESHOLD) {
-                flagged++
-                console.log(
-                    chalk.yellow(
-                        `  ⚠ "${recipe.deliverooName}" computed ${Math.round(nutrition.calories)} kcal vs Deliveroo's ` +
-                        `stated ${dish.energyKcal} kcal (${(gap * 100).toFixed(0)}% off) — check the recipe for a ` +
-                        'missing or wrong ingredient'
+            const energyKcal = dish.energyKcal
+            const gap = reconciliationGap(nutrition.calories, energyKcal)
+            if (gap !== undefined && energyKcal !== undefined) {
+                if (gap > RECONCILIATION_WARNING_THRESHOLD) {
+                    flagged++
+                    console.log(
+                        chalk.yellow(
+                            `  ⚠ "${recipe.deliverooName}" computed ${Math.round(nutrition.calories)} kcal vs Deliveroo's ` +
+                            `stated ${energyKcal} kcal (${(gap * 100).toFixed(0)}% off) — check the recipe for a ` +
+                            'missing or wrong ingredient (left unscaled)'
+                        )
                     )
-                )
+                } else {
+                    nutrition = anchorToStatedCalories(nutrition, energyKcal)
+                    anchored++
+                }
             }
 
             const outcome = addItem(items, recipe.deliverooName, nutrition)
@@ -143,11 +182,11 @@ export class FiveGuysScraper extends SourceScraper {
         }
 
         console.log(chalk.green(`✓ Found ${Object.keys(items).length} Five Guys items (PDF + Deliveroo)`))
-        if (delisted || duplicates || renamed || flagged) {
+        if (delisted || duplicates || renamed || flagged || anchored) {
             console.log(
                 chalk.gray(
                     `  skipped ${delisted} (delisted on Deliveroo); ${duplicates} duplicate, ${renamed} requalified, ` +
-                    `${flagged} flagged for calorie mismatch`
+                    `${anchored} anchored to Deliveroo's stated calories, ${flagged} flagged for calorie mismatch`
                 )
             )
         }

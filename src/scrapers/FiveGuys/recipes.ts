@@ -13,7 +13,12 @@
  * Guys dish here carries a `productMeta` calorie figure (e.g. "678 kcal" on
  * "Hamburger") — a real, independently-published total for the finished
  * dish, not derived from this table. Every recipe below was checked by
- * summing its ingredients' PDF macros and comparing to that figure:
+ * summing its ingredients' PDF macros and comparing to that figure. The gaps
+ * described here are for that raw ingredient sum — `scraper.ts` now anchors
+ * the *shipped* calories (and proportionally scales protein/fat/carbs) to
+ * Deliveroo's figure whenever the gap is small enough to trust (see its
+ * docblock), so what this project actually serves for burgers/hot dogs
+ * matches Deliveroo exactly, not the undershot raw sum below:
  *
  *  - **Fries and shakes reconcile exactly.** Regular/Large Salted Fries,
  *    Regular/Large Cajun Fries (base fries + one serving of "Cajun
