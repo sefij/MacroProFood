@@ -65,7 +65,8 @@ const REGISTRY: RestaurantMeta[] = [
     // Genuinely live: fetches papajohns.co.uk's PDF directly on every run,
     // falling back to a committed copy only if that fetch fails; see
     // ../scrapers/PapaJohns/README.md.
-    { scrapeKey: 'PapaJohns', key: 'PAPAJOHNS', restaurant: 'Papa Johns', icon: '🧀', source: 'live' }
+    { scrapeKey: 'PapaJohns', key: 'PAPAJOHNS', restaurant: 'Papa Johns', icon: '🧀', source: 'live' },
+    { scrapeKey: 'FiveGuys', key: 'FIVEGUYS', restaurant: 'Five Guys', icon: '🌭', source: 'live' }
 ]
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'web', 'public', 'data')
