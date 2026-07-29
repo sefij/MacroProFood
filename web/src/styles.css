@@ -246,6 +246,38 @@ header.hero p {
     background: #2a2114;
 }
 
+/* Quick global exclusion presets ("No sides", "No drinks", "No desserts") —
+   sit above the per-restaurant "Advanced filters", since they're meant to be
+   the simple/one-click option. Labeled the same way "Advanced filters"
+   labels itself, and the chips use the identical toggle styling as the
+   per-restaurant filter chips below (.filter-chip) — same pill, same
+   selected state — so both read as the same kind of control. */
+.preset-section { margin-top: 14px; }
+.preset-label {
+    font-size: 0.86rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.preset-chip {
+    padding: 6px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+.preset-chip.selected {
+    border-color: var(--accent);
+    background: #2a2114;
+    color: var(--accent-2);
+}
+
 /* Matching preferences (collapsible, mirrors .restaurant-filter above) —
    one compact fader column per macro, all in a single row that wraps to two
    on narrow screens instead of squeezing. */

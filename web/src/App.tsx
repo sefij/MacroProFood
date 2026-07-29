@@ -20,6 +20,7 @@ import { TrackPanel } from './components/TrackPanel'
 import { MenuBuilder } from './components/MenuBuilder'
 import { StickySummary } from './components/StickySummary'
 import type { RestaurantCategoryFilter } from '../../src/core/category-filter'
+import { togglePreset, type CategoryPreset } from '../../src/core/category-presets'
 import { menuItemKey, menuRestaurant, menuTotals, type MenuState } from './menu'
 
 type AppMode = 'optimize' | 'menu'
@@ -203,6 +204,14 @@ export function App() {
                 ? current.categories.filter((c) => c !== category)
                 : [...current.categories, category]
             const next = { ...prev, [restaurant]: { mode: current.mode, categories } }
+            persistCategoryFilters(next)
+            return next
+        })
+    }
+
+    const handleTogglePreset = (preset: CategoryPreset) => {
+        setCategoryFilters((prev) => {
+            const next = togglePreset(categoryGroups, prev, preset)
             persistCategoryFilters(next)
             return next
         })
@@ -433,6 +442,7 @@ export function App() {
                         categoryFilters={categoryFilters}
                         onCategoryModeChange={setCategoryMode}
                         onToggleCategory={toggleFilterCategory}
+                        onTogglePreset={handleTogglePreset}
                     />
 
                     <button
