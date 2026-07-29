@@ -278,23 +278,32 @@ header.hero p {
     color: var(--accent-2);
 }
 
-/* Matching preferences (collapsible, mirrors .restaurant-filter above) —
-   one compact fader column per macro, all in a single row that wraps to two
-   on narrow screens instead of squeezing. */
-.macro-dial-row {
+/* Matching preferences — Calories always visible, Protein/Carbs/Fat nested
+   in an "Advanced" reveal (.filters, same collapsible pattern as "Advanced
+   filters" above) instead of a separate simple/advanced mode. */
+.macro-prefs { margin-top: 14px; }
+.macro-prefs-head {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 18px;
-    margin-top: 12px;
-}
-.macro-dial {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 2px;
-    width: 64px;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.macro-prefs-title {
+    font-size: 0.86rem;
+    color: var(--muted);
+}
+.macro-prefs-head .link-btn { margin-top: 0; }
+.macro-prefs .filters { margin-top: 10px; }
+
+/* One full-width row per macro, stacked — a native range input benefits
+   from width (more travel = more precision), unlike the vertical fader this
+   replaced, which crammed a 15-step range into an 84px-tall bar. */
+.macro-slider-row { margin-top: 14px; }
+.macro-slider-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
 }
 .macro-dial-label { font-size: 0.78rem; font-weight: 600; }
 .macro-dial-percent {
@@ -306,59 +315,42 @@ header.hero p {
    is visual (see MacroPreferences' docblock on why there's no separate
    toggle), so make it clearly read as "different from normal" here. */
 .macro-dial-percent.over { color: var(--accent-2); font-weight: 700; }
-/* The effective gram/kcal figure sits inline after the percent (Variant B) —
-   its own weight/colour stay neutral even when the percent turns "over",
-   since it's a plain readout, not itself a state indicator. */
+/* Any other non-default weight (including under 100%) still gets its own,
+   lighter emphasis — otherwise a lowered weight looks identical to the
+   slider just parked at default, with no cue it was actually changed. */
+.macro-dial-percent.changed { color: var(--text); font-weight: 600; }
+/* The effective gram/kcal figure sits inline after the percent — its own
+   weight/colour stay neutral even when the percent turns "over", since
+   it's a plain readout, not itself a state indicator. */
 .macro-dial-effective-inline {
     font-weight: 400;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
 }
 
-/* Below this, 4 columns of fixed width leave room for only 3 per row (an
-   asymmetric 3+1 wrap) — force a clean 2x2 instead. */
-@media (max-width: 420px) {
-    .macro-dial-row { gap: 16px 8px; }
-    .macro-dial { width: auto; flex: 0 1 40%; }
-}
-
-/* Fader (see components/Fader.tsx) */
-.fader-track {
-    position: relative;
-    margin-top: 8px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 5px;
+/* Native <input type="range"> (see MacroPreferences.tsx's docblock on why
+   this replaced a custom-built dial/fader) — themed via accent-color rather
+   than the full ::-webkit-slider-thumb/::-moz-range-thumb pseudo-element
+   set, so it stays a real native control (and its already-tuned touch
+   target) underneath, just recoloured. */
+.macro-slider-track { position: relative; display: flex; align-items: center; }
+.macro-slider {
+    width: 100%;
+    accent-color: var(--accent);
     cursor: pointer;
-    touch-action: none;
 }
-.fader-track:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* A faint reference line at the 100% mark — the fixed point past which a macro overflows. */
-.fader-mark {
+.macro-slider.over { accent-color: var(--accent-2); }
+/* A faint reference line at the fixed 100% mark — approximate (it doesn't
+   account for the native thumb's own width), which is fine for a glanceable
+   reference rather than a precise input target. */
+.macro-slider-mark {
     position: absolute;
-    left: -3px;
-    right: -3px;
-    height: 1px;
+    top: 50%;
+    width: 2px;
+    height: 10px;
+    transform: translate(-50%, -50%);
     background: var(--muted);
     opacity: 0.5;
-}
-.fader-fill {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: var(--accent);
-    border-radius: 5px;
-    pointer-events: none;
-}
-.fader-handle {
-    position: absolute;
-    left: 50%;
-    width: 20px;
-    height: 10px;
-    background: var(--accent-2);
-    border-radius: 3px;
-    transform: translateX(-50%);
     pointer-events: none;
 }
 
