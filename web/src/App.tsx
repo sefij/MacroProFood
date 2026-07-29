@@ -3,11 +3,12 @@ import type {
     MenuItem,
     OptimizationResult,
     OptimizationResults,
+    OptimizerConfig,
     RestaurantIndexEntry,
     SnapshotItem,
     TargetMacros
 } from './macro'
-import { findBestCombinations } from './macro'
+import { findBestCombinations, DEFAULT_OPTIMIZER_CONFIG } from './macro'
 import { loadData, toRestaurantsData, type LoadedData } from './data'
 import { buildClipboardToken, parseRemainingHash } from './bookmarklets'
 import { detectExtension, trackMeal as extTrackMeal } from './mfpExtension'
@@ -40,6 +41,18 @@ function loadCategoryFilters (): Record<string, RestaurantCategoryFilter> {
     }
 }
 
+// Persists per-macro weight/overflow tuning across visits (see MacroPreferences).
+const OPTIMIZER_CONFIG_KEY = 'macropro:optimizerConfig'
+
+function loadOptimizerConfig (): OptimizerConfig {
+    try {
+        const raw = localStorage.getItem(OPTIMIZER_CONFIG_KEY)
+        return raw ? { ...DEFAULT_OPTIMIZER_CONFIG, ...JSON.parse(raw) } : DEFAULT_OPTIMIZER_CONFIG
+    } catch {
+        return DEFAULT_OPTIMIZER_CONFIG
+    }
+}
+
 // Swap-suggestion tuning. The optimizer never exceeds its target, so to give
 // swaps "room for overage" we inflate the freed-up macros before searching:
 //   - OVERAGE: how far past the gap a suggestion may reach (1.5 = up to +50%).
@@ -64,8 +77,10 @@ export function App() {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
     const [categoryFilters, setCategoryFilters] =
         useState<Record<string, RestaurantCategoryFilter>>(loadCategoryFilters)
+    const [optimizerConfig, setOptimizerConfig] = useState<OptimizerConfig>(loadOptimizerConfig)
 
     const [results, setResults] = useState<OptimizationResults | null>(null)
+    const [computing, setComputing] = useState(false)
     const [picked, setPicked] = useState<{
         restaurant: string
         index: number
@@ -165,6 +180,11 @@ export function App() {
         localStorage.setItem(CATEGORY_FILTERS_KEY, JSON.stringify(next))
     }
 
+    const updateOptimizerConfig = (next: OptimizerConfig) => {
+        setOptimizerConfig(next)
+        localStorage.setItem(OPTIMIZER_CONFIG_KEY, JSON.stringify(next))
+    }
+
     const setCategoryMode = (restaurant: string, mode: RestaurantCategoryFilter['mode']) => {
         setCategoryFilters((prev) => {
             const next = {
@@ -188,12 +208,22 @@ export function App() {
         })
     }
 
+    // The search can take a real amount of wall time (each restaurant gets up
+    // to SEARCH_TIME_BUDGET_MS in core/optimizer.ts, and it runs synchronously
+    // on the main thread) — the setTimeout gives React a chance to actually
+    // paint the "computing" state before that blocking call starts, so the
+    // spinner/disabled button aren't skipped by the same frame that freezes.
     const compute = () => {
         if (!data) return
-        const restaurantsData = toRestaurantsData(data.snapshots, activeKeys, macros, categoryFilters)
-        setResults(findBestCombinations(restaurantsData, macros, 5, 3))
+        setComputing(true)
+        setResults(null)
         setPicked(null)
         setTracked(null)
+        setTimeout(() => {
+            const restaurantsData = toRestaurantsData(data.snapshots, activeKeys, macros, categoryFilters)
+            setResults(findBestCombinations(restaurantsData, macros, 5, 3, optimizerConfig))
+            setComputing(false)
+        }, 0)
     }
 
     // Choosing an option collapses the rest and opens the Track panel below.
@@ -253,7 +283,7 @@ export function App() {
             carbs: pad(remaining.carbs, macros.carbs)
         }
         const combos =
-            findBestCombinations(restData, widened, 3, SWAP_MAX_SUGGESTIONS)[
+            findBestCombinations(restData, widened, 3, SWAP_MAX_SUGGESTIONS, optimizerConfig)[
                 picked.restaurant
             ] ?? []
         const seen = new Set<string>()
@@ -385,6 +415,10 @@ export function App() {
                 macros={macros}
                 onChange={setMacros}
                 extAvailable={extAvailable}
+                optimizerConfig={optimizerConfig}
+                onOptimizerConfigChange={updateOptimizerConfig}
+                defaultOptimizerConfig={DEFAULT_OPTIMIZER_CONFIG}
+                showOptimizerConfig={appMode === 'optimize'}
             />
 
             {appMode === 'optimize' ? (
@@ -402,11 +436,19 @@ export function App() {
                     />
 
                     <button
-                        className="btn btn-primary"
-                        disabled={!canCompute}
+                        className={`btn btn-primary${computing ? ' btn-loading' : ''}`}
+                        disabled={!canCompute || computing}
                         onClick={compute}
                     >
-                        {hasMacros ? 'Find meals' : 'Enter your calories first'}
+                        {computing ? (
+                            <>
+                                <span className="spinner" aria-hidden="true" /> Finding meals…
+                            </>
+                        ) : hasMacros ? (
+                            'Find meals'
+                        ) : (
+                            'Enter your calories first'
+                        )}
                     </button>
 
                     {results && (

@@ -1,6 +1,7 @@
-import type { TargetMacros } from '../macro'
+import type { TargetMacros, OptimizerConfig } from '../macro'
 import { ConnectMfp } from './ConnectMfp'
 import { ScreenshotInput } from './ScreenshotInput'
+import { MacroPreferences } from './MacroPreferences'
 
 export type InputMode = 'manual' | 'mfp' | 'screenshot'
 
@@ -11,6 +12,11 @@ interface Props {
     onChange: (m: TargetMacros) => void
     /** True when the MacroPro MyFitnessPal Companion extension is installed (enables 1-click pull). */
     extAvailable: boolean
+    optimizerConfig: OptimizerConfig
+    onOptimizerConfigChange: (config: OptimizerConfig) => void
+    defaultOptimizerConfig: OptimizerConfig
+    /** Macro priorities only affect the optimizer search — hidden in Menu Mode, where nothing reads them. */
+    showOptimizerConfig: boolean
 }
 
 const FIELDS: { key: keyof TargetMacros; label: string }[] = [
@@ -24,7 +30,17 @@ const FIELDS: { key: keyof TargetMacros; label: string }[] = [
 const EXTENSION_URL =
     'https://chromewebstore.google.com/detail/kmdghdedmhabhnhehomcfeknegcjgmbd?utm_source=item-share-cb'
 
-export function MacroInput ({ mode, onModeChange, macros, onChange, extAvailable }: Props) {
+export function MacroInput ({
+    mode,
+    onModeChange,
+    macros,
+    onChange,
+    extAvailable,
+    optimizerConfig,
+    onOptimizerConfigChange,
+    defaultOptimizerConfig,
+    showOptimizerConfig
+}: Props) {
     const set = (key: keyof TargetMacros, raw: string) => {
         const value = raw === '' ? 0 : Number(raw)
         if (Number.isNaN(value)) return
@@ -95,6 +111,16 @@ export function MacroInput ({ mode, onModeChange, macros, onChange, extAvailable
                     </div>
                 ))}
             </div>
+
+            {showOptimizerConfig && (
+                <MacroPreferences
+                    macros={macros}
+                    config={optimizerConfig}
+                    onChange={onOptimizerConfigChange}
+                    defaultConfig={defaultOptimizerConfig}
+                    title="Matching preferences"
+                />
+            )}
         </section>
     )
 }

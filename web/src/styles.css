@@ -246,6 +246,101 @@ header.hero p {
     background: #2a2114;
 }
 
+/* Matching preferences (collapsible, mirrors .restaurant-filter above) —
+   one compact fader column per macro, all in a single row that wraps to two
+   on narrow screens instead of squeezing. */
+.macro-dial-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 18px;
+    margin-top: 12px;
+}
+.macro-dial {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 64px;
+}
+.macro-dial-label { font-size: 0.78rem; font-weight: 600; }
+.macro-dial-percent {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+/* Past 100%, that macro is allowed to overflow — the only signal for this
+   is visual (see MacroPreferences' docblock on why there's no separate
+   toggle), so make it clearly read as "different from normal" here. */
+.macro-dial-percent.over { color: var(--accent-2); font-weight: 700; }
+/* The effective gram/kcal figure sits inline after the percent (Variant B) —
+   its own weight/colour stay neutral even when the percent turns "over",
+   since it's a plain readout, not itself a state indicator. */
+.macro-dial-effective-inline {
+    font-weight: 400;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Below this, 4 columns of fixed width leave room for only 3 per row (an
+   asymmetric 3+1 wrap) — force a clean 2x2 instead. */
+@media (max-width: 420px) {
+    .macro-dial-row { gap: 16px 8px; }
+    .macro-dial { width: auto; flex: 0 1 40%; }
+}
+
+/* Fader (see components/Fader.tsx) */
+.fader-track {
+    position: relative;
+    margin-top: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    touch-action: none;
+}
+.fader-track:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* A faint reference line at the 100% mark — the fixed point past which a macro overflows. */
+.fader-mark {
+    position: absolute;
+    left: -3px;
+    right: -3px;
+    height: 1px;
+    background: var(--muted);
+    opacity: 0.5;
+}
+.fader-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--accent);
+    border-radius: 5px;
+    pointer-events: none;
+}
+.fader-handle {
+    position: absolute;
+    left: 50%;
+    width: 20px;
+    height: 10px;
+    background: var(--accent-2);
+    border-radius: 3px;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.link-btn {
+    background: none;
+    border: 0;
+    color: var(--accent-2);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 14px;
+}
+.link-btn:hover { text-decoration: underline; }
+
 /* Switch */
 .switch {
     display: inline-flex;
@@ -287,6 +382,30 @@ header.hero p {
 }
 .btn-primary { background: var(--accent); color: #1a1206; width: 100%; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Actively computing reads differently from merely unavailable — stay fully
+   opaque and keep the "in progress" cursor instead of "not-allowed". */
+.btn-primary.btn-loading:disabled {
+    opacity: 1;
+    cursor: wait;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(26, 18, 6, 0.35);
+    border-top-color: #1a1206;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spinner { animation-duration: 1.6s; }
+}
 .btn-ghost {
     background: var(--surface-2);
     color: var(--text);

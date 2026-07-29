@@ -75,6 +75,39 @@ export interface TargetMacros {
     carbs: number
 }
 
+/**
+ * Per-macro tuning for {@link findBestCombinations} (see ./optimizer.ts).
+ *
+ *  - `weight` — scales this macro's *effective* target for the search,
+ *    default `1` (target unchanged). `0.8` on a 55g protein target means the
+ *    search treats 44g as the real ceiling to aim for/not exceed — not "55g
+ *    still, just cared about less." `0` means "ignore this macro entirely"
+ *    (its effective target would round to ~0, which the search special-cases
+ *    rather than treating as "must be exactly zero"). Must be `>= 0` — the
+ *    search's admissible-bound prune assumes a non-negative, monotonically-
+ *    scoring contribution per macro; a negative weight would make that prune
+ *    unsound (it could cut a genuinely best branch).
+ *  - `overflow` — `'strict'` (default) excludes any combo whose total for
+ *    this macro exceeds its *effective* (weight-scaled) target. `'allowed'`
+ *    lets a combo overflow this specific macro without being disqualified —
+ *    useful for a macro the user doesn't mind going over (e.g. calories, or
+ *    a macro weighted above 1 to deliberately reach past its original
+ *    target) so the search isn't blocked from otherwise-good combos by one
+ *    macro's ceiling.
+ */
+export interface MacroPreference {
+    weight: number
+    overflow: 'strict' | 'allowed'
+}
+
+/** One {@link MacroPreference} per macro — the full tuning `findBestCombinations` accepts. */
+export interface OptimizerConfig {
+    calories: MacroPreference
+    protein: MacroPreference
+    fat: MacroPreference
+    carbs: MacroPreference
+}
+
 // ---------------------------------------------------------------------------
 // Web-app data format (produced by src/tools/build-web-data.ts, consumed by the
 // React app under web/). One file per restaurant + an index.json summary.
