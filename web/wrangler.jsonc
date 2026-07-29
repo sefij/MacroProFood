@@ -11,10 +11,17 @@
   "assets": {
     "directory": "dist",
     "binding": "ASSETS",
-    // Always hit the Worker first for /data/* so the R2-backed snapshots win
-    // even if a stale copy ever lands in dist. Everything else is served
-    // straight from static assets.
-    "run_worker_first": ["/data/*"]
+    // Every request must reach the Worker, not just /data/*: worker/index.ts
+    // also does the apex (macropro.food) -> canonical (www.macropro.food)
+    // redirect, and that check can only ever run on requests the Worker
+    // actually sees. Scoping this to ["/data/*"] (as it was before) let
+    // /data/* correctly hit R2 first, but silently made the redirect dead
+    // code — any other path, including "/", was served straight from static
+    // assets without the Worker running at all, so the apex host kept
+    // serving content directly instead of redirecting. `true` routes every
+    // request through the Worker; index.ts's own checks (isDataRequest,
+    // hostname, Sec-Fetch-Mode) still decide what happens from there.
+    "run_worker_first": true
   },
   "r2_buckets": [
     { "binding": "STORAGE_NAME", "bucket_name": "macropro-data" }
