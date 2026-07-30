@@ -6,11 +6,18 @@ import { RestaurantCategoryFilter } from './category-filter'
 const SIDES = CATEGORY_PRESETS.find((p) => p.key === 'sides')!
 const DRINKS = CATEGORY_PRESETS.find((p) => p.key === 'drinks')!
 const DESSERTS = CATEGORY_PRESETS.find((p) => p.key === 'desserts')!
+const BREAKFAST = CATEGORY_PRESETS.find((p) => p.key === 'breakfast')!
 
 test('matchingCategories catches real category-name variants seen across restaurants (July 2026 data)', () => {
     assert.deepEqual(
         matchingCategories(['Fries & Sides', 'Sourdough Sides', 'Burgers'], SIDES),
         ['Fries & Sides', 'Sourdough Sides']
+    )
+    // Five Guys' and Wingstop's fries categories are standalone ("Fries",
+    // "Sweet Potato Fries", "Loaded Fries") — none contain "side" at all.
+    assert.deepEqual(
+        matchingCategories(['Fries', 'Sweet Potato Fries', 'Loaded Fries', 'Burgers'], SIDES),
+        ['Fries', 'Sweet Potato Fries', 'Loaded Fries']
     )
     assert.deepEqual(
         matchingCategories(['Drinks & Coffee', 'Cold Drinks', 'Beverages', 'Burgers'], DRINKS),
@@ -22,12 +29,71 @@ test('matchingCategories catches real category-name variants seen across restaur
     )
 })
 
+test('sides preset also catches dips/sauces/condiments — the "fries & extras" bucket, not just literal sides', () => {
+    assert.deepEqual(
+        matchingCategories(
+            ['Dips', 'New 40g Dips', "Dips & Extras", 'Sauces', 'Sauces & Condiments', 'Ingredients/Condiments', 'Burgers'],
+            SIDES
+        ),
+        ['Dips', 'New 40g Dips', 'Dips & Extras', 'Sauces', 'Sauces & Condiments', 'Ingredients/Condiments']
+    )
+    // KFC's "Sides & Dips" already matched on 'side' alone before dip/sauce/
+    // condiment were added — confirm it's still just one match, not double-counted.
+    assert.deepEqual(matchingCategories(['Sides & Dips'], SIDES), ['Sides & Dips'])
+})
+
+test("sides preset catches Domino's \"Chick 'N' Dip\"/\"Chick 'N' Dip Combos\" via their own literal phrase, not the broad 'dips' keyword", () => {
+    // Confirmed with the user: at Domino's, chicken tenders/wings/boneless
+    // bites (and their meal combos) are ordered as a side alongside pizza,
+    // the same role as garlic bread or wedges — so both should be excluded.
+    assert.deepEqual(
+        matchingCategories(["Chick 'N' Dip", "Chick 'N' Dip Combos", 'Dips'], SIDES),
+        ["Chick 'N' Dip", "Chick 'N' Dip Combos", 'Dips']
+    )
+})
+
+test("the \"chick 'n' dip\" phrase doesn't spill over into other restaurants' real chicken-main categories", () => {
+    assert.deepEqual(matchingCategories(['Just Chicken', 'Chicken', 'Crispy & Tender Chicken'], SIDES), [])
+})
+
+test('Slim Chickens\' "Dipping Sauces" still matches — not via \'dips\' (singular "Dipping"), but via \'sauce\'', () => {
+    assert.deepEqual(matchingCategories(['Dipping Sauces'], SIDES), ['Dipping Sauces'])
+})
+
+test("sides preset catches Wagamama's/Nando's bare \"Extras\" categories via 'extra'", () => {
+    assert.deepEqual(
+        matchingCategories(['Extras', 'Dips & Extras', 'Burgers'], SIDES),
+        ['Extras', 'Dips & Extras']
+    )
+})
+
+test("sides preset catches Subway's \"Toppings\" via an exact match, not a substring", () => {
+    assert.deepEqual(matchingCategories(['Toppings'], SIDES), ['Toppings'])
+})
+
+test("the exact 'toppings' match doesn't false-positive on Wendy's \"Salads Includes Toppings & Dressings\" (a salad category)", () => {
+    assert.deepEqual(matchingCategories(['Salads Includes Toppings & Dressings'], SIDES), [])
+})
+
 test("desserts preset doesn't false-positive on Wingstop's 'Sweet Potato Fries' (a side, not a dessert)", () => {
     assert.deepEqual(matchingCategories(['Sweet Potato Fries', 'Sides'], DESSERTS), [])
 })
 
-test('genuinely ambiguous categories (shakes, proper-noun desserts) are left unmatched by every preset', () => {
-    const ambiguous = ['Shakes', 'Milkshakes', 'Handspun Shakes', 'Frosty®']
+test('breakfast preset catches real category-name variants (plain "Breakfast" and Nando\'s "Breakfast Rolls")', () => {
+    assert.deepEqual(
+        matchingCategories(['Breakfast', 'Breakfast Rolls', 'Burgers'], BREAKFAST),
+        ['Breakfast', 'Breakfast Rolls']
+    )
+})
+
+test("'shake' is caught by both drinks and desserts — confirmed with the user as genuinely either", () => {
+    const shakes = ['Shakes', 'Milkshakes', 'Handspun Shakes', 'Burgers']
+    assert.deepEqual(matchingCategories(shakes, DRINKS), ['Shakes', 'Milkshakes', 'Handspun Shakes'])
+    assert.deepEqual(matchingCategories(shakes, DESSERTS), ['Shakes', 'Milkshakes', 'Handspun Shakes'])
+})
+
+test('genuinely ambiguous categories (proper-noun desserts) are left unmatched by every preset', () => {
+    const ambiguous = ['Frosty®']
     for (const preset of CATEGORY_PRESETS) {
         assert.deepEqual(matchingCategories(ambiguous, preset), [], `"${preset.label}" unexpectedly matched something in ${ambiguous}`)
     }
