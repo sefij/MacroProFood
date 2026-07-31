@@ -246,6 +246,125 @@ header.hero p {
     background: #2a2114;
 }
 
+/* Quick global exclusion presets ("No sides", "No drinks", "No desserts") —
+   sit above the per-restaurant "Advanced filters", since they're meant to be
+   the simple/one-click option. Labeled the same way "Advanced filters"
+   labels itself, and the chips use the identical toggle styling as the
+   per-restaurant filter chips below (.filter-chip) — same pill, same
+   selected state — so both read as the same kind of control. */
+.preset-section { margin-top: 14px; }
+.preset-label {
+    font-size: 0.86rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.preset-chip {
+    padding: 6px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+.preset-chip.selected {
+    border-color: var(--accent);
+    background: #2a2114;
+    color: var(--accent-2);
+}
+
+/* Matching preferences — Calories always visible, Protein/Carbs/Fat nested
+   in an "Advanced" reveal (.filters, same collapsible pattern as "Advanced
+   filters" above) instead of a separate simple/advanced mode. */
+.macro-prefs { margin-top: 14px; }
+.macro-prefs-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.macro-prefs-title {
+    font-size: 0.86rem;
+    color: var(--muted);
+}
+.macro-prefs-head .link-btn { margin-top: 0; }
+.macro-prefs .filters { margin-top: 10px; }
+
+/* One full-width row per macro, stacked — a native range input benefits
+   from width (more travel = more precision), unlike the vertical fader this
+   replaced, which crammed a 15-step range into an 84px-tall bar. */
+.macro-slider-row { margin-top: 14px; }
+.macro-slider-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+.macro-dial-label { font-size: 0.78rem; font-weight: 600; }
+.macro-dial-percent {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+/* Past 100%, that macro is allowed to overflow — the only signal for this
+   is visual (see MacroPreferences' docblock on why there's no separate
+   toggle), so make it clearly read as "different from normal" here. */
+.macro-dial-percent.over { color: var(--accent-2); font-weight: 700; }
+/* Any other non-default weight (including under 100%) still gets its own,
+   lighter emphasis — otherwise a lowered weight looks identical to the
+   slider just parked at default, with no cue it was actually changed. */
+.macro-dial-percent.changed { color: var(--text); font-weight: 600; }
+/* The effective gram/kcal figure sits inline after the percent — its own
+   weight/colour stay neutral even when the percent turns "over", since
+   it's a plain readout, not itself a state indicator. */
+.macro-dial-effective-inline {
+    font-weight: 400;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Native <input type="range"> (see MacroPreferences.tsx's docblock on why
+   this replaced a custom-built dial/fader) — themed via accent-color rather
+   than the full ::-webkit-slider-thumb/::-moz-range-thumb pseudo-element
+   set, so it stays a real native control (and its already-tuned touch
+   target) underneath, just recoloured. */
+.macro-slider-track { position: relative; display: flex; align-items: center; }
+.macro-slider {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+.macro-slider.over { accent-color: var(--accent-2); }
+/* A faint reference line at the fixed 100% mark — approximate (it doesn't
+   account for the native thumb's own width), which is fine for a glanceable
+   reference rather than a precise input target. */
+.macro-slider-mark {
+    position: absolute;
+    top: 50%;
+    width: 2px;
+    height: 10px;
+    transform: translate(-50%, -50%);
+    background: var(--muted);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.link-btn {
+    background: none;
+    border: 0;
+    color: var(--accent-2);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 14px;
+}
+.link-btn:hover { text-decoration: underline; }
+
 /* Switch */
 .switch {
     display: inline-flex;
@@ -287,6 +406,30 @@ header.hero p {
 }
 .btn-primary { background: var(--accent); color: #1a1206; width: 100%; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Actively computing reads differently from merely unavailable — stay fully
+   opaque and keep the "in progress" cursor instead of "not-allowed". */
+.btn-primary.btn-loading:disabled {
+    opacity: 1;
+    cursor: wait;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(26, 18, 6, 0.35);
+    border-top-color: #1a1206;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spinner { animation-duration: 1.6s; }
+}
 .btn-ghost {
     background: var(--surface-2);
     color: var(--text);

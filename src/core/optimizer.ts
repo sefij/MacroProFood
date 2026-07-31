@@ -10,9 +10,18 @@ import {
     NutritionData,
     OptimizationResult,
     OptimizationResults,
+    OptimizerConfig,
     RestaurantsData,
     TargetMacros
 } from './types'
+
+/** Neutral tuning — every macro's effective target equals its real target, and none may be exceeded. Matches this project's behavior before {@link OptimizerConfig} existed. */
+export const DEFAULT_OPTIMIZER_CONFIG: OptimizerConfig = {
+    calories: { weight: 1, overflow: 'strict' },
+    protein: { weight: 1, overflow: 'strict' },
+    fat: { weight: 1, overflow: 'strict' },
+    carbs: { weight: 1, overflow: 'strict' }
+}
 
 /** Flattens `RestaurantsData` into a single list of `MenuItem`s. */
 export function flattenItems (restaurantsData: RestaurantsData): MenuItem[] {
@@ -35,15 +44,20 @@ export function flattenItems (restaurantsData: RestaurantsData): MenuItem[] {
 }
 
 /**
- * Finds the top-N meal combinations per restaurant that best match `targets`
- * without exceeding any macro. Pure function — given the same inputs it always
- * returns the same result.
+ * Finds the top-N meal combinations per restaurant that best match `targets`.
+ * By default no macro may exceed its target (see {@link DEFAULT_OPTIMIZER_CONFIG});
+ * pass `config` to scale specific macros' effective targets up or down, or
+ * let them overflow — see {@link OptimizerConfig}. The `accuracy` on each
+ * returned result is still measured against the real `targets`, not the
+ * weighted ones, regardless of `config`. Pure function — given the same
+ * inputs it always returns the same result.
  */
 export function findBestCombinations (
     restaurantsData: RestaurantsData,
     targets: TargetMacros,
     maxItems: number = 5,
-    optionsPerRestaurant: number = 3
+    optionsPerRestaurant: number = 3,
+    config: OptimizerConfig = DEFAULT_OPTIMIZER_CONFIG
 ): OptimizationResults {
     const allItems = flattenItems(restaurantsData)
     const results: OptimizationResults = {}
@@ -57,7 +71,8 @@ export function findBestCombinations (
             restaurantItems,
             targets,
             maxItems,
-            optionsPerRestaurant
+            optionsPerRestaurant,
+            config
         )
         if (combos.length > 0) {
             results[restaurant] = combos
@@ -100,18 +115,39 @@ function optimizeRestaurant (
     items: MenuItem[],
     targets: TargetMacros,
     maxItems: number,
-    topN: number
+    topN: number,
+    config: OptimizerConfig
 ): OptimizationResult[] {
-    // Helper to check if nutrition exceeds any target
+    // A macro's weight scales its *effective* target for this search — 80%
+    // weight on a 55g fat target means the search treats 44g as the ceiling
+    // to aim for/not exceed, not "55g still but caring a bit less about it."
+    // See OptimizerConfig's docs. `targets` itself (the user's real numbers)
+    // is untouched — only used below for the final accuracy report, which
+    // should reflect what the user actually asked for, not the weighted search.
+    const effectiveTargets: TargetMacros = {
+        calories: targets.calories * config.calories.weight,
+        protein: targets.protein * config.protein.weight,
+        fat: targets.fat * config.fat.weight,
+        carbs: targets.carbs * config.carbs.weight
+    }
+    const eCal = Math.max(effectiveTargets.calories, 1)
+    const eProt = Math.max(effectiveTargets.protein, 1)
+    const eFat = Math.max(effectiveTargets.fat, 1)
+    const eCarbs = Math.max(effectiveTargets.carbs, 1)
+
+    // Helper to check if nutrition exceeds any *strict* effective target — a
+    // macro configured with overflow: 'allowed' never disqualifies a combo,
+    // and neither does a macro weighted to 0 (its effective target rounds to
+    // ~0, which would otherwise reject almost any real combo outright; weight
+    // 0 means "ignore this macro," not "must be exactly zero").
     function exceeds (
-        nutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>,
-        targets: TargetMacros
+        nutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>
     ): boolean {
         return (
-            nutrition.calories > targets.calories ||
-            nutrition.protein > targets.protein ||
-            nutrition.fat > targets.fat ||
-            nutrition.carbs > targets.carbs
+            (config.calories.overflow === 'strict' && config.calories.weight > 0 && nutrition.calories > effectiveTargets.calories) ||
+            (config.protein.overflow === 'strict' && config.protein.weight > 0 && nutrition.protein > effectiveTargets.protein) ||
+            (config.fat.overflow === 'strict' && config.fat.weight > 0 && nutrition.fat > effectiveTargets.fat) ||
+            (config.carbs.overflow === 'strict' && config.carbs.weight > 0 && nutrition.carbs > effectiveTargets.carbs)
         )
     }
 
@@ -130,17 +166,19 @@ function optimizeRestaurant (
         )
     }
 
-    // Helper to score a combination (higher is better, but must not overflow)
+    // Helper to score a combination (higher is better, but must not overflow).
+    // Unweighted sum of fill ratios against the *effective* (already-scaled)
+    // targets above — the weighting is baked into what "100%" means for each
+    // macro now, not a second multiplier here. A 0-weight macro contributes
+    // nothing either way (its ratio against a ~0 target is meaningless).
     function score (
-        nutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>,
-        targets: TargetMacros
+        nutrition: Omit<NutritionData, 'ProteinTCalRatio' | 'CarbToCalRatio'>
     ): number {
-        // Score is the sum of ratios (how much of each macro is covered, capped at 1)
         return (
-            Math.min(nutrition.calories / Math.max(targets.calories, 1), 1) +
-            Math.min(nutrition.protein / Math.max(targets.protein, 1), 1) +
-            Math.min(nutrition.fat / Math.max(targets.fat, 1), 1) +
-            Math.min(nutrition.carbs / Math.max(targets.carbs, 1), 1)
+            (config.calories.weight === 0 ? 0 : Math.min(nutrition.calories / eCal, 1)) +
+            (config.protein.weight === 0 ? 0 : Math.min(nutrition.protein / eProt, 1)) +
+            (config.fat.weight === 0 ? 0 : Math.min(nutrition.fat / eFat, 1)) +
+            (config.carbs.weight === 0 ? 0 : Math.min(nutrition.carbs / eCarbs, 1))
         )
     }
 
@@ -169,23 +207,27 @@ function optimizeRestaurant (
     const thresholdScore = () =>
         topK.length < topN ? -1 : topK[topN - 1].score
 
-    // Hoisted: filter+sort depend only on `items` and `targets`, both invariant
-    // across the recursion. Compute once.
-    // Sort by ProteinToCalRatio desc when protein is the highest target, by
-    // CarbToCalRatio desc when carbs is the highest target.
+    // Hoisted: filter+sort depend only on `items`, `effectiveTargets` and
+    // `config`, all invariant across the recursion. Compute once.
+    // Sort by ProteinToCalRatio desc when protein has the highest *effective*
+    // target, by CarbToCalRatio desc when carbs does.
     const proteinTargetHighest =
-        targets.protein >= targets.carbs && targets.protein >= targets.fat
+        effectiveTargets.protein >= effectiveTargets.carbs && effectiveTargets.protein >= effectiveTargets.fat
     const carbsTargetHighest =
-        targets.carbs >= targets.protein && targets.carbs >= targets.fat
+        effectiveTargets.carbs >= effectiveTargets.protein && effectiveTargets.carbs >= effectiveTargets.fat
+    // A macro configured with overflow: 'allowed', or weighted to 0, skips the
+    // "no single item over 1.3x effective target" pre-filter — a candidate
+    // that's fine to overflow (or that this macro ignores entirely) shouldn't
+    // be excluded from consideration just for being large in it.
     const sortedItems = items
         .filter(
             (item) =>
                 item.protein >= 1 &&
                 item.carbs >= 1 &&
-                item.calories <= targets.calories * 1.3 &&
-                item.protein <= targets.protein * 1.3 &&
-                item.fat <= targets.fat * 1.3 &&
-                item.carbs <= targets.carbs * 1.3
+                (config.calories.overflow === 'allowed' || config.calories.weight === 0 || item.calories <= effectiveTargets.calories * 1.3) &&
+                (config.protein.overflow === 'allowed' || config.protein.weight === 0 || item.protein <= effectiveTargets.protein * 1.3) &&
+                (config.fat.overflow === 'allowed' || config.fat.weight === 0 || item.fat <= effectiveTargets.fat * 1.3) &&
+                (config.carbs.overflow === 'allowed' || config.carbs.weight === 0 || item.carbs <= effectiveTargets.carbs * 1.3)
         )
         .sort((a, b) => {
             if (proteinTargetHighest) {
@@ -241,21 +283,23 @@ function optimizeRestaurant (
             return
         }
 
-        if (exceeds(cur, targets)) return
+        if (exceeds(cur)) return
 
-        recordCombo(score(cur, targets))
+        recordCombo(score(cur))
 
         if (combo.length === maxItems) return
 
         // Admissible upper-bound prune: max additional score reachable in
         // the remaining slots, assuming each could be the macro-maximizing
-        // item. Strict `<` keeps the length tiebreak path open on equality.
+        // item. Same shape as score() — effective (already-scaled) targets,
+        // a 0-weight macro contributing nothing — so this stays a true upper
+        // bound. Strict `<` keeps the length tiebreak path open on equality.
         const slotsLeft = maxItems - combo.length
         const upper =
-            Math.min(1, (cur.calories + slotsLeft * maxCalories) / tCal) +
-            Math.min(1, (cur.protein + slotsLeft * maxProtein) / tProt) +
-            Math.min(1, (cur.fat + slotsLeft * maxFat) / tFat) +
-            Math.min(1, (cur.carbs + slotsLeft * maxCarbs) / tCarbs)
+            (config.calories.weight === 0 ? 0 : Math.min(1, (cur.calories + slotsLeft * maxCalories) / eCal)) +
+            (config.protein.weight === 0 ? 0 : Math.min(1, (cur.protein + slotsLeft * maxProtein) / eProt)) +
+            (config.fat.weight === 0 ? 0 : Math.min(1, (cur.fat + slotsLeft * maxFat) / eFat)) +
+            (config.carbs.weight === 0 ? 0 : Math.min(1, (cur.carbs + slotsLeft * maxCarbs) / eCarbs))
         if (upper < thresholdScore()) return
 
         for (let i = startIndex; i < sortedItems.length; i++) {

@@ -4,4 +4,4 @@
  * the repo boundary (`../../src/core/...`) directly.
  */
 export * from '../../src/core/types'
-export { findBestCombinations, avgAccuracyOf, flattenItems } from '../../src/core/optimizer'
+export { findBestCombinations, avgAccuracyOf, flattenItems, DEFAULT_OPTIMIZER_CONFIG } from '../../src/core/optimizer'
