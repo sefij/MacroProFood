@@ -32,11 +32,21 @@ import { extractPdfItems, PdfItem } from '../pdf/pdf-lines'
  *     shows one "Margherita" with a size selector rather than ~11 rows.
  *  3. **Category.** The nearest rotated `Category` label (by vertical centre).
  *
- * **Scope (per product decision): Pizzas, Sides and Chicken only.** Melts,
- * Flatzz, Dips, Desserts and Drinks are dropped — some extract messily from
- * this layout, and Drinks are excluded by the app by default anyway. Sides
- * and Chicken aren't size-variant products (each row is its own item, e.g.
- * "Garlic Bread (4 slices)"), so those emit as plain items.
+ * **Scope: Pizzas, Sides, Chicken and Desserts.** Melts, Flatzz, Dips and
+ * Drinks are still dropped — Drinks are excluded by the app by default
+ * anyway, and Melts/Flatzz genuinely don't fit this reconstruction (too
+ * few rows to safely infer a category boundary around). Desserts *does*
+ * extract cleanly (verified against a live pull — 4 rows, real names,
+ * plausible macros), contrary to an earlier, broader "some extract
+ * messily" assumption here; the one thing that doesn't survive cleanly is
+ * a single boundary-seam row ("Mango & Habanero Dip") whose y-position
+ * falls between the Dips and Desserts labels and gets bucketed into
+ * Desserts by the boundary heuristic below — {@link DROP_NAME} guards
+ * against that specific leak by name rather than trying to make the
+ * boundary itself pixel-perfect for a category that's excluded anyway.
+ * Sides, Chicken and Desserts aren't size-variant products (each row is
+ * its own item, e.g. "Garlic Bread (4 slices)", "Vanilla Ice Cream"), so
+ * those emit as plain items.
  *
  * The PDF URL is hosted on Contentful's CDN and hard-coded, matching the
  * other PDF scrapers (Domino's, Wendy's, Subway). Pizza Hut's own
@@ -83,7 +93,13 @@ const NAME_MAX_X = 245
 const NAME_FRAGMENT_GAP = 60
 
 // Only these categories are in scope; everything else is dropped.
-const IN_SCOPE = /pizza|sides|chicken/i
+const IN_SCOPE = /pizza|sides|chicken|dessert/i
+
+// Guards against the one confirmed Dips/Desserts boundary-seam leak (see
+// docblock): a Dip whose row y-position lands inside the Desserts bucket.
+// Dips are out of scope everywhere else in this scraper, so this is a name
+// backstop for that specific mis-bucketed row, not a general dessert filter.
+const DROP_NAME = /\bdip\b/i
 
 // A single macro can't out-energise the whole item (protein/carbs ≈ 4 kcal/g,
 // fat ≈ 9 kcal/g); drop feed errors that break this by more than the slack.
@@ -316,6 +332,8 @@ export class PizzaHutScraper extends SourceScraper {
                     if (!IN_SCOPE.test(category)) { outOfScope++; continue }
 
                     const size = clean(row.size)
+                    if (DROP_NAME.test(size)) { outOfScope++; continue }
+
                     const built = buildNutrition(row, rawCategory)
                     if (built === null) { invalid++; continue }
                     if (built === 'implausible') {
