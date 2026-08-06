@@ -8,6 +8,15 @@
 
 import * as path from 'path'
 import * as fs from 'fs'
+import * as dns from 'dns'
+
+// Node 18+ resolves a hostname's IPv6 address first (Happy Eyeballs) before
+// falling back to IPv4. Several GitHub Actions runners have broken/rate-
+// limited IPv6 egress, so that first leg fails and axios/undici surface it as
+// an `AggregateError` — seen intermittently across unrelated scrapers (KFC,
+// Domino's) in the same CI run, never locally on a normal IPv4-first network.
+// Preferring IPv4 here (before any scraper's first request) sidesteps it.
+dns.setDefaultResultOrder('ipv4first')
 
 /**
  * Minimal `.env` loader — reads `KEY=VALUE` pairs from the project-root
