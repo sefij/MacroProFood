@@ -69,8 +69,7 @@ export class WagamamaScraper extends SourceScraper {
     async scrape (): Promise<RestaurantData> {
         console.log(chalk.blue(`${this.icon} Scraping Wagamama UK (live)…`))
 
-        const html = await this.fetchPage()
-        const payload = this.extractPayload(html)
+        const payload = await this.fetchPayload()
         const drinkNames = this.collectDrinkNames(payload)
         const categories = this.collectCategoryNames(payload)
 
@@ -119,6 +118,24 @@ export class WagamamaScraper extends SourceScraper {
             transformResponse: [(d) => d]
         })
         return response.data
+    }
+
+    /**
+     * Fetches the menu page and extracts its payload, retrying once on
+     * failure. A missing/malformed `__NUXT_DATA__` blob has shown up
+     * intermittently in production (an edge cache or bot-check occasionally
+     * serving a page without it) even though a plain re-request succeeds —
+     * one retry clears it without masking a genuine site redesign, which
+     * would fail identically on the retry too.
+     */
+    private async fetchPayload (attempt: number = 0): Promise<unknown[]> {
+        try {
+            const html = await this.fetchPage()
+            return this.extractPayload(html)
+        } catch (error) {
+            if (attempt === 0) return this.fetchPayload(attempt + 1)
+            throw error
+        }
     }
 
     /** Pulls the `__NUXT_DATA__` devalue array out of the page. */

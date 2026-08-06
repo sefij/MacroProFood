@@ -45,6 +45,15 @@ export class ScrapingOperator {
     /**
      * Runs `producer` unless the scraper is disabled via the `DISABLE_<KEY>`
      * env var, in which case it logs a skip notice and returns no items.
+     *
+     * A scraper throwing (a live site being temporarily unreachable, a page
+     * layout it doesn't recognise, etc.) resolves to no items rather than
+     * rejecting. All 17 scrapers run under one `Promise.all` in
+     * {@link scrapeAll} — an uncaught rejection here would fail that whole
+     * call, and with it every other restaurant's scrape, before
+     * `build-web-data.ts` gets a chance to fall back to that restaurant's
+     * last committed snapshot (its already-designed behaviour for "no items
+     * scraped", see `resolveUpdatedAt`/`finalItems` there).
      */
     private async scrapeIfEnabled (
         key: RestaurantKey,
@@ -55,7 +64,12 @@ export class ScrapingOperator {
             console.log(chalk.gray(`⏭️  Skipping ${label} (DISABLE_${key} is set)`))
             return {}
         }
-        return producer()
+        try {
+            return await producer()
+        } catch (error) {
+            console.error(chalk.red(`✗ ${label} scrape failed, keeping last committed data: ${error}`))
+            return {}
+        }
     }
 
     async scrapePopeyes (): Promise<RestaurantData> {
