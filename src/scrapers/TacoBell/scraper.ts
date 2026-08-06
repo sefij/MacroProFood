@@ -159,9 +159,6 @@ export class TacoBellScraper extends SourceScraper {
                     currentCategory.includes('drink') ||
                     currentCategory.includes('beverage') ||
                     currentCategory.includes('sauce') ||
-                    currentCategory.includes('dessert') ||
-                    name.includes('churro') ||
-                    name.includes('cinnabon') ||
                     name.includes('shake') ||
                     name.includes('freeze') ||
                     name.includes('pepsi') ||
