@@ -52,8 +52,10 @@ export class PopeyesScraper extends SourceScraper {
             // ("Boneless", "Breakfast", "Dips", …). A section header is a <tr>
             // with no `.recipe-title` cell; its first cell holds the section
             // name. We walk the rows in order, tracking the current section so
-            // we can skip whole categories the user doesn't care about.
-            const EXCLUDED_SECTIONS = new Set(['dips', 'drinks', 'whipz'])
+            // we can skip condiments and drinks — not meal items for macro
+            // fitting. "Whipz" (Popeyes' dessert line) used to be excluded
+            // here too; that was wrong, they're real food with real macros.
+            const EXCLUDED_SECTIONS = new Set(['dips', 'drinks'])
             const table = $('.recipe-title').first().closest('table')
             let currentSection = ''
             let currentSectionLabel: string | undefined
