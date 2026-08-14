@@ -75,6 +75,19 @@ const NAV_TIMEOUT_MS = 25000
 const NUTRITION_WAIT_MS = 12000
 const HTTP_TIMEOUT_MS = 15000
 
+// The root menu page (~300KB) is heavier than an individual category page,
+// so it gets a longer budget plus one retry. NOTE: this alone does not
+// explain — or necessarily fix — CI's McDonald's failures. Checked the
+// actual refresh-data.yml run history: McDonald's scraped fine every day
+// through 2026-08-10 (46 items), then every run since 2026-08-11 has failed
+// with EVERY one of the old hard-coded category URLs independently timing
+// out at exactly 15000ms — a uniform, multi-day pattern across 8 unrelated
+// URLs that looks like GitHub Actions' outbound IP range got blocked by
+// mcdonalds.com's Akamai WAF, not marginal slowness a bigger timeout fixes.
+// Keeping this change since it's a reasonable, low-risk improvement either
+// way, but the real fix (if any) is outside this file — see project memory.
+const MENU_HTTP_TIMEOUT_MS = 30000
+
 const NUTRITION_ROWS_SELECTOR =
     '.cmp-nutrition-summary--secondary-table-without-allergens tbody tr, ' +
     '.cmp-nutrition-summary--secondary-table tbody tr'
@@ -156,11 +169,11 @@ export class McDonaldsScraper extends SourceScraper {
      * list so a category McDonald's adds later shows up without a code
      * change — see the class docblock for what's excluded and why.
      */
-    private async discoverCategories (): Promise<Array<{ url: string; category: string }>> {
+    private async discoverCategories (attempt: number = 0): Promise<Array<{ url: string; category: string }>> {
         try {
             const response = await axios.get<string>(MENU_URL, {
                 headers: REQUEST_HEADERS,
-                timeout: HTTP_TIMEOUT_MS,
+                timeout: MENU_HTTP_TIMEOUT_MS,
                 responseType: 'text',
                 transformResponse: [(d) => d]
             })
@@ -178,6 +191,7 @@ export class McDonaldsScraper extends SourceScraper {
             })
             return categories
         } catch (error: any) {
+            if (attempt === 0) return this.discoverCategories(attempt + 1)
             console.log(
                 chalk.yellow(`  ⚠ category discovery failed: ${error?.message ?? error}`)
             )
