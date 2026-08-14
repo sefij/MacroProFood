@@ -16,19 +16,34 @@ import { addItem } from '../add-item'
  *    `.marketing-name`, picking the visible per-portion cell.
  *  - Misses are bucketed (`discontinued`, `no-nutrition-rows`, `nav-timeout`,
  *    …) so it's obvious whether the site lost an item or the scraper did.
+ *
+ * **Category discovery.** The left-nav on {@link MENU_URL} is crawled live
+ * rather than hard-coding each category page — confirmed against a live
+ * pull (2026-08) that the hard-coded list had drifted: it was missing
+ * Breakfast Menu entirely (22 items — a whole meal period), and its "Happy
+ * Meal" entry pointed at a page whose items live under `/meal/...` rather
+ * than `/product/...`, so it silently contributed zero items every run.
+ * {@link EXCLUDED_CATEGORIES} skips categories confirmed to add no unique
+ * items: "What's New" (every item is cross-listed on its real category
+ * page — verified directly, e.g. the "hot-honey-mccrispy" What's New entry
+ * is also linked from Chicken), "Sauces" (condiments, consistent with every
+ * other scraper's exclusion), "Breakfast Saver Menu"/"Vegetarian"/"Vegan"
+ * (each a strict subset of items already covered by a real category — e.g.
+ * every Vegetarian item is also on Burgers/Fries & Sides/Desserts), "Happy
+ * Meal" (its `/meal/...` bundle pages carry no macro breakdown at all, but
+ * every component — the burger, the fries, the drink — is already scraped
+ * individually under its own real category), and the two purely-beverage
+ * categories "Milkshakes & Cold Drinks"/"McCafé".
  */
 
-/** Menu category pages to crawl, each tagged with its display category. */
-const CATEGORY_URLS: Array<{ url: string; category: string }> = [
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/made-for-sharing.html', category: 'Sharing' },
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/burgers.html', category: 'Burgers' },
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/chicken-mcnuggets-and-selects.html', category: 'Chicken' },
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/wraps-and-salads.html', category: 'Wraps & Salads' },
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/saver-menu.html', category: 'Saver Menu' },
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/happy-meal-meal.html', category: 'Happy Meal' },
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/fries-and-sides.html', category: 'Fries & Sides' },
-    { url: 'https://www.mcdonalds.com/gb/en-gb/menu/desserts.html', category: 'Desserts' }
-]
+const MENU_URL = 'https://www.mcdonalds.com/gb/en-gb/menu.html'
+
+/**
+ * Category display-text patterns to skip entirely (see docblock above for
+ * why each is safe to drop). Matched against the site's own nav label, not
+ * the URL slug, since that's the more stable signal across a site redesign.
+ */
+const EXCLUDED_CATEGORIES = /what.?s new|sauce|breakfast saver|vegetarian|vegan|happy meal|milkshake|mccaf[eé]/i
 
 const ITEM_URL_SKIP_PATTERNS = [
     'coffee',
@@ -82,10 +97,11 @@ export class McDonaldsScraper extends SourceScraper {
 
         console.log(chalk.blue(`${this.icon} Loading McDonald's data...`))
 
-        const itemUrls = await this.collectItemUrls()
+        const categories = await this.discoverCategories()
+        const itemUrls = await this.collectItemUrls(categories)
         console.log(
             chalk.blue(
-                `🍟 Discovered ${itemUrls.size} items across ${CATEGORY_URLS.length} categories`
+                `🍟 Discovered ${itemUrls.size} items across ${categories.length} categories`
             )
         )
 
@@ -129,12 +145,49 @@ export class McDonaldsScraper extends SourceScraper {
         return items
     }
 
+    /**
+     * Crawls {@link MENU_URL}'s left-nav for category pages, skipping the
+     * ones matched by {@link EXCLUDED_CATEGORIES}. Replaces a hard-coded
+     * list so a category McDonald's adds later shows up without a code
+     * change — see the class docblock for what's excluded and why.
+     */
+    private async discoverCategories (): Promise<Array<{ url: string; category: string }>> {
+        try {
+            const response = await axios.get<string>(MENU_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text',
+                transformResponse: [(d) => d]
+            })
+            const $ = cheerio.load(response.data)
+            const seen = new Set<string>()
+            const categories: Array<{ url: string; category: string }> = []
+            $('a[href*="/menu/"]').each((_, el) => {
+                const href = $(el).attr('href')
+                const text = cleanCategoryText($(el).text())
+                if (!href || !text || EXCLUDED_CATEGORIES.test(text)) return
+                const abs = new URL(href, MENU_URL).toString()
+                if (seen.has(abs)) return
+                seen.add(abs)
+                categories.push({ url: abs, category: text })
+            })
+            return categories
+        } catch (error: any) {
+            console.log(
+                chalk.yellow(`  ⚠ category discovery failed: ${error?.message ?? error}`)
+            )
+            return []
+        }
+    }
+
     /** Item URL → its display category (first category wins if listed twice). */
-    private async collectItemUrls (): Promise<Map<string, string>> {
+    private async collectItemUrls (
+        categories: Array<{ url: string; category: string }>
+    ): Promise<Map<string, string>> {
         const urlCategories = new Map<string, string>()
 
         await Promise.all(
-            CATEGORY_URLS.map(async ({ url: categoryUrl, category }) => {
+            categories.map(async ({ url: categoryUrl, category }) => {
                 try {
                     const response = await axios.get<string>(categoryUrl, {
                         headers: REQUEST_HEADERS,
@@ -296,6 +349,11 @@ export class McDonaldsScraper extends SourceScraper {
         )
         await Promise.all(runners)
     }
+}
+
+/** Strips trademark/registered symbols the site bakes into nav labels ("Saver Menu®"). */
+function cleanCategoryText (raw: string): string {
+    return raw.replace(/[®™]/g, '').replace(/\s+/g, ' ').trim()
 }
 
 function pickNutrition (
