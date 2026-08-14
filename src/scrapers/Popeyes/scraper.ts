@@ -100,14 +100,18 @@ export class PopeyesScraper extends SourceScraper {
                 const fatTxt = (fatContainer.children[0] as any).data
                 const fat = Number(fatTxt === '-' ? Infinity : fatTxt)
 
+                // 'beans'/'ketchup'/'muffin' used to be excluded here too — wrong,
+                // verified live: they were dropping half of Breakfast (Bacon Egg
+                // and Cheese Muffin, every "... with Heinz/Cajun Ketchup" roll and
+                // wrap) plus the Smoky Beans side, all real items with real
+                // macros. 'jam'/'brekkie' match nothing on the current menu,
+                // left alone as harmless. 'ireland only' correctly scopes out
+                // region-restricted items not sold in the UK.
                 if (
                     calories > 0 &&
                     protein > 1 &&
                     carbs > 0 &&
                     !name.includes('ireland only') &&
-                    !name.includes('beans') &&
-                    !name.includes('ketchup') &&
-                    !name.includes('muffin') &&
                     !name.includes('jam') &&
                     !name.includes('brekkie')
                 ) {
