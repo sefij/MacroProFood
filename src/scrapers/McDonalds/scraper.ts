@@ -45,6 +45,14 @@ const MENU_URL = 'https://www.mcdonalds.com/gb/en-gb/menu.html'
  */
 const EXCLUDED_CATEGORIES = /what.?s new|sauce|breakfast saver|vegetarian|vegan|happy meal|milkshake|mccaf[eé]/i
 
+// A defensive per-item backstop, not the primary drinks filter — most drinks
+// are already kept out by EXCLUDED_CATEGORIES; these catch the ones that
+// still leak into a kept category page (e.g. milkshakes are listed on
+// Desserts). 'salad'/'cucumber'/'fish' used to be here too and were wrong:
+// verified live that they excluded real food with real macros
+// (crispy-chicken-salad, crispy-chicken-bacon-salad, shaker-side-salad,
+// cucumber-sticks, filet-o-fish, double-filet-o-fish) — nothing about a
+// salad or a fish sandwich makes it not a meal item.
 const ITEM_URL_SKIP_PATTERNS = [
     'coffee',
     'latte',
@@ -52,10 +60,7 @@ const ITEM_URL_SKIP_PATTERNS = [
     'smoothie',
     'slices',
     'veggie',
-    'milkshake',
-    'salad',
-    'cucumber',
-    'fish'
+    'milkshake'
 ]
 
 const REQUEST_HEADERS = {
