@@ -69,6 +69,15 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # McDonald's runs its browser headed, not headless (see
+      # src/scrapers/McDonalds/scraper.ts's docblock) — mcdonalds.com's
+      # Akamai WAF fingerprints headless Chromium specifically and blocks
+      # it, confirmed by testing headless vs. headed from the same
+      # machine/IP. A headed browser needs a real display to render into,
+      # which this runner doesn't have; xvfb-run below fakes one.
+      - name: Install Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       # Pull the current snapshots down so build:data can preserve prior
       # timestamps/items when a live scrape returns nothing (see
       # resolveUpdatedAt / readExisting in build-web-data.ts). Missing objects
@@ -83,9 +92,11 @@ jobs:
 
       # A push (scraper code changed) or a manual bypass re-scrapes everything;
       # scheduled runs use the cache. `build:data:fresh` passes --no-cache.
+      # xvfb-run gives McDonald's headed browser a virtual display (see the
+      # "Install Xvfb" step above for why it needs one at all).
       - name: Build nutrition data
         run: >-
-          yarn ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bypass_cache))
+          xvfb-run -a yarn ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bypass_cache))
           && 'build:data:fresh' || 'build:data' }}
 
       - name: Upload snapshots to R2

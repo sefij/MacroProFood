@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import * as cheerio from 'cheerio'
-import { BrowserContext } from 'playwright'
+import { chromium, BrowserContext } from 'playwright'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
 import { addItem } from '../add-item'
@@ -9,29 +9,35 @@ import { addItem } from '../add-item'
  * McDonald's UK scraper.
  *
  *  - Category pages AND item pages both go through the same Playwright
- *    browser context (category pages used to be plain axios+cheerio HTTP
- *    requests; switched over — see below). Category-page HTML is static
- *    once loaded (`page.content()` straight into cheerio); item pages need
- *    a real wait, since their nutrition `<tbody>` is populated by JS after
- *    load.
+ *    browser context. Category-page HTML is static once loaded
+ *    (`page.content()` straight into cheerio); item pages need a real
+ *    wait, since their nutrition `<tbody>` is populated by JS after load.
  *  - Real waits on the populated rows; row-by-row parsing keyed on
  *    `.marketing-name`, picking the visible per-portion cell.
  *  - Misses are bucketed (`discontinued`, `no-nutrition-rows`, `nav-timeout`,
  *    …) so it's obvious whether the site lost an item or the scraper did.
  *
- * **Why category pages moved off axios (2026-08).** CI's refresh-data.yml
- * runs scraped McDonald's fine every day through 2026-08-10, then every run
- * since 2026-08-11 failed: all of the (then hard-coded) category URLs
- * independently timed out via axios, uniformly, every day — the signature
- * of GitHub Actions' outbound IP range getting blocked by mcdonalds.com's
- * Akamai WAF, not marginal slowness. Item pages, which have always gone
- * through Playwright here, were never actually tested against that block in
- * CI, since category discovery failed before ever reaching them. Routing
- * category pages through the same browser context is a real, testable bet
- * that a genuine browser's TLS/HTTP fingerprint gets through where axios's
- * does not — NOT a confirmed fix (a same-IP block wouldn't care what client
- * sent the request), but worth trying since it's the one variable neither
- * this session's sandbox testing nor CI's history has actually isolated.
+ * **Why this scraper launches its own headed browser (2026-08), unlike
+ * every other Playwright-based scraper here.** CI's refresh-data.yml
+ * scraped McDonald's fine every day through 2026-08-10, then every run
+ * since 2026-08-11 failed — originally diagnosed as an axios timeout/IP
+ * block (see git history), but that theory didn't survive contact with a
+ * real test: switching category-page fetching to headless Playwright
+ * *still* failed identically (`net::ERR_HTTP2_PROTOCOL_ERROR`), both with
+ * the default lightweight headless-shell binary AND with the full Chromium
+ * binary's newer headless architecture. Only genuinely headed mode
+ * (`headless: false`) got through — verified directly, repeatedly, from
+ * the same machine/IP that headless mode failed from, which rules out a
+ * pure IP-based block: mcdonalds.com's Akamai WAF is fingerprinting
+ * headless Chromium specifically (any variant), not blocking a source IP.
+ * This also better explains why three *unrelated* networks (a sandbox, CI,
+ * and Anthropic's own fetch infra) all broke on the same date — a WAF rule
+ * change targeting headless automation fits that better than three
+ * independent IP-blocklist hits.
+ *
+ * CI has no display server, so `headless: false` needs `xvfb-run` wrapping
+ * the workflow step (see `.github/workflows/refresh-data.yml`) to give
+ * Chromium a virtual display to render into.
  *
  * **Category discovery.** The left-nav on {@link MENU_URL} is crawled live
  * rather than hard-coding each category page — confirmed against a live
@@ -106,6 +112,27 @@ interface ParsedNutrition {
 
 export class McDonaldsScraper extends SourceScraper {
     icon = '🍟'
+
+    /**
+     * Overrides {@link SourceScraper.initialize} to launch a headed browser
+     * instead of the shared headless one every other scraper uses — see the
+     * class docblock for why. Needs `xvfb-run` in CI (no real display).
+     */
+    async initialize (): Promise<void> {
+        this.browser = await chromium.launch({
+            headless: false,
+            channel: 'chromium',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        })
+    }
 
     async scrape (): Promise<RestaurantData> {
         if (!this.browser) {
