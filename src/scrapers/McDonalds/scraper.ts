@@ -1,5 +1,4 @@
 import chalk from 'chalk'
-import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { BrowserContext } from 'playwright'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
@@ -9,13 +8,30 @@ import { addItem } from '../add-item'
 /**
  * McDonald's UK scraper.
  *
- *  - Category pages: HTTP + cheerio (item links are in static markup).
- *  - Item pages: one shared browser context with a bounded page pool, since
- *    the nutrition `<tbody>` is populated by JS after load.
+ *  - Category pages AND item pages both go through the same Playwright
+ *    browser context (category pages used to be plain axios+cheerio HTTP
+ *    requests; switched over — see below). Category-page HTML is static
+ *    once loaded (`page.content()` straight into cheerio); item pages need
+ *    a real wait, since their nutrition `<tbody>` is populated by JS after
+ *    load.
  *  - Real waits on the populated rows; row-by-row parsing keyed on
  *    `.marketing-name`, picking the visible per-portion cell.
  *  - Misses are bucketed (`discontinued`, `no-nutrition-rows`, `nav-timeout`,
  *    …) so it's obvious whether the site lost an item or the scraper did.
+ *
+ * **Why category pages moved off axios (2026-08).** CI's refresh-data.yml
+ * runs scraped McDonald's fine every day through 2026-08-10, then every run
+ * since 2026-08-11 failed: all of the (then hard-coded) category URLs
+ * independently timed out via axios, uniformly, every day — the signature
+ * of GitHub Actions' outbound IP range getting blocked by mcdonalds.com's
+ * Akamai WAF, not marginal slowness. Item pages, which have always gone
+ * through Playwright here, were never actually tested against that block in
+ * CI, since category discovery failed before ever reaching them. Routing
+ * category pages through the same browser context is a real, testable bet
+ * that a genuine browser's TLS/HTTP fingerprint gets through where axios's
+ * does not — NOT a confirmed fix (a same-IP block wouldn't care what client
+ * sent the request), but worth trying since it's the one variable neither
+ * this session's sandbox testing nor CI's history has actually isolated.
  *
  * **Category discovery.** The left-nav on {@link MENU_URL} is crawled live
  * rather than hard-coding each category page — confirmed against a live
@@ -63,30 +79,13 @@ const ITEM_URL_SKIP_PATTERNS = [
     'milkshake'
 ]
 
-const REQUEST_HEADERS = {
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-        '(KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-    'Accept-Language': 'en-GB,en;q=0.9'
-}
-
 const ITEM_CONCURRENCY = 3
+// Category pages are far lighter than item pages (no JS-populated table to
+// wait on), so a higher concurrency is fine here without straining the
+// browser the way 8-9 concurrent item scrapes might.
+const CATEGORY_CONCURRENCY = 6
 const NAV_TIMEOUT_MS = 25000
 const NUTRITION_WAIT_MS = 12000
-const HTTP_TIMEOUT_MS = 15000
-
-// The root menu page (~300KB) is heavier than an individual category page,
-// so it gets a longer budget plus one retry. NOTE: this alone does not
-// explain — or necessarily fix — CI's McDonald's failures. Checked the
-// actual refresh-data.yml run history: McDonald's scraped fine every day
-// through 2026-08-10 (46 items), then every run since 2026-08-11 has failed
-// with EVERY one of the old hard-coded category URLs independently timing
-// out at exactly 15000ms — a uniform, multi-day pattern across 8 unrelated
-// URLs that looks like GitHub Actions' outbound IP range got blocked by
-// mcdonalds.com's Akamai WAF, not marginal slowness a bigger timeout fixes.
-// Keeping this change since it's a reasonable, low-risk improvement either
-// way, but the real fix (if any) is outside this file — see project memory.
-const MENU_HTTP_TIMEOUT_MS = 30000
 
 const NUTRITION_ROWS_SELECTOR =
     '.cmp-nutrition-summary--secondary-table-without-allergens tbody tr, ' +
@@ -115,24 +114,25 @@ export class McDonaldsScraper extends SourceScraper {
 
         console.log(chalk.blue(`${this.icon} Loading McDonald's data...`))
 
-        const categories = await this.discoverCategories()
-        const itemUrls = await this.collectItemUrls(categories)
-        console.log(
-            chalk.blue(
-                `🍟 Discovered ${itemUrls.size} items across ${categories.length} categories`
-            )
-        )
+        const context = await this.browser.newContext({
+            viewport: { width: 1366, height: 768 },
+            extraHTTPHeaders: { 'Accept-Language': 'en-GB,en;q=0.9' }
+        })
 
         const items: RestaurantData = {}
         const missReasons = new Map<string, number>()
         const bump = (reason: string) =>
             missReasons.set(reason, (missReasons.get(reason) ?? 0) + 1)
 
-        const context = await this.browser.newContext({
-            viewport: { width: 1366, height: 768 }
-        })
-
         try {
+            const categories = await this.discoverCategories(context)
+            const itemUrls = await this.collectItemUrls(context, categories)
+            console.log(
+                chalk.blue(
+                    `🍟 Discovered ${itemUrls.size} items across ${categories.length} categories`
+                )
+            )
+
             await this.runWithConcurrency(
                 Array.from(itemUrls),
                 ITEM_CONCURRENCY,
@@ -164,20 +164,42 @@ export class McDonaldsScraper extends SourceScraper {
     }
 
     /**
+     * Loads `url` in a fresh page and returns its rendered HTML — the same
+     * browser-context mechanism {@link scrapeItem} already uses for item
+     * pages, now shared with category-page fetching (see class docblock).
+     * Retries once on `ERR_HTTP2_PROTOCOL_ERROR`, matching {@link scrapeItem}.
+     */
+    private async fetchHtml (
+        context: BrowserContext,
+        url: string,
+        attempt: number = 0
+    ): Promise<string> {
+        const page = await context.newPage()
+        try {
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS })
+            return await page.content()
+        } catch (error: any) {
+            const msg = String(error?.message ?? error)
+            if (msg.includes('ERR_HTTP2_PROTOCOL_ERROR') && attempt === 0) {
+                await page.close().catch(() => undefined)
+                return this.fetchHtml(context, url, attempt + 1)
+            }
+            throw error
+        } finally {
+            await page.close().catch(() => undefined)
+        }
+    }
+
+    /**
      * Crawls {@link MENU_URL}'s left-nav for category pages, skipping the
      * ones matched by {@link EXCLUDED_CATEGORIES}. Replaces a hard-coded
      * list so a category McDonald's adds later shows up without a code
      * change — see the class docblock for what's excluded and why.
      */
-    private async discoverCategories (attempt: number = 0): Promise<Array<{ url: string; category: string }>> {
+    private async discoverCategories (context: BrowserContext): Promise<Array<{ url: string; category: string }>> {
         try {
-            const response = await axios.get<string>(MENU_URL, {
-                headers: REQUEST_HEADERS,
-                timeout: MENU_HTTP_TIMEOUT_MS,
-                responseType: 'text',
-                transformResponse: [(d) => d]
-            })
-            const $ = cheerio.load(response.data)
+            const html = await this.fetchHtml(context, MENU_URL)
+            const $ = cheerio.load(html)
             const seen = new Set<string>()
             const categories: Array<{ url: string; category: string }> = []
             $('a[href*="/menu/"]').each((_, el) => {
@@ -191,7 +213,6 @@ export class McDonaldsScraper extends SourceScraper {
             })
             return categories
         } catch (error: any) {
-            if (attempt === 0) return this.discoverCategories(attempt + 1)
             console.log(
                 chalk.yellow(`  ⚠ category discovery failed: ${error?.message ?? error}`)
             )
@@ -201,20 +222,18 @@ export class McDonaldsScraper extends SourceScraper {
 
     /** Item URL → its display category (first category wins if listed twice). */
     private async collectItemUrls (
+        context: BrowserContext,
         categories: Array<{ url: string; category: string }>
     ): Promise<Map<string, string>> {
         const urlCategories = new Map<string, string>()
 
-        await Promise.all(
-            categories.map(async ({ url: categoryUrl, category }) => {
+        await this.runWithConcurrency(
+            categories,
+            CATEGORY_CONCURRENCY,
+            async ({ url: categoryUrl, category }) => {
                 try {
-                    const response = await axios.get<string>(categoryUrl, {
-                        headers: REQUEST_HEADERS,
-                        timeout: HTTP_TIMEOUT_MS,
-                        responseType: 'text',
-                        transformResponse: [(d) => d]
-                    })
-                    const $ = cheerio.load(response.data)
+                    const html = await this.fetchHtml(context, categoryUrl)
+                    const $ = cheerio.load(html)
                     $('.cmp-category__item a[href]').each((_, el) => {
                         const href = $(el).attr('href')
                         if (!href) return
@@ -230,7 +249,7 @@ export class McDonaldsScraper extends SourceScraper {
                         )
                     )
                 }
-            })
+            }
         )
 
         return urlCategories
