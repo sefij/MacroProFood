@@ -138,10 +138,16 @@ export class WagamamaScraper extends SourceScraper {
         }
     }
 
-    /** Pulls the `__NUXT_DATA__` devalue array out of the page. */
+    /**
+     * Pulls the `__NUXT_DATA__` devalue array out of the page. Matches the
+     * `id` attribute anywhere in the tag, not immediately after
+     * `type="application/json"` — Wagamama's Nuxt build started inserting
+     * `data-nuxt-data`/`data-ssr` attributes between them, which broke a
+     * stricter, adjacency-assuming regex.
+     */
     private extractPayload (html: string): unknown[] {
         const match = html.match(
-            /<script type="application\/json" id="__NUXT_DATA__"[^>]*>([\s\S]*?)<\/script>/
+            /<script[^>]*\bid="__NUXT_DATA__"[^>]*>([\s\S]*?)<\/script>/
         )
         if (!match) {
             throw new Error('Wagamama: could not find __NUXT_DATA__ in the page')
