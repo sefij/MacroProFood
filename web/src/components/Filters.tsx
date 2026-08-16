@@ -16,6 +16,15 @@ const RESTRICTION_LABEL: Record<DietaryRestriction, string> = {
 const MAX_SUGGESTIONS = 8
 
 interface Props {
+    /**
+     * Whether to show the dietary-restriction toggle at all. Only McDonald's
+     * has real vegetarian/vegan data (see `core/item-filters.ts`'s docblock),
+     * so this is currently off — App.tsx also pins `restriction` to `'none'`
+     * whenever this is false, so a stale `'vegetarian'`/`'vegan'` value left
+     * over from before it was disabled can't silently keep filtering with no
+     * way to undo it.
+     */
+    dietaryEnabled: boolean
     restriction: DietaryRestriction
     onRestrictionChange: (restriction: DietaryRestriction) => void
     excludedDishes: string[]
@@ -60,6 +69,7 @@ interface Props {
  * a separate heuristic that could drift from the real filter.
  */
 export function Filters ({
+    dietaryEnabled,
     restriction,
     onRestrictionChange,
     excludedDishes,
@@ -106,28 +116,32 @@ export function Filters ({
         <section className="card">
             <h2>Filters</h2>
 
-            <div className="preset-label">Dietary restriction</div>
-            <div className="mode-select">
-                {(Object.keys(RESTRICTION_LABEL) as DietaryRestriction[]).map((r) => (
-                    <button
-                        key={r}
-                        type="button"
-                        className={`mode-btn${restriction === r ? ' active' : ''}`}
-                        onClick={() => onRestrictionChange(r)}
-                    >
-                        {RESTRICTION_LABEL[r]}
-                    </button>
-                ))}
-            </div>
-            {restriction !== 'none' && (
-                <p className="small muted">
-                    {restaurantsWithData.size > 0
-                        ? `Verified for ${Array.from(restaurantsWithData).sort().join(', ')} — other restaurants are hidden while a restriction is active.`
-                        : 'No restaurant has published dietary data yet — every restaurant is hidden while a restriction is active.'}
-                </p>
+            {dietaryEnabled && (
+                <>
+                    <div className="preset-label">Dietary restriction</div>
+                    <div className="mode-select">
+                        {(Object.keys(RESTRICTION_LABEL) as DietaryRestriction[]).map((r) => (
+                            <button
+                                key={r}
+                                type="button"
+                                className={`mode-btn${restriction === r ? ' active' : ''}`}
+                                onClick={() => onRestrictionChange(r)}
+                            >
+                                {RESTRICTION_LABEL[r]}
+                            </button>
+                        ))}
+                    </div>
+                    {restriction !== 'none' && (
+                        <p className="small muted">
+                            {restaurantsWithData.size > 0
+                                ? `Verified for ${Array.from(restaurantsWithData).sort().join(', ')} — other restaurants are hidden while a restriction is active.`
+                                : 'No restaurant has published dietary data yet — every restaurant is hidden while a restriction is active.'}
+                        </p>
+                    )}
+                </>
             )}
 
-            <div className="preset-section">
+            <div className={dietaryEnabled ? 'preset-section' : undefined}>
                 <div className="preset-label">Exclude a dish or ingredient</div>
                 <div className="exclude-input">
                     <input

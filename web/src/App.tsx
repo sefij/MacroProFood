@@ -56,10 +56,21 @@ interface ItemPreferences {
 
 const DEFAULT_ITEM_PREFERENCES: ItemPreferences = { dietaryRestriction: 'none', excludedDishes: [] }
 
+// McDonald's is still the only restaurant with real vegetarian/vegan data,
+// so the restriction toggle is hidden for now rather than shipping a control
+// that only does anything for one restaurant. Flip this back on once a
+// second restaurant has real dietary tags — everything else (scraper tags,
+// filterSnapshotItems, the Filters UI) stays fully wired underneath.
+const DIETARY_FILTER_ENABLED = false
+
 function loadItemPreferences (): ItemPreferences {
     try {
         const raw = localStorage.getItem(ITEM_PREFERENCES_KEY)
-        return raw ? { ...DEFAULT_ITEM_PREFERENCES, ...JSON.parse(raw) } : DEFAULT_ITEM_PREFERENCES
+        const loaded = raw ? { ...DEFAULT_ITEM_PREFERENCES, ...JSON.parse(raw) } : DEFAULT_ITEM_PREFERENCES
+        // Ignore any restriction saved from before this was disabled — a
+        // stale 'vegetarian'/'vegan' value would otherwise keep silently
+        // filtering with no UI left to undo it.
+        return DIETARY_FILTER_ENABLED ? loaded : { ...loaded, dietaryRestriction: 'none' }
     } catch {
         return DEFAULT_ITEM_PREFERENCES
     }
@@ -514,6 +525,7 @@ export function App() {
             />
 
             <Filters
+                dietaryEnabled={DIETARY_FILTER_ENABLED}
                 restriction={itemPreferences.dietaryRestriction}
                 onRestrictionChange={setDietaryRestriction}
                 excludedDishes={itemPreferences.excludedDishes}
