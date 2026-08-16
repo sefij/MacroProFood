@@ -57,6 +57,14 @@ import { addItem } from '../add-item'
  * individually under its own real category), and the two purely-beverage
  * categories "Milkshakes & Cold Drinks"/"McCafé".
  *
+ * **Dietary tags (2026-08).** "Vegetarian" and "Vegan" stay excluded as item
+ * *sources* for the reason above, but they're the confirmed dietary signal
+ * this scraper has, so {@link DIETARY_PROBE_CATEGORIES} crawls them the same
+ * way {@link DRINK_PROBE_CATEGORIES} crawls the beverage categories — not
+ * for their items, just to build the base-slug sets `collectItemUrls` tags
+ * every item against, independent of category. See `NutritionData.dietary`'s
+ * own docblock for the "absent means unknown, not confirmed-not" semantics.
+ *
  * **Category assignment for cross-listed items (2026-08).** McDonald's own
  * site lists plenty of items under more than one category — a Saver Menu
  * cheeseburger, a chicken wrap that's also on the Chicken page. Assigning
@@ -89,6 +97,17 @@ const EXCLUDED_CATEGORIES = /what.?s new|sauce|breakfast saver|vegetarian|vegan|
  * size-stripped base slugs instead catches every size.
  */
 const DRINK_PROBE_CATEGORIES = /milkshake|mccaf[eé]/i
+
+/**
+ * Same probe-and-discard pattern as {@link DRINK_PROBE_CATEGORIES}, for a
+ * different purpose: "Vegetarian"/"Vegan" are excluded as item *sources*
+ * (every item on them is already covered by a real category — see the class
+ * docblock), but their listings are exactly the confirmed dietary signal
+ * this scraper has, so they're still crawled to build the base-slug sets
+ * {@link collectItemUrls} tags items with. Never inferred from a name/
+ * ingredient guess — only from the restaurant's own published listing.
+ */
+const DIETARY_PROBE_CATEGORIES = /vegetarian|vegan/i
 
 /**
  * "Saver Menu" and "Sharers & Bundles" aren't real food-type categories —
@@ -181,6 +200,12 @@ const NAME_SELECTORS = [
     'h1.cmp-product-details-main__heading'
 ]
 
+/** Resolved category + confirmed dietary tags for one item URL. */
+interface ItemMeta {
+    category: string
+    dietary?: Array<'vegetarian' | 'vegan'>
+}
+
 interface ParsedNutrition {
     calories: number
     protein: number
@@ -233,7 +258,8 @@ export class McDonaldsScraper extends SourceScraper {
             const allCategories = await this.discoverCategories(context)
             const categories = allCategories.filter((c) => !EXCLUDED_CATEGORIES.test(c.category))
             const drinkProbes = allCategories.filter((c) => DRINK_PROBE_CATEGORIES.test(c.category))
-            const itemUrls = await this.collectItemUrls(context, categories, drinkProbes)
+            const dietaryProbes = allCategories.filter((c) => DIETARY_PROBE_CATEGORIES.test(c.category))
+            const itemUrls = await this.collectItemUrls(context, categories, drinkProbes, dietaryProbes)
             console.log(
                 chalk.blue(
                     `🍟 Discovered ${itemUrls.size} items across ${categories.length} categories`
@@ -243,10 +269,14 @@ export class McDonaldsScraper extends SourceScraper {
             await this.runWithConcurrency(
                 Array.from(itemUrls),
                 ITEM_CONCURRENCY,
-                async ([itemUrl, category]) => {
+                async ([itemUrl, meta]) => {
                     const result = await this.scrapeItem(context, itemUrl)
                     if (result.kind === 'ok') {
-                        const outcome = addItem(items, result.name, this.buildNutritionData(result.nutrition, category))
+                        const outcome = addItem(
+                            items,
+                            result.name,
+                            this.buildNutritionData(result.nutrition, meta.category, meta.dietary)
+                        )
                         if (outcome.kind === 'duplicate') bump('duplicate-name')
                         else if (outcome.kind === 'renamed') bump('name-collision-requalified')
                     } else {
@@ -344,22 +374,26 @@ export class McDonaldsScraper extends SourceScraper {
     }
 
     /**
-     * Item URL → its display category. An item cross-listed under more than
-     * one category (confirmed live — chicken-protein wraps/salads appear
-     * under both Chicken and Wraps & Salads) is resolved by
-     * {@link CATEGORY_PRIORITY}, not by which page happened to fetch first.
-     * A {@link BUNDLE_CATEGORIES} item with no direct cross-listing (a Saver
-     * Menu cheeseburger isn't literally listed under Burgers too) still
-     * inherits a real category if its {@link baseSlug} matches one — e.g. a
-     * Mini McFlurry sold only via Saver Menu gets "Desserts", the same
-     * category its regular-size sibling already has. Drinks are excluded
-     * outright via the same base-slug match against `drinkProbes`.
+     * Item URL → its display category plus any confirmed dietary tags. An
+     * item cross-listed under more than one category (confirmed live —
+     * chicken-protein wraps/salads appear under both Chicken and Wraps &
+     * Salads) is resolved by {@link CATEGORY_PRIORITY}, not by which page
+     * happened to fetch first. A {@link BUNDLE_CATEGORIES} item with no
+     * direct cross-listing (a Saver Menu cheeseburger isn't literally listed
+     * under Burgers too) still inherits a real category if its
+     * {@link baseSlug} matches one — e.g. a Mini McFlurry sold only via
+     * Saver Menu gets "Desserts", the same category its regular-size sibling
+     * already has. Drinks are excluded outright via the same base-slug match
+     * against `drinkProbes`; dietary tags are attached (not exclusion-gated)
+     * via the same match against `dietaryProbes`, independent of whichever
+     * category the item ended up in.
      */
     private async collectItemUrls (
         context: BrowserContext,
         categories: Array<{ url: string; category: string }>,
-        drinkProbes: Array<{ url: string; category: string }>
-    ): Promise<Map<string, string>> {
+        drinkProbes: Array<{ url: string; category: string }>,
+        dietaryProbes: Array<{ url: string; category: string }>
+    ): Promise<Map<string, ItemMeta>> {
         const drinkBaseSlugs = new Set<string>()
         await this.runWithConcurrency(drinkProbes, CATEGORY_CONCURRENCY, async ({ url }) => {
             try {
@@ -368,6 +402,20 @@ export class McDonaldsScraper extends SourceScraper {
             } catch (error: any) {
                 console.log(
                     chalk.yellow(`  ⚠ drink-probe fetch failed for ${url}: ${error?.message ?? error}`)
+                )
+            }
+        })
+
+        const vegetarianBaseSlugs = new Set<string>()
+        const veganBaseSlugs = new Set<string>()
+        await this.runWithConcurrency(dietaryProbes, CATEGORY_CONCURRENCY, async ({ url, category }) => {
+            try {
+                const urls = await this.fetchCategoryItemUrls(context, url)
+                const target = /vegan/i.test(category) ? veganBaseSlugs : vegetarianBaseSlugs
+                for (const itemUrl of urls) target.add(baseSlug(itemUrl))
+            } catch (error: any) {
+                console.log(
+                    chalk.yellow(`  ⚠ dietary-probe fetch failed for ${url}: ${error?.message ?? error}`)
                 )
             }
         })
@@ -411,7 +459,17 @@ export class McDonaldsScraper extends SourceScraper {
             if (inherited) urlCategories.set(url, inherited)
         }
 
-        return urlCategories
+        const urlMeta = new Map<string, ItemMeta>()
+        for (const [url, category] of urlCategories) {
+            const slug = baseSlug(url)
+            const dietary: Array<'vegetarian' | 'vegan'> | undefined = veganBaseSlugs.has(slug)
+                ? ['vegetarian', 'vegan']
+                : vegetarianBaseSlugs.has(slug)
+                    ? ['vegetarian']
+                    : undefined
+            urlMeta.set(url, { category, dietary })
+        }
+        return urlMeta
     }
 
     private shouldSkip (url: string): boolean {
@@ -517,7 +575,11 @@ export class McDonaldsScraper extends SourceScraper {
         }
     }
 
-    private buildNutritionData (n: ParsedNutrition, category?: string): NutritionData {
+    private buildNutritionData (
+        n: ParsedNutrition,
+        category?: string,
+        dietary?: Array<'vegetarian' | 'vegan'>
+    ): NutritionData {
         return {
             calories: n.calories,
             protein: n.protein,
@@ -525,7 +587,8 @@ export class McDonaldsScraper extends SourceScraper {
             carbs: n.carbs,
             ProteinTCalRatio: n.calories > 0 ? n.protein / n.calories : 0,
             CarbToCalRatio: n.calories > 0 ? n.carbs / n.calories : 0,
-            category: normalizeCategory(category)
+            category: normalizeCategory(category),
+            dietary
         }
     }
 

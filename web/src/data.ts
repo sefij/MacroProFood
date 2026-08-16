@@ -13,6 +13,10 @@ import {
     filterCategoriesByRestaurant,
     type RestaurantCategoryFilter
 } from '../../src/core/category-filter'
+import {
+    filterSnapshotItems,
+    type DietaryRestriction
+} from '../../src/core/item-filters'
 import { dominantMacro, expandBuildableCombos } from '../../src/core/buildable-combos'
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
@@ -49,17 +53,24 @@ export async function loadData (): Promise<LoadedData> {
  * display name (which the optimizer surfaces back in results). `categoryFilters`
  * (keyed by that same display name — see {@link RestaurantCategoryFilter})
  * is applied here so both the main compute path and swap suggestions share
- * the same per-restaurant filtering. `targets` drives which macro a
- * build-your-own item's candidate expansion is capped/ranked around (spec
- * 12's `dominantMacro` — whichever of protein/fat/carbs this request leans
- * on most); this runs fresh per call, so the expansion is always matched to
- * the request actually being made, not a fixed default.
+ * the same per-restaurant filtering. `dietaryRestriction`/`excludedDishes`
+ * (see `core/item-filters.ts`) are global, not per-restaurant, and applied
+ * to each restaurant's raw `SnapshotItem[]` before the variant/build
+ * expansion below — the same call Menu Mode makes directly on its own raw
+ * item list, so both browsing paths see the same filtered items. `targets`
+ * drives which macro a build-your-own item's candidate expansion is
+ * capped/ranked around (spec 12's `dominantMacro` — whichever of
+ * protein/fat/carbs this request leans on most); this runs fresh per call,
+ * so the expansion is always matched to the request actually being made,
+ * not a fixed default.
  */
 export function toRestaurantsData (
     snapshots: Record<string, RestaurantSnapshot>,
     selectedKeys: string[],
     targets: TargetMacros,
-    categoryFilters: Record<string, RestaurantCategoryFilter> = {}
+    categoryFilters: Record<string, RestaurantCategoryFilter> = {},
+    dietaryRestriction: DietaryRestriction = 'none',
+    excludedDishes: string[] = []
 ): RestaurantsData {
     const macro = dominantMacro(targets)
     const out: RestaurantsData = {}
@@ -67,7 +78,8 @@ export function toRestaurantsData (
         const snap = snapshots[key]
         if (!snap || snap.items.length === 0) continue
         const items: RestaurantsData[string] = {}
-        for (const it of snap.items) {
+        const filteredItems = filterSnapshotItems(snap.items, dietaryRestriction, excludedDishes)
+        for (const it of filteredItems) {
             // A variant item (spec 10) expands back into one flat optimizer
             // entry per option, keyed "<base> (<option>)" — exactly what a
             // pre-alterations scraper produced — so the optimizer stays

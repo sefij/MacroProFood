@@ -29,12 +29,12 @@ interface Props {
 }
 
 /**
- * Collapsible "Advanced filters" row nested inside the restaurant picker
- * card, with one filter group per active restaurant — its own mode (include
- * everything / only selected categories / everything but selected
- * categories) and, once a non-"all" mode is picked, its own row of toggleable
- * category chips. Filtering is applied per restaurant via
- * `filterCategoriesByRestaurant` in `toRestaurantsData`.
+ * Collapsible "Categories" row nested inside the Filters card, with one
+ * filter group per active restaurant — its own mode (include everything /
+ * only selected categories / everything but selected categories) and, once
+ * a non-"all" mode is picked, its own row of toggleable category chips.
+ * Filtering is applied per restaurant via `filterCategoriesByRestaurant` in
+ * `toRestaurantsData`.
  */
 export function CategoryFilters ({ groups, filters, onModeChange, onToggleCategory }: Props) {
     if (groups.length === 0) return null
@@ -47,7 +47,7 @@ export function CategoryFilters ({ groups, filters, onModeChange, onToggleCatego
     return (
         <details className="filters">
             <summary>
-                Advanced filters{activeCount > 0 ? ` — ${activeCount} restaurant${activeCount === 1 ? '' : 's'} filtered` : ''}
+                Categories{activeCount > 0 ? ` — ${activeCount} restaurant${activeCount === 1 ? '' : 's'} filtered` : ''}
             </summary>
 
             {groups.map((group) => {

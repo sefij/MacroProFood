@@ -60,6 +60,15 @@
  *  - Genuinely ambiguous categories are still left unmatched where no
  *    keyword reasonably predicts them: Wendy's "Frosty®" for desserts is a
  *    proper-noun product name, not a describable pattern.
+ *  - "No dips" (`'dips'`, same keyword as in "No sides" above) exists
+ *    alongside "No sides" for restaurants where dips have their own standalone
+ *    category — Burger King's, Domino's' and Wingstop's plain "Dips" — so
+ *    someone who wants fries/sides but not the dip tub isn't forced to lose
+ *    both. It's still whole-category matching, so it inherits the same
+ *    limitation "No sides" already has at restaurants that only have a
+ *    *combined* dip category: KFC's "Sides & Dips", Nando's "Dips & Extras",
+ *    Subway's "Sauces & Condiments" — toggling "No dips" alone drops the
+ *    whole combined category there too, same as toggling "No sides" does.
  *
  * This is a real, documented tradeoff of the keyword approach over a
  * per-category mapping: broad coverage with occasional misses, not
@@ -89,7 +98,8 @@ export const CATEGORY_PRESETS: CategoryPreset[] = [
     },
     { key: 'drinks', label: 'No drinks', keywords: ['drink', 'beverage', 'shake'] },
     { key: 'desserts', label: 'No desserts', keywords: ['dessert', 'sweet treat', 'churro', 'cookie', 'shake'] },
-    { key: 'breakfast', label: 'No breakfast', keywords: ['breakfast'] }
+    { key: 'breakfast', label: 'No breakfast', keywords: ['breakfast'] },
+    { key: 'dips', label: 'No dips', keywords: ['dips'] }
 ]
 
 /** One restaurant's available categories, as surfaced by the web app's category-group builder. */

@@ -59,7 +59,7 @@ const ADVANCED_KEYS: MacroKey[] = ['protein', 'carbs', 'fat']
  * Calories is always visible — it's the macro most people reach for first
  * when tuning how a search should behave. Protein/carbs/fat sit inside a
  * nested "Advanced" reveal instead of always taking up space, mirroring the
- * "Advanced filters" pattern already used elsewhere in this same card,
+ * same collapsible pattern the Filters card's "Categories" section uses,
  * rather than a separate simple/advanced *mode* — nothing here is lost by
  * collapsing it, so a toggle-able reveal is a smaller step than a whole
  * mode concept with its own state.

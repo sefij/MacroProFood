@@ -21,6 +21,8 @@ import { MenuBuilder } from './components/MenuBuilder'
 import { StickySummary } from './components/StickySummary'
 import type { RestaurantCategoryFilter } from '../../src/core/category-filter'
 import { togglePreset, type CategoryPreset } from '../../src/core/category-presets'
+import { filterSnapshotItems, type DietaryRestriction } from '../../src/core/item-filters'
+import { Filters } from './components/Filters'
 import { menuItemKey, menuRestaurant, menuTotals, type MenuState } from './menu'
 
 type AppMode = 'optimize' | 'menu'
@@ -39,6 +41,38 @@ function loadCategoryFilters (): Record<string, RestaurantCategoryFilter> {
         return raw ? JSON.parse(raw) : {}
     } catch {
         return {}
+    }
+}
+
+// Persists the dietary restriction + dish exclude-list across visits. Global
+// (not per-restaurant, unlike category filters — see core/item-filters.ts),
+// so a single key covers both.
+const ITEM_PREFERENCES_KEY = 'macropro:itemPreferences'
+
+interface ItemPreferences {
+    dietaryRestriction: DietaryRestriction
+    excludedDishes: string[]
+}
+
+const DEFAULT_ITEM_PREFERENCES: ItemPreferences = { dietaryRestriction: 'none', excludedDishes: [] }
+
+// McDonald's is still the only restaurant with real vegetarian/vegan data,
+// so the restriction toggle is hidden for now rather than shipping a control
+// that only does anything for one restaurant. Flip this back on once a
+// second restaurant has real dietary tags — everything else (scraper tags,
+// filterSnapshotItems, the Filters UI) stays fully wired underneath.
+const DIETARY_FILTER_ENABLED = false
+
+function loadItemPreferences (): ItemPreferences {
+    try {
+        const raw = localStorage.getItem(ITEM_PREFERENCES_KEY)
+        const loaded = raw ? { ...DEFAULT_ITEM_PREFERENCES, ...JSON.parse(raw) } : DEFAULT_ITEM_PREFERENCES
+        // Ignore any restriction saved from before this was disabled — a
+        // stale 'vegetarian'/'vegan' value would otherwise keep silently
+        // filtering with no UI left to undo it.
+        return DIETARY_FILTER_ENABLED ? loaded : { ...loaded, dietaryRestriction: 'none' }
+    } catch {
+        return DEFAULT_ITEM_PREFERENCES
     }
 }
 
@@ -78,6 +112,7 @@ export function App() {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
     const [categoryFilters, setCategoryFilters] =
         useState<Record<string, RestaurantCategoryFilter>>(loadCategoryFilters)
+    const [itemPreferences, setItemPreferences] = useState<ItemPreferences>(loadItemPreferences)
     const [optimizerConfig, setOptimizerConfig] = useState<OptimizerConfig>(loadOptimizerConfig)
 
     const [results, setResults] = useState<OptimizationResults | null>(null)
@@ -177,6 +212,33 @@ export function App() {
         return groups.sort((a, b) => a.restaurant.localeCompare(b.restaurant))
     }, [activeKeys, data])
 
+    // Which restaurants have published any dietary tag at all — derived live
+    // from the loaded snapshots (not hardcoded to McDonald's) so this stays
+    // accurate the day a second restaurant gets real vegetarian/vegan data.
+    // Across every restaurant, not just active ones, since RestaurantPicker
+    // shows the full list.
+    const restaurantsWithDietaryData = useMemo(() => {
+        const names = new Set<string>()
+        if (!data) return names
+        for (const snap of Object.values(data.snapshots)) {
+            if (snap.items.some((it) => it.dietary)) names.add(snap.restaurant)
+        }
+        return names
+    }, [data])
+
+    // Every distinct item name across every loaded restaurant — feeds
+    // DietaryFilters' live "what does this term match" preview. Global, like
+    // the exclude-list itself, so a term matches regardless of which
+    // restaurant is currently selected.
+    const allDishNames = useMemo(() => {
+        if (!data) return []
+        const names = new Set<string>()
+        for (const snap of Object.values(data.snapshots)) {
+            for (const item of snap.items) names.add(item.name)
+        }
+        return Array.from(names).sort()
+    }, [data])
+
     const persistCategoryFilters = (next: Record<string, RestaurantCategoryFilter>) => {
         localStorage.setItem(CATEGORY_FILTERS_KEY, JSON.stringify(next))
     }
@@ -184,6 +246,19 @@ export function App() {
     const updateOptimizerConfig = (next: OptimizerConfig) => {
         setOptimizerConfig(next)
         localStorage.setItem(OPTIMIZER_CONFIG_KEY, JSON.stringify(next))
+    }
+
+    const persistItemPreferences = (next: ItemPreferences) => {
+        setItemPreferences(next)
+        localStorage.setItem(ITEM_PREFERENCES_KEY, JSON.stringify(next))
+    }
+
+    const setDietaryRestriction = (dietaryRestriction: DietaryRestriction) => {
+        persistItemPreferences({ ...itemPreferences, dietaryRestriction })
+    }
+
+    const setExcludedDishes = (excludedDishes: string[]) => {
+        persistItemPreferences({ ...itemPreferences, excludedDishes })
     }
 
     const setCategoryMode = (restaurant: string, mode: RestaurantCategoryFilter['mode']) => {
@@ -229,7 +304,14 @@ export function App() {
         setPicked(null)
         setTracked(null)
         setTimeout(() => {
-            const restaurantsData = toRestaurantsData(data.snapshots, activeKeys, macros, categoryFilters)
+            const restaurantsData = toRestaurantsData(
+                data.snapshots,
+                activeKeys,
+                macros,
+                categoryFilters,
+                itemPreferences.dietaryRestriction,
+                itemPreferences.excludedDishes
+            )
             setResults(findBestCombinations(restaurantsData, macros, 5, 3, optimizerConfig))
             setComputing(false)
         }, 0)
@@ -281,7 +363,14 @@ export function App() {
         // `macros` (the overall meal target), not `widened` below — that's
         // computed from `remaining` right after this and only pads the
         // *search* target, not which macro dominates the user's original ask.
-        const restData = toRestaurantsData(data.snapshots, [key], macros, categoryFilters)
+        const restData = toRestaurantsData(
+            data.snapshots,
+            [key],
+            macros,
+            categoryFilters,
+            itemPreferences.dietaryRestriction,
+            itemPreferences.excludedDishes
+        )
         // Inflate the gap so suggestions get headroom past the freed-up macros.
         const pad = (rem: number, target: number) =>
             Math.max(rem * SWAP_OVERAGE, target * SWAP_MIN_HEADROOM)
@@ -317,15 +406,20 @@ export function App() {
         const restaurantName = tracked?.items[0]?.restaurant
         if (!data || !restaurantName) return []
         const key = restaurants.find((r) => r.restaurant === restaurantName)?.key
-        return key ? data.snapshots[key]?.items ?? [] : []
-    }, [data, tracked, restaurants])
+        const items = key ? data.snapshots[key]?.items ?? [] : []
+        return filterSnapshotItems(items, itemPreferences.dietaryRestriction, itemPreferences.excludedDishes)
+    }, [data, tracked, restaurants, itemPreferences])
 
     // Menu mode: the restaurant currently being browsed, and the running
     // totals of whatever's been added so far. Browsing a different
     // restaurant's chip doesn't touch the meal — only adding from it does
     // (see addMenuItem) — so switching around to compare menus is free.
     const menuSnapshot = menuRestaurantKey ? data?.snapshots[menuRestaurantKey] : undefined
-    const menuItems = menuSnapshot?.items ?? []
+    const menuItems = filterSnapshotItems(
+        menuSnapshot?.items ?? [],
+        itemPreferences.dietaryRestriction,
+        itemPreferences.excludedDishes
+    )
     const menuRestaurantName = menuSnapshot?.restaurant ?? ''
     const menuMealTotals = useMemo(() => menuTotals(menuMeal), [menuMeal])
 
@@ -430,6 +524,22 @@ export function App() {
                 showOptimizerConfig={appMode === 'optimize'}
             />
 
+            <Filters
+                dietaryEnabled={DIETARY_FILTER_ENABLED}
+                restriction={itemPreferences.dietaryRestriction}
+                onRestrictionChange={setDietaryRestriction}
+                excludedDishes={itemPreferences.excludedDishes}
+                onExcludedDishesChange={setExcludedDishes}
+                restaurantsWithData={restaurantsWithDietaryData}
+                allDishNames={allDishNames}
+                showCategoryFilters={appMode === 'optimize'}
+                categoryGroups={categoryGroups}
+                categoryFilters={categoryFilters}
+                onCategoryModeChange={setCategoryMode}
+                onToggleCategory={toggleFilterCategory}
+                onTogglePreset={handleTogglePreset}
+            />
+
             {appMode === 'optimize' ? (
                 <>
                     <RestaurantPicker
@@ -438,11 +548,8 @@ export function App() {
                         onToggle={toggleKey}
                         useAll={useAll}
                         onUseAll={setUseAll}
-                        categoryGroups={categoryGroups}
-                        categoryFilters={categoryFilters}
-                        onCategoryModeChange={setCategoryMode}
-                        onToggleCategory={toggleFilterCategory}
-                        onTogglePreset={handleTogglePreset}
+                        dietaryRestriction={itemPreferences.dietaryRestriction}
+                        restaurantsWithDietaryData={restaurantsWithDietaryData}
                     />
 
                     <button
@@ -484,6 +591,8 @@ export function App() {
                         meal={menuMeal}
                         onAdd={addMenuItem}
                         onRemove={removeMenuItem}
+                        dietaryRestriction={itemPreferences.dietaryRestriction}
+                        restaurantsWithDietaryData={restaurantsWithDietaryData}
                     />
 
                     {menuMeal.size > 0 && (
