@@ -17,6 +17,15 @@ export interface NutritionData {
     /** Menu section the item was scraped under, e.g. "Burgers", "Desserts". Omitted when the source offers none. */
     category?: string
     /**
+     * Confirmed dietary tags, sourced by cross-referencing the restaurant's
+     * own published vegetarian/vegan listing — never inferred/guessed.
+     * Absent means "no claim" (unknown), not "confirmed not vegetarian";
+     * see `filterSnapshotItems` in `core/item-filters.ts` for how that
+     * distinction is handled when a dietary filter is active. `'vegan'`
+     * implies `'vegetarian'` — a vegan item carries both tags.
+     */
+    dietary?: Array<'vegetarian' | 'vegan'>
+    /**
      * Variant grouping metadata (see spec 10). Set only for entries emitted via
      * `addVariant` — a variant carries its base name here so `build-web-data`
      * can regroup the flat entries into one variant {@link SnapshotItem} without
@@ -52,7 +61,7 @@ export interface RestaurantsData {
 /** Macro-only view of {@link NutritionData} — the four macros, none of the per-item metadata. */
 type MacroTotals = Omit<
     NutritionData,
-    'ProteinTCalRatio' | 'CarbToCalRatio' | 'category' | 'variantOf' | 'variantGroupLabel' | 'variantOption'
+    'ProteinTCalRatio' | 'CarbToCalRatio' | 'category' | 'dietary' | 'variantOf' | 'variantGroupLabel' | 'variantOption'
 >
 
 export interface OptimizationResult {
@@ -170,6 +179,8 @@ export interface SnapshotItem {
     fat: number
     carbs: number
     category?: string
+    /** See {@link NutritionData.dietary} — same "no claim if absent" semantics. */
+    dietary?: Array<'vegetarian' | 'vegan'>
     /** Present on a variant item: the selectable options. Absent on simple items. */
     variants?: ItemVariant[]
     /** The variant selector's heading, e.g. "Size". Present iff {@link variants} is. */

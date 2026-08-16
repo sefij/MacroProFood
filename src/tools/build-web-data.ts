@@ -110,6 +110,7 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
                     fat: 0,
                     carbs: 0,
                     category: n.category,
+                    dietary: n.dietary,
                     variantLabel: n.variantGroupLabel,
                     variants: []
                 }
@@ -139,7 +140,8 @@ function toSnapshotItems (data: RestaurantData | undefined): SnapshotItem[] {
                 protein: n.protein,
                 fat: n.fat,
                 carbs: n.carbs,
-                category: n.category
+                category: n.category,
+                dietary: n.dietary
             })
         }
     }

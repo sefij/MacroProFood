@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ItemVariant, MenuItem, RestaurantIndexEntry, SnapshotItem } from '../macro'
+import type { DietaryRestriction } from '../../../src/core/item-filters'
 import { round } from '../format'
 import { categoryIcon } from '../category'
 import { menuItemKey, type MenuState } from '../menu'
@@ -222,6 +223,9 @@ interface Props {
     meal: MenuState
     onAdd: (item: MenuItem) => void
     onRemove: (item: MenuItem) => void
+    dietaryRestriction: DietaryRestriction
+    /** Restaurant display names with any confirmed dietary data. */
+    restaurantsWithDietaryData: Set<string>
 }
 
 /**
@@ -238,7 +242,9 @@ export function MenuBuilder ({
     restaurantName,
     meal,
     onAdd,
-    onRemove
+    onRemove,
+    dietaryRestriction,
+    restaurantsWithDietaryData
 }: Props) {
     return (
         <section className="card">
@@ -247,10 +253,18 @@ export function MenuBuilder ({
             <div className="restaurant-grid" style={{ marginBottom: selectedKey ? 14 : 0 }}>
                 {restaurants
                     .filter((r) => r.itemCount > 0)
-                    .map((r) => (
+                    .map((r) => {
+                        const noDietaryData =
+                            dietaryRestriction !== 'none' && !restaurantsWithDietaryData.has(r.restaurant)
+                        return (
                         <button
                             key={r.key}
-                            className={`chip${selectedKey === r.key ? ' selected' : ''}`}
+                            className={`chip${selectedKey === r.key ? ' selected' : ''}${noDietaryData ? ' dimmed' : ''}`}
+                            title={
+                                noDietaryData
+                                    ? 'No dietary data yet — hidden while a restriction is active'
+                                    : undefined
+                            }
                             onClick={() => onSelectRestaurant(r.key)}
                         >
                             <span className="icon">{r.icon}</span>
@@ -266,7 +280,8 @@ export function MenuBuilder ({
                                 )}
                             </span>
                         </button>
-                    ))}
+                        )
+                    })}
             </div>
 
             {!selectedKey && <p className="small muted">Pick a restaurant to browse its menu.</p>}

@@ -1,8 +1,6 @@
 import type { RestaurantIndexEntry } from '../macro'
-import type { RestaurantCategoryFilter } from '../../../src/core/category-filter'
-import { CATEGORY_PRESETS, matchingCategories, isPresetActive, type CategoryPreset } from '../../../src/core/category-presets'
+import type { DietaryRestriction } from '../../../src/core/item-filters'
 import { staleness } from '../format'
-import { CategoryFilters, type RestaurantCategoryGroup } from './CategoryFilters'
 
 interface Props {
     restaurants: RestaurantIndexEntry[]
@@ -10,33 +8,25 @@ interface Props {
     onToggle: (key: string) => void
     useAll: boolean
     onUseAll: (v: boolean) => void
-    categoryGroups: RestaurantCategoryGroup[]
-    categoryFilters: Record<string, RestaurantCategoryFilter>
-    onCategoryModeChange: (restaurant: string, mode: RestaurantCategoryFilter['mode']) => void
-    onToggleCategory: (restaurant: string, category: string) => void
-    onTogglePreset: (preset: CategoryPreset) => void
+    dietaryRestriction: DietaryRestriction
+    /** Restaurant display names with any confirmed dietary data. */
+    restaurantsWithDietaryData: Set<string>
 }
 
+/**
+ * Restaurant selection only — which restaurants are in scope. Every actual
+ * filter (dietary, dish exclusions, category quick/advanced filters) lives
+ * in `Filters`, rendered once above the Optimize/Menu Mode split.
+ */
 export function RestaurantPicker ({
     restaurants,
     selected,
     onToggle,
     useAll,
     onUseAll,
-    categoryGroups,
-    categoryFilters,
-    onCategoryModeChange,
-    onToggleCategory,
-    onTogglePreset
+    dietaryRestriction,
+    restaurantsWithDietaryData
 }: Props) {
-    // Only offer a preset if it actually matches something in the currently
-    // active restaurants — a "No drinks" chip that does nothing (e.g. every
-    // active restaurant is Chipotle/Five Guys, neither of which has a drinks
-    // category at all) is just confusing.
-    const relevantPresets = CATEGORY_PRESETS.filter((preset) =>
-        categoryGroups.some((group) => matchingCategories(group.categories, preset).length > 0)
-    )
-
     return (
         <section className="card">
             <div className="picker-head">
@@ -58,12 +48,19 @@ export function RestaurantPicker ({
                     const { stale, label } = staleness(r.updatedAt)
                     const isOn = useAll || selected.has(r.key)
                     const badgeClass = empty ? 'badge empty' : stale ? 'badge stale' : 'badge'
+                    const noDietaryData = dietaryRestriction !== 'none' && !restaurantsWithDietaryData.has(r.restaurant)
                     return (
                         <button
                             key={r.key}
-                            className={`chip${isOn && !empty ? ' selected' : ''}`}
+                            className={`chip${isOn && !empty ? ' selected' : ''}${noDietaryData ? ' dimmed' : ''}`}
                             disabled={empty || useAll}
-                            title={empty ? 'No data yet — refresh pending' : `Updated ${label}`}
+                            title={
+                                empty
+                                    ? 'No data yet — refresh pending'
+                                    : noDietaryData
+                                        ? `Updated ${label} — no dietary data yet, hidden while a restriction is active`
+                                        : `Updated ${label}`
+                            }
                             onClick={() => onToggle(r.key)}
                         >
                             <span className="icon">{r.icon}</span>
@@ -85,35 +82,6 @@ export function RestaurantPicker ({
                     )
                 })}
             </div>
-
-            {relevantPresets.length > 0 && (
-                <div className="preset-section">
-                    <div className="preset-label">Quick filters</div>
-                    <div className="preset-row">
-                        {relevantPresets.map((preset) => {
-                            const active = isPresetActive(categoryGroups, categoryFilters, preset)
-                            return (
-                                <button
-                                    key={preset.key}
-                                    type="button"
-                                    aria-pressed={active}
-                                    className={`preset-chip${active ? ' selected' : ''}`}
-                                    onClick={() => onTogglePreset(preset)}
-                                >
-                                    {preset.label}
-                                </button>
-                            )
-                        })}
-                    </div>
-                </div>
-            )}
-
-            <CategoryFilters
-                groups={categoryGroups}
-                filters={categoryFilters}
-                onModeChange={onCategoryModeChange}
-                onToggleCategory={onToggleCategory}
-            />
         </section>
     )
 }

@@ -165,6 +165,11 @@ header.hero p {
     transition: all 0.12s ease;
 }
 .chip:disabled { opacity: 0.4; cursor: not-allowed; }
+/* A restriction is active but this restaurant has no confirmed dietary data
+   — still selectable (matches the rest of the app's "degrade, don't
+   block" approach), just visually flagged so picking it isn't a silent
+   dead end. */
+.chip.dimmed { opacity: 0.5; }
 .chip.selected {
     border-color: var(--accent);
     background: #2a2114;
@@ -246,10 +251,36 @@ header.hero p {
     background: #2a2114;
 }
 
+/* Dietary/exclude-dish card's text input + Add button row. */
+.exclude-input {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.exclude-input input {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 0.9rem;
+}
+.exclude-input input:focus { outline: none; border-color: var(--accent); }
+.exclude-input .btn { padding: 8px 16px; font-size: 0.85rem; }
+.exclude-input + .chips,
+.exclude-preview + .chips { margin-top: 12px; }
+/* Live "what would this term match" feedback below the exclude input —
+   its own chips use the plain (non-selected) filter-chip style, distinct
+   from the already-excluded terms below, so the two rows read differently
+   at a glance despite reusing the same chip shape. */
+.exclude-preview { margin-top: 10px; }
+.exclude-preview .chips { margin-top: 6px; }
+
 /* Quick global exclusion presets ("No sides", "No drinks", "No desserts") —
-   sit above the per-restaurant "Advanced filters", since they're meant to be
-   the simple/one-click option. Labeled the same way "Advanced filters"
-   labels itself, and the chips use the identical toggle styling as the
+   sit above the per-restaurant "Categories" section, since they're meant to
+   be the simple/one-click option. Labeled the same way "Categories" labels
+   itself, and the chips use the identical toggle styling as the
    per-restaurant filter chips below (.filter-chip) — same pill, same
    selected state — so both read as the same kind of control. */
 .preset-section { margin-top: 14px; }
@@ -675,7 +706,7 @@ header.hero p {
 .swap-chip .sub { color: var(--muted); font-size: 0.74rem; }
 
 /* "+ Add from menu" (TrackPanel, spec 07) — same disclosure pattern as
-   Advanced filters / menu-mode category groups. */
+   Categories / menu-mode category groups. */
 .add-from-menu {
     margin-bottom: 12px;
     padding-top: 12px;
