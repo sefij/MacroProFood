@@ -18,6 +18,7 @@ import type { RestaurantCategoryGroup } from './components/CategoryFilters'
 import { Results } from './components/Results'
 import { TrackPanel } from './components/TrackPanel'
 import { MenuBuilder } from './components/MenuBuilder'
+import { MenuCart } from './components/MenuCart'
 import { StickySummary } from './components/StickySummary'
 import type { RestaurantCategoryFilter } from '../../src/core/category-filter'
 import { togglePreset, type CategoryPreset } from '../../src/core/category-presets'
@@ -582,18 +583,29 @@ export function App() {
                 </>
             ) : (
                 <>
-                    <MenuBuilder
-                        restaurants={restaurants}
-                        selectedKey={menuRestaurantKey}
-                        onSelectRestaurant={setMenuRestaurantKey}
-                        items={menuItems}
-                        restaurantName={menuRestaurantName}
-                        meal={menuMeal}
-                        onAdd={addMenuItem}
-                        onRemove={removeMenuItem}
-                        dietaryRestriction={itemPreferences.dietaryRestriction}
-                        restaurantsWithDietaryData={restaurantsWithDietaryData}
-                    />
+                    <div className="menu-layout">
+                        <MenuBuilder
+                            restaurants={restaurants}
+                            selectedKey={menuRestaurantKey}
+                            onSelectRestaurant={setMenuRestaurantKey}
+                            items={menuItems}
+                            restaurantName={menuRestaurantName}
+                            meal={menuMeal}
+                            onAdd={addMenuItem}
+                            onRemove={removeMenuItem}
+                            dietaryRestriction={itemPreferences.dietaryRestriction}
+                            restaurantsWithDietaryData={restaurantsWithDietaryData}
+                        />
+
+                        <MenuCart
+                            meal={menuMeal}
+                            totals={menuMealTotals}
+                            targets={macros}
+                            onAdd={addMenuItem}
+                            onRemove={removeMenuItem}
+                            onTrack={trackMenuMeal}
+                        />
+                    </div>
 
                     {menuMeal.size > 0 && (
                         <StickySummary

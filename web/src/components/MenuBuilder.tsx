@@ -52,6 +52,18 @@ export function MenuItemList ({ items, restaurantName, meal, onAdd, onRemove }: 
         return Array.from(byCategory.entries()).sort(([a], [b]) => a.localeCompare(b))
     }, [items, search])
 
+    // How many of each category's items are already in the meal — lets a
+    // long, mostly-collapsed category list show at a glance where picks are
+    // hiding, without opening every group to find them.
+    const cartQtyByCategory = useMemo(() => {
+        const counts = new Map<string, number>()
+        for (const { item, qty } of meal.values()) {
+            const category = item.category ?? 'Other'
+            counts.set(category, (counts.get(category) ?? 0) + qty)
+        }
+        return counts
+    }, [meal])
+
     return (
         <>
             <input
@@ -62,11 +74,18 @@ export function MenuItemList ({ items, restaurantName, meal, onAdd, onRemove }: 
                 onChange={(e) => setSearch(e.target.value)}
             />
 
-            {groups.map(([category, catItems]) => (
+            {groups.map(([category, catItems]) => {
+                const cartQty = cartQtyByCategory.get(category) ?? 0
+                return (
                 <details className="menu-group" key={category} open={hasSearch}>
                     <summary className="menu-group-title">
                         {category}
                         <span className="menu-group-count">{catItems.length}</span>
+                        {cartQty > 0 && (
+                            <span className="menu-group-cart-badge" title={`${cartQty} in your meal`}>
+                                🛒 {cartQty}
+                            </span>
+                        )}
                     </summary>
                     <ul className="menu-list">
                         {catItems.map((it) =>
@@ -90,7 +109,8 @@ export function MenuItemList ({ items, restaurantName, meal, onAdd, onRemove }: 
                         )}
                     </ul>
                 </details>
-            ))}
+                )
+            })}
 
             {groups.length === 0 && (
                 <p className="small muted">No items match "{search}".</p>

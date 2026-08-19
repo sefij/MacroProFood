@@ -841,6 +841,19 @@ footer.foot br { line-height: 2; }
     text-transform: none;
     letter-spacing: normal;
 }
+.menu-group-cart-badge {
+    margin-left: auto;
+    color: var(--accent);
+    background: #2a2114;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    font-variant-numeric: tabular-nums;
+}
 .menu-list { list-style: none; margin: 0; padding: 0; }
 .menu-row {
     display: flex;
@@ -1014,3 +1027,43 @@ footer.foot br { line-height: 2; }
 @media (max-width: 460px) {
     .sticky-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/*
+ * Menu mode's desktop cart sidebar (`MenuCart`), living beside the menu list
+ * instead of bottom-pinned like `.sticky-summary` above. Unlike that bar,
+ * this sits next to a genuinely tall sibling (the menu list) for its whole
+ * scroll range, so a top `position: sticky` has real room to engage — the
+ * failure mode documented on `.sticky-summary` (a short element right before
+ * the page's end, whose pin threshold sits past the max scroll position)
+ * doesn't apply to a sidebar next to long content. Hidden below the
+ * breakpoint where a 300px column plus the menu list's own comfortable width
+ * no longer both fit — `.sticky-summary`'s bottom bar keeps covering those
+ * narrower widths instead, so there's always exactly one visible tracker.
+ */
+.menu-layout { margin-bottom: 18px; }
+.menu-layout > .card:first-child { margin-bottom: 0; }
+.menu-cart { display: none; }
+
+@media (min-width: 1100px) {
+    .app--menu { max-width: 1040px; padding-bottom: 24px; }
+    .menu-layout { display: flex; align-items: flex-start; gap: 20px; }
+    .menu-layout > .card:first-child { flex: 1; min-width: 0; }
+    .menu-cart {
+        display: flex;
+        flex-direction: column;
+        flex: 0 0 300px;
+        position: sticky;
+        top: 18px;
+        max-height: calc(100vh - 36px);
+        overflow-y: auto;
+        margin-bottom: 0;
+    }
+    .sticky-summary { display: none; }
+}
+
+.menu-cart-list { list-style: none; margin: 0 0 14px; padding: 0; }
+.menu-cart-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.menu-cart-row + .menu-cart-row { border-top: 1px solid var(--border); }
+.menu-cart-row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.menu-cart-row-info .mi-name { font-size: 0.86rem; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.menu-cart .sticky-summary-grid { grid-template-columns: repeat(2, 1fr); margin-top: 4px; }
