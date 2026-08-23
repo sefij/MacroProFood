@@ -10,8 +10,8 @@
  * The page 403s without a `fulfillment_method` + `geohash` query pair
  * (verified live, same as Chipotle) — those encode a specific branch, not a
  * session. Five Guys UK's menu doesn't vary by branch the way some chains'
- * does, so one representative branch (Oxford Circus, Soho) stands in for the
- * whole country.
+ * does, so one representative branch (Kings Cross) stands in for the whole
+ * country.
  *
  * Deliveroo also publishes a `productMeta` calorie figure directly on each
  * named dish here (Chipotle's listings don't carry one) — this module parses
@@ -26,7 +26,7 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 
 const MENU_URL =
-    'https://deliveroo.co.uk/menu/london/soho/five-guys-oxford-circus?fulfillment_method=delivery&geohash=gcpvhf09z'
+    'https://deliveroo.co.uk/menu/london/kings-cross/five-guys-kings-cross?fulfillment_method=delivery&geohash=gcpvjhvue'
 
 const REQUEST_HEADERS = {
     'User-Agent':

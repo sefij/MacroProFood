@@ -44,6 +44,12 @@
  * recipe's dish no longer listed on Deliveroo** (delisted, renamed) is an
  * ordinary menu change — that one dish is skipped with a warning, the rest of
  * the scrape proceeds.
+ *
+ * A `recipe.skipReconciliation` opt-out (currently just the two Myprotein
+ * shakes) bypasses the whole reconciliation step above — see recipes.ts's
+ * docblock for why: Deliveroo's stated calories for those two listings
+ * demonstrably exclude an ingredient the recipe deliberately includes, so
+ * anchoring to that figure would silently erase it rather than reconcile it.
  */
 
 import chalk from 'chalk'
@@ -52,7 +58,7 @@ import { normalizeCategory } from '../category'
 import { addItem } from '../add-item'
 import { fetchIngredients, IngredientNutrition } from './ingredients'
 import { fetchDeliverooDishes, DeliverooDish } from './deliveroo'
-import { RECIPES, RecipeIngredient } from './recipes'
+import { RECIPES, RecipeIngredient, MANUAL_INGREDIENTS } from './recipes'
 
 /** See the class docblock's third bullet on why this sits above every currently-documented recipe gap (~18% worst case, hot dogs). */
 export const RECONCILIATION_WARNING_THRESHOLD = 0.2
@@ -147,6 +153,12 @@ export class FiveGuysScraper extends SourceScraper {
             console.error(chalk.red(`Error scraping Five Guys: ${error}`))
             return {}
         }
+        // A handful of hand-entered, non-PDF ingredients (see recipes.ts's
+        // MANUAL_INGREDIENTS docblock) — merged in so buildNutrition's lookup
+        // doesn't need to know or care which source an ingredient came from.
+        for (const [name, macros] of Object.entries(MANUAL_INGREDIENTS)) {
+            ingredients.set(name, macros)
+        }
 
         for (const recipe of RECIPES) {
             const dish = deliverooDishes.get(recipe.deliverooName)
@@ -158,7 +170,7 @@ export class FiveGuysScraper extends SourceScraper {
 
             let nutrition = buildNutrition(ingredients, recipe.deliverooName, recipe.category, recipe.ingredients)
 
-            const energyKcal = dish.energyKcal
+            const energyKcal = recipe.skipReconciliation ? undefined : dish.energyKcal
             const gap = reconciliationGap(nutrition.calories, energyKcal)
             if (gap !== undefined && energyKcal !== undefined) {
                 if (gap > RECONCILIATION_WARNING_THRESHOLD) {
