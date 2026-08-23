@@ -3,6 +3,7 @@ import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
 import { addItem } from '../add-item'
+import { withRetry } from '../http-retry'
 
 /**
  * Live Burger King UK scraper.
@@ -233,12 +234,14 @@ export class BurgerKingScraper extends SourceScraper {
     }
 
     private async fetchMenu (): Promise<BkMenu> {
-        const response = await axios.get<SanityResponse>(SANITY_URL, {
-            params: { query: MENU_QUERY },
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'json'
-        })
+        const response = await withRetry('Burger King Sanity dataset', () =>
+            axios.get<SanityResponse>(SANITY_URL, {
+                params: { query: MENU_QUERY },
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'json'
+            })
+        )
         const menu = response.data.result
         if (!menu?.sections?.length) {
             throw new Error('Burger King: no menu sections returned from the Sanity dataset')

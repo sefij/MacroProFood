@@ -24,6 +24,7 @@
 
 import axios from 'axios'
 import * as cheerio from 'cheerio'
+import { withRetry } from '../http-retry'
 
 const MENU_URL =
     'https://deliveroo.co.uk/menu/london/kings-cross/five-guys-kings-cross?fulfillment_method=delivery&geohash=gcpvjhvue'
@@ -106,10 +107,12 @@ export function parseDeliverooDishes (html: string): Map<string, DeliverooDish> 
 
 /** Fetches the menu page and returns every listing that carries a fixed-composition description. */
 export async function fetchDeliverooDishes (): Promise<Map<string, DeliverooDish>> {
-    const response = await axios.get<string>(MENU_URL, {
-        headers: REQUEST_HEADERS,
-        timeout: HTTP_TIMEOUT_MS,
-        responseType: 'text'
-    })
+    const response = await withRetry('Five Guys (Deliveroo) menu page', () =>
+        axios.get<string>(MENU_URL, {
+            headers: REQUEST_HEADERS,
+            timeout: HTTP_TIMEOUT_MS,
+            responseType: 'text'
+        })
+    )
     return parseDeliverooDishes(response.data)
 }

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
 import { addItem } from '../add-item'
+import { withRetry } from '../http-retry'
 
 /**
  * Live KFC UK scraper.
@@ -97,12 +98,14 @@ export class KFCScraper extends SourceScraper {
     }
 
     private async fetchPage (): Promise<string> {
-        const response = await axios.get<string>(NUTRITION_URL, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'text',
-            transformResponse: [(d) => d]
-        })
+        const response = await withRetry('KFC nutrition page', () =>
+            axios.get<string>(NUTRITION_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text',
+                transformResponse: [(d) => d]
+            })
+        )
         return response.data
     }
 

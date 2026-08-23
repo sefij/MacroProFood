@@ -40,6 +40,7 @@
 
 import axios from 'axios'
 import * as cheerio from 'cheerio'
+import { withRetry } from '../http-retry'
 
 const MENU_URL =
     'https://deliveroo.co.uk/menu/london/angel/chipotle-islington?fulfillment_method=delivery&geohash=gcpvjyzcd'
@@ -191,11 +192,13 @@ export function parseDeliverooDishes (html: string): Map<string, DeliverooDish> 
 
 /** Fetches and parses the menu page's full root (dishes + build-your-own modifier tree) — one live HTTP call feeds both spec 11 and spec 12. */
 export async function fetchDeliverooRoot (): Promise<DeliverooRoot> {
-    const response = await axios.get<string>(MENU_URL, {
-        headers: REQUEST_HEADERS,
-        timeout: HTTP_TIMEOUT_MS,
-        responseType: 'text'
-    })
+    const response = await withRetry('Chipotle (Deliveroo) menu page', () =>
+        axios.get<string>(MENU_URL, {
+            headers: REQUEST_HEADERS,
+            timeout: HTTP_TIMEOUT_MS,
+            responseType: 'text'
+        })
+    )
     return parseDeliverooRoot(response.data)
 }
 

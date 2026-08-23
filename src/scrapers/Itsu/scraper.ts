@@ -6,6 +6,7 @@ import { normalizeCategory } from '../category'
 import { addItem } from '../add-item'
 import { parseNumber } from '../parse-number'
 import { ITSU_PRODUCT_QUERY } from './query'
+import { withRetry } from '../http-retry'
 
 /**
  * Live itsu UK scraper.
@@ -186,11 +187,13 @@ export class ItsuScraper extends SourceScraper {
 
     /** Scrapes the menu listing page for every product card's URI. */
     private async fetchProductUris (): Promise<string[]> {
-        const response = await axios.get<string>(MENU_PAGE_URL, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'text'
-        })
+        const response = await withRetry('itsu menu page', () =>
+            axios.get<string>(MENU_PAGE_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text'
+            })
+        )
         const $ = cheerio.load(response.data)
         const uris = new Set<string>()
         $('a.base-lined-card.product-listing-card').each((_, el) => {
@@ -203,21 +206,23 @@ export class ItsuScraper extends SourceScraper {
     /** Fetches one product's nutrition via the CMS GraphQL endpoint. Returns `null` on any failure. */
     private async fetchProduct (uri: string): Promise<ItsuProduct | null> {
         try {
-            const response = await axios.post<ItsuGraphQLResponse>(
-                GRAPHQL_URL,
-                {
-                    query: ITSU_PRODUCT_QUERY,
-                    variables: { locale: 'en', site: SITE_DOMAIN, path: uri, uri },
-                    operationName: 'DynamicPage'
-                },
-                {
-                    headers: {
-                        ...REQUEST_HEADERS,
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${CMS_BEARER_TOKEN}`
+            const response = await withRetry(`itsu product "${uri}"`, () =>
+                axios.post<ItsuGraphQLResponse>(
+                    GRAPHQL_URL,
+                    {
+                        query: ITSU_PRODUCT_QUERY,
+                        variables: { locale: 'en', site: SITE_DOMAIN, path: uri, uri },
+                        operationName: 'DynamicPage'
                     },
-                    timeout: HTTP_TIMEOUT_MS
-                }
+                    {
+                        headers: {
+                            ...REQUEST_HEADERS,
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${CMS_BEARER_TOKEN}`
+                        },
+                        timeout: HTTP_TIMEOUT_MS
+                    }
+                )
             )
             if (response.data.errors?.length) {
                 console.log(chalk.yellow(`  ⚠ "${uri}" — GraphQL error: ${response.data.errors[0].message}`))

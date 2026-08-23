@@ -5,6 +5,7 @@ import { normalizeCategory } from '../category'
 import { addItem, addVariant } from '../add-item'
 import { parseNumber } from '../parse-number'
 import { extractPdfItems, PdfItem } from '../pdf/pdf-lines'
+import { withRetry } from '../http-retry'
 
 /**
  * Pizza Hut UK — parsed from their published allergen/nutrition PDF.
@@ -382,11 +383,13 @@ export class PizzaHutScraper extends SourceScraper {
     }
 
     private async download (): Promise<Uint8Array> {
-        const response = await axios.get<ArrayBuffer>(PDF_URL, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'arraybuffer'
-        })
+        const response = await withRetry('Pizza Hut nutrition PDF', () =>
+            axios.get<ArrayBuffer>(PDF_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'arraybuffer'
+            })
+        )
         return new Uint8Array(response.data)
     }
 }

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
 import { addItem, addVariant } from '../add-item'
+import { withRetry } from '../http-retry'
 
 /**
  * Live Nando's UK scraper.
@@ -209,11 +210,13 @@ export class NandosScraper extends SourceScraper {
      * stale, long-out-of-date build.
      */
     private async fetchCurrentDataUrl (): Promise<string> {
-        const response = await axios.get<string>(MENU_PAGE_URL, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'text'
-        })
+        const response = await withRetry("Nando's menu page", () =>
+            axios.get<string>(MENU_PAGE_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text'
+            })
+        )
         const chunkMappingMatch = response.data.match(/window\.___chunkMapping=(\{.*?\});/)
         const appHash = chunkMappingMatch && JSON.parse(chunkMappingMatch[1]).app?.[0]?.match(/app-(\d+)\.js/)?.[1]
         if (!appHash) {
@@ -224,11 +227,13 @@ export class NandosScraper extends SourceScraper {
 
     private async fetchSections (): Promise<NandosSection[]> {
         const dataUrl = await this.fetchCurrentDataUrl()
-        const response = await axios.get<NandosMenuResponse>(dataUrl, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'json'
-        })
+        const response = await withRetry("Nando's menu data", () =>
+            axios.get<NandosMenuResponse>(dataUrl, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'json'
+            })
+        )
         return response.data.result?.data?.nandos?.menu?.sections ?? []
     }
 }

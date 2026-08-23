@@ -4,6 +4,7 @@ import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { parseNumber } from '../parse-number'
 import { normalizeCategory } from '../category'
 import { addItem } from '../add-item'
+import { withRetry } from '../http-retry'
 
 /**
  * Live Wagamama UK scraper.
@@ -111,12 +112,14 @@ export class WagamamaScraper extends SourceScraper {
     }
 
     private async fetchPage (): Promise<string> {
-        const response = await axios.get<string>(MENU_URL, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'text',
-            transformResponse: [(d) => d]
-        })
+        const response = await withRetry('Wagamama menu page', () =>
+            axios.get<string>(MENU_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text',
+                transformResponse: [(d) => d]
+            })
+        )
         return response.data
     }
 

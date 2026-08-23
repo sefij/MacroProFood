@@ -32,6 +32,7 @@
 
 import axios from 'axios'
 import { extractPdfLines, PdfLine } from '../pdf/pdf-lines'
+import { withRetry } from '../http-retry'
 
 const PDF_URL =
     'https://www.chipotle.co.uk/content/dam/chipotle/menu/nutrition/2026/january/Allergen%20UK160126.pdf'
@@ -145,11 +146,13 @@ export function parseIngredientRows (lines: PdfLine[]): Map<string, IngredientNu
 }
 
 async function download (): Promise<Uint8Array> {
-    const response = await axios.get<ArrayBuffer>(PDF_URL, {
-        headers: REQUEST_HEADERS,
-        timeout: HTTP_TIMEOUT_MS,
-        responseType: 'arraybuffer'
-    })
+    const response = await withRetry('Chipotle nutrition PDF', () =>
+        axios.get<ArrayBuffer>(PDF_URL, {
+            headers: REQUEST_HEADERS,
+            timeout: HTTP_TIMEOUT_MS,
+            responseType: 'arraybuffer'
+        })
+    )
     return new Uint8Array(response.data)
 }
 
