@@ -5,6 +5,7 @@ import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
 import { addItem, addVariant } from '../add-item'
 import { parseNumber } from '../parse-number'
+import { withRetry } from '../http-retry'
 
 /**
  * Live Slim Chickens UK scraper.
@@ -256,11 +257,13 @@ export class SlimChickensScraper extends SourceScraper {
      * branch name that could close.
      */
     private async fetchMainMenuBranchUrl (): Promise<string> {
-        const response = await axios.get<string>(SITE_PICKER_URL, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'text'
-        })
+        const response = await withRetry('Slim Chickens site picker', () =>
+            axios.get<string>(SITE_PICKER_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text'
+            })
+        )
         const $ = cheerio.load(response.data)
         const branchLink = $('.k10-site-selector__option-link')
             .filter((_, el) => MAIN_MENU_TEMPLATE_PATTERN.test($(el).attr('href') ?? ''))
@@ -274,11 +277,13 @@ export class SlimChickensScraper extends SourceScraper {
 
     /** Fetches one branch's menu page and flattens its embedded schema.org Menu JSON-LD. */
     private async fetchMenuItems (branchUrl: string): Promise<FlatItem[]> {
-        const response = await axios.get<string>(branchUrl, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'text'
-        })
+        const response = await withRetry('Slim Chickens menu page', () =>
+            axios.get<string>(branchUrl, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text'
+            })
+        )
         const $ = cheerio.load(response.data)
 
         let menu: SchemaMenu | undefined

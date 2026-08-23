@@ -5,6 +5,7 @@ import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import { normalizeCategory } from '../category'
 import { addItem } from '../add-item'
 import { parseNumber } from '../parse-number'
+import { withRetry } from '../http-retry'
 
 /**
  * Live YO! Sushi UK scraper.
@@ -129,11 +130,13 @@ export class YoSushiScraper extends SourceScraper {
 
     /** Fetches and parses the full tenkites nutrition page for this menu. */
     private async fetchItems (): Promise<TenkitesItem[]> {
-        const response = await axios.get<string>(TENKITES_URL, {
-            headers: REQUEST_HEADERS,
-            timeout: HTTP_TIMEOUT_MS,
-            responseType: 'text'
-        })
+        const response = await withRetry('YO! Sushi (tenkites) page', () =>
+            axios.get<string>(TENKITES_URL, {
+                headers: REQUEST_HEADERS,
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text'
+            })
+        )
         const $ = cheerio.load(response.data)
 
         // Course headings and item rows interleaved in document order, so a

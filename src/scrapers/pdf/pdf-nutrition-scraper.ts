@@ -22,6 +22,7 @@ import { normalizeCategory } from '../category'
 import { addItem, addVariant } from '../add-item'
 import { extractPdfLines } from './pdf-lines'
 import { ColumnMatcher, FixedColumn, extractTables, TableRow } from './table-grid'
+import { withRetry } from '../http-retry'
 
 /** A row's raw text cells, keyed by the role each column was matched to. */
 export type NutritionRow = TableRow['cells']
@@ -191,11 +192,13 @@ export abstract class PdfNutritionScraper extends SourceScraper {
     }
 
     private async download (): Promise<Uint8Array> {
-        const response = await axios.get<ArrayBuffer>(this.config.url, {
-            headers: REQUEST_HEADERS,
-            timeout: this.config.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-            responseType: 'arraybuffer'
-        })
+        const response = await withRetry(`${this.config.name} nutrition PDF`, () =>
+            axios.get<ArrayBuffer>(this.config.url, {
+                headers: REQUEST_HEADERS,
+                timeout: this.config.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+                responseType: 'arraybuffer'
+            })
+        )
         return new Uint8Array(response.data)
     }
 

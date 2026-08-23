@@ -49,6 +49,7 @@
 
 import axios from 'axios'
 import { extractPdfLines, PdfLine } from '../pdf/pdf-lines'
+import { withRetry } from '../http-retry'
 
 const PDF_URL =
     'https://www.fiveguys.co.uk/wp-content/uploads/sites/30/2026/06/FGUK_FOH_allergen_ingredient_nutrition_breakfast_A4_DIGITAL_20260622.pdf'
@@ -138,11 +139,13 @@ export function parseIngredientRows (lines: PdfLine[]): Map<string, IngredientNu
 }
 
 async function download (): Promise<Uint8Array> {
-    const response = await axios.get<ArrayBuffer>(PDF_URL, {
-        headers: REQUEST_HEADERS,
-        timeout: HTTP_TIMEOUT_MS,
-        responseType: 'arraybuffer'
-    })
+    const response = await withRetry('Five Guys nutrition PDF', () =>
+        axios.get<ArrayBuffer>(PDF_URL, {
+            headers: REQUEST_HEADERS,
+            timeout: HTTP_TIMEOUT_MS,
+            responseType: 'arraybuffer'
+        })
+    )
     return new Uint8Array(response.data)
 }
 
