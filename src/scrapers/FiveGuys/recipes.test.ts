@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { RECIPES } from './recipes'
+import { RECIPES, MANUAL_INGREDIENTS } from './recipes'
 
 /**
  * A frozen snapshot of every row `ingredients.ts` parsed from a live PDF pull
@@ -32,7 +32,11 @@ const REFERENCE_INGREDIENTS: Record<string, { calories: number, protein: number,
     'Five Guys Milkshake Base': { calories: 625, protein: 7.8, fat: 33, carbs: 75 },
     'Five Guys Milkshake Base Little': { calories: 313, protein: 3.9, fat: 17, carbs: 37 },
     'Jimmy’s Iced Coffee': { calories: 8, protein: 0.4, fat: 0, carbs: 1.6 },
-    'Pistachio***': { calories: 194, protein: 7.8, fat: 17, carbs: 2.1 }
+    'Pistachio***': { calories: 194, protein: 7.8, fat: 17, carbs: 2.1 },
+    // MANUAL_INGREDIENTS aren't PDF rows (see recipes.ts's docblock), but
+    // scraper.ts merges them into the same lookup at scrape time — mirrored
+    // here so this offline table matches what production actually resolves.
+    ...MANUAL_INGREDIENTS
 }
 
 // protein/carbs ≈ 4 kcal/g, fat ≈ 9 kcal/g; a summed recipe shouldn't wildly
@@ -155,6 +159,23 @@ test('burgers and the from-scratch Lettuce Wrap reconcile within the documented 
         const stated = STATED_KCAL[name]
         const diff = Math.abs(calories - stated) / stated
         assert.ok(diff < 0.09, `${name}: computed ${calories} vs stated ${stated} (${(diff * 100).toFixed(1)}% off)`)
+    }
+})
+
+test('Myprotein shakes skip reconciliation and sum to base shake + manual scoop estimate', () => {
+    const cases: [string, string][] = [
+        ['Myprotein Shake', 'Five Guys Milkshake Base'],
+        ['Myprotein Little Shake', 'Five Guys Milkshake Base Little']
+    ]
+    for (const [name, baseIngredient] of cases) {
+        const recipe = RECIPES.find((r) => r.deliverooName === name)
+        assert.ok(recipe, `${name} recipe not found`)
+        assert.equal(recipe.skipReconciliation, true, `${name}: expected skipReconciliation`)
+        const scoopIngredient = recipe.ingredients.find((i) => i.ingredient !== baseIngredient)?.ingredient
+        assert.ok(scoopIngredient && scoopIngredient in MANUAL_INGREDIENTS, `${name}: expected a MANUAL_INGREDIENTS scoop`)
+        const { calories } = sumMacros(recipe)
+        const expected = REFERENCE_INGREDIENTS[baseIngredient].calories + MANUAL_INGREDIENTS[scoopIngredient].calories
+        assert.equal(calories, expected, `${name}: computed ${calories} vs base+scoop ${expected}`)
     }
 })
 

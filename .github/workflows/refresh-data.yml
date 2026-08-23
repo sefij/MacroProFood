@@ -18,7 +18,7 @@ name: Refresh nutrition data
 
 on:
   schedule:
-    - cron: '0 6 * * *' # daily 06:00 UTC
+    - cron: '0 14 * * *' # daily 14:00 UTC (afternoon)
   push:
     branches: [main]
     # Only the scraping mechanism / scrapers — a change here can alter the
@@ -82,10 +82,19 @@ jobs:
       # timestamps/items when a live scrape returns nothing (see
       # resolveUpdatedAt / readExisting in build-web-data.ts). Missing objects
       # (e.g. the very first run) are ignored.
+      #
+      # This list must cover every restaurant in build-web-data.ts's REGISTRY
+      # (not just source: 'live' ones — a 'composed' entry can transiently
+      # fail its live half too) — it drifted out of sync once already (only
+      # the first 8 restaurants were seeded, so a transient Five Guys fetch
+      # error wiped its R2 snapshot to 0 items instead of falling back, since
+      # readExisting had nothing local to fall back to) and there's no
+      # automated check tying the two together, so keep it updated by hand
+      # whenever a restaurant is added to or removed from REGISTRY.
       - name: Seed existing snapshots from R2
         run: |
           mkdir -p "$DATA_DIR"
-          for key in index mcdonalds popeyes tacobell wagamama kfc dominos wendys subway; do
+          for key in index mcdonalds popeyes tacobell wagamama kfc dominos wendys subway nandos itsu yosushi slimchickens burgerking pizzahut chipotle papajohns fiveguys; do
             npx wrangler r2 object get "$R2_BUCKET/$key.json" \
               --file "$DATA_DIR/$key.json" --remote || true
           done

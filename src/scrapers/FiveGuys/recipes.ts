@@ -80,10 +80,26 @@
  * and hash browns are excluded because the PDF itself states they're sold at
  * Heathrow Airport only, not at the branch this scraper's Deliveroo source
  * represents.
+ *
+ * **"Myprotein Shake" / "Myprotein Little Shake" are the one exception to
+ * "every ingredient traces to a PDF row."** These are the base Shake/Little
+ * Shake plus a paid Myprotein scoop add-on — Five Guys' PDF has no row for
+ * the scoop at all, and the only figure published anywhere for it is
+ * Deliveroo's own listing description ("added 12g Myprotein scoop... 54
+ * Kcal" / "6g... 27 Kcal" for Little). {@link MANUAL_INGREDIENTS} hand-enters
+ * those two calorie figures with an *assumed* protein-heavy macro split
+ * (whey isolate is close to pure protein by mass) since no source publishes
+ * a real breakdown — flagged here as an estimate, not measured data, same
+ * spirit as this project's other honesty norms. Deliveroo's `productMeta`
+ * for both listings (625 / 313 kcal) exactly equals the *plain* Shake's
+ * total, not base+scoop — i.e. it doesn't reflect the add-on its own
+ * description says is included — so both recipes set `skipReconciliation`
+ * to stop `scraper.ts` from anchoring the composed total back down to a
+ * figure that would silently erase the scoop.
  */
 
 export interface RecipeIngredient {
-    /** Exact key into the map `ingredients.ts` parses from the PDF. */
+    /** Exact key into the map `ingredients.ts` parses from the PDF, or into {@link MANUAL_INGREDIENTS}. */
     ingredient: string
     /** Serving multiplier; omitted means 1×. See docblock above for which multipliers are stated fact vs. inferred. */
     multiplier?: number
@@ -94,6 +110,24 @@ export interface Recipe {
     deliverooName: string
     category: string
     ingredients: RecipeIngredient[]
+    /**
+     * Skips reconciling against Deliveroo's stated `productMeta` calories for
+     * this dish — only for the Myprotein shakes (see docblock above), whose
+     * stated figure demonstrably excludes an ingredient this recipe
+     * deliberately includes.
+     */
+    skipReconciliation?: boolean
+}
+
+/**
+ * Ingredient macros with no PDF row — hand-entered, not live-refreshed. See
+ * the "Myprotein Shake" docblock note above for what these represent and why
+ * they exist; keyed the same way `ingredients.ts`'s PDF table is, so
+ * `scraper.ts` can look them up identically once merged in.
+ */
+export const MANUAL_INGREDIENTS: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
+    'Myprotein Scoop (manual estimate)': { calories: 54, protein: 11, fat: 0.5, carbs: 1.5 },
+    'Myprotein Scoop Little (manual estimate)': { calories: 27, protein: 5.5, fat: 0.3, carbs: 0.75 }
 }
 
 export const RECIPES: Recipe[] = [
@@ -250,5 +284,23 @@ export const RECIPES: Recipe[] = [
         deliverooName: 'RETURNING: Pistachio',
         category: 'Shakes',
         ingredients: [{ ingredient: 'Five Guys Milkshake Base' }, { ingredient: 'Pistachio***' }]
+    },
+    {
+        deliverooName: 'Myprotein Shake',
+        category: 'Shakes',
+        ingredients: [
+            { ingredient: 'Five Guys Milkshake Base' },
+            { ingredient: 'Myprotein Scoop (manual estimate)' }
+        ],
+        skipReconciliation: true
+    },
+    {
+        deliverooName: 'Myprotein Little Shake',
+        category: 'Shakes',
+        ingredients: [
+            { ingredient: 'Five Guys Milkshake Base Little' },
+            { ingredient: 'Myprotein Scoop Little (manual estimate)' }
+        ],
+        skipReconciliation: true
     }
 ]
