@@ -15,29 +15,39 @@ import {
  * flanked by a wide block of (text-empty) allergen columns — so we give the
  * column x-anchors directly instead, read off the data rows.
  *
- * The macro columns sit only ~10pt apart with the allergen columns crowding in
- * from the right, so the cell→column tolerance is tightened; and item names
+ * The macro columns sit only ~16-18pt apart with the allergen columns crowding
+ * in from the right, so the cell→column tolerance is tightened; and item names
  * never wrap (a very small font fits them on one line), so wrapped-cell merging
  * is disabled to keep a zero-calorie condiment row (name only, no macros) from
  * gluing onto the previous item.
+ *
+ * **2026-08 refresh**: the source PDF was replaced (25 June 2025 → 25 March
+ * 2026 revision) and every macro column's x-anchor shifted right by ~70-90pt —
+ * this revision also inserted a new "Weight (g)" column right after the item
+ * name, which is why the gap widened. Anchors below were re-measured directly
+ * off this revision's data rows (162 rows sampled, ≤3pt spread per column);
+ * the weight column is deliberately left unmapped (no macro use for it) —
+ * it's far enough from every mapped anchor that the tight tolerance drops it
+ * silently rather than bleeding into `calories`.
  */
 const WENDYS_CONFIG: PdfScraperConfig = {
     name: "Wendy's",
     icon: '🍔',
-    url: 'https://www.wendys.com/sites/default/files/2025-06/Wendy%27s%20UK%20Nutrition%20-%2003%20June%202025_1.pdf',
+    url: 'https://www.wendys.com/sites/default/files/2026-04/United-Kingdom-National-Nutrition-Information---3.25.2026-%28002%29.pdf',
     // x-anchors of the item name + macro columns, from the data rows. The
-    // allergen columns to the right (x ≥ ~200) are left unmapped by the tight
-    // tolerance below, and carry no text in data rows anyway.
+    // weight column (~x 158) and the allergen columns further right are left
+    // unmapped by the tight tolerance below, and the latter carry no text in
+    // data rows anyway.
     fixedColumns: [
-        { role: 'name', x: 51.7 },
-        { role: 'calories', x: 116.8 },
-        { role: 'fat', x: 127.4 },
-        { role: 'satFat', x: 137.2 },
-        { role: 'carbs', x: 147.6 },
-        { role: 'sugar', x: 157.4 },
-        { role: 'fibre', x: 167.2 },
-        { role: 'protein', x: 177.8 },
-        { role: 'salt', x: 187.3 }
+        { role: 'name', x: 52.0 },
+        { role: 'calories', x: 191.2 },
+        { role: 'fat', x: 208.4 },
+        { role: 'satFat', x: 224.9 },
+        { role: 'carbs', x: 241.5 },
+        { role: 'sugar', x: 258.0 },
+        { role: 'fibre', x: 274.7 },
+        { role: 'protein', x: 291.2 },
+        { role: 'salt', x: 307.1 }
     ],
     columnXTolerance: 6,
     continuationLineGap: 0,
