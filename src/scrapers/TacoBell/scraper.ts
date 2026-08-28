@@ -43,14 +43,25 @@ import { Page } from 'playwright'
  * two tables' overlap is left to the existing `addItem` duplicate/requalify
  * handling below — same as any other source with repeated rows.
  *
- * **Category loss (same redesign)**: the old page's fine-grained section
- * headings (Tacos, Burritos, Desserts, Meals, …) are gone — every row now
- * sits under the flat "Menu Items"/"Menu Ingredients" table label, which
- * carries no useful grouping info. Rather than surface that as a category
- * (every item would land in one giant, meaningless bucket) or guess a
- * category from the item name (this project doesn't fabricate data),
- * `category` is left `undefined` here; affected items fall back to
- * whatever the web app already does for uncategorized items.
+ * **Category loss (same redesign) → name-keyword fallback**: the old page's
+ * fine-grained section headings (Tacos, Burritos, Desserts, Meals, …) are
+ * gone — every row now sits under the flat "Menu Items"/"Menu Ingredients"
+ * table label, which carries no useful grouping info. Cross-referencing
+ * item names against Taco Bell's own official site (tacobell.co.uk, which
+ * still has 14 real category pages) was tried first, but its naming scheme
+ * differs enough — protein choice and size are cart options there, not part
+ * of the name; bundle/meal names are phrased differently; promotional
+ * categories like "Fan Favourites" overlap real ones — that only ~34% of
+ * items matched with any confidence. Not good enough to use as a source.
+ * {@link guessCategory} instead infers a category from the item's own name
+ * via keyword rules, tuned against a live pull to land on buckets close in
+ * shape to the pre-redesign categories (verified: Meals still dominates at
+ * over half of all items, same as before). This is a deliberate, explicit
+ * exception to this project's usual "don't fabricate data" stance — the
+ * user chose it over leaving every item uncategorized, after seeing the
+ * cross-reference approach's poor match rate. Get it wrong and an item
+ * just lands in the wrong browse/filter bucket; it never touches a macro
+ * value.
  *
  * **Sauce/drink filtering, updated for the redesign**: the previous filter
  * checked the (fine-grained) category text for "drink"/"beverage"/"sauce",
@@ -153,6 +164,26 @@ function parseTableRows ($: cheerio.CheerioAPI, tableIndex: number): RawRow[] {
     return rows
 }
 
+/**
+ * Infers a display category from an item's own (lowercased) name — see the
+ * "Category loss" section of the module docblock for why this exists and
+ * its limitations. Checked in order: a rule earlier in this list wins over
+ * one later (e.g. a meal-deal name containing both "meal" and "burrito"
+ * lands in Meals, not Burritos, matching how the pre-redesign source itself
+ * grouped combo items). Returns `undefined` — not a guess — for anything no
+ * rule recognizes.
+ */
+function guessCategory (name: string): string | undefined {
+    if (/\bmeal\b|\bdeluxe box\b|\bcombo\b|\bbundle for\b|\bfill up\b|\bfor \d\b|\bmatch day\b/.test(name)) return 'Meals'
+    if (name.startsWith('extra ') || name === 'grilled chicken' || name === 'seasoned beef') return 'Add-Ons'
+    if (/\bcrunchwrap\b|\bquesadilla\b|\bchalupa\b|\bgordita\b|\bprotein bowl\b|\broll up\b/.test(name)) return 'Specialties'
+    if (/\btaco\b/.test(name)) return 'Tacos'
+    if (/\bburrito\b/.test(name)) return 'Burritos'
+    if (/\bchurros?\b|\bempanada\b|\bcinnamon\b|\bchocolate\b|\bmilky bar\b|\bsmarties\b|\bdulce de leche\b/.test(name)) return 'Desserts'
+    if (/\bfries\b|\bnachos?\b|\brice\b|\bblack beans?\b|\bsour cream\b|\btenders?\b|\bchicken bites?\b|\bsharer\b|\bdip\b|\bchips\b|\bcheese\b|\blettuce\b|\btomatoes?\b|\bguacamole\b|\btortilla\b|\btaco shell\b|\btostada shell\b|\bflatbread\b|\bstuffing\b|\bjalapen/.test(name)) return 'Sides'
+    return undefined
+}
+
 /** Reads the highest page number linked for `param` (its pager's "Last" link) — 1 if the table isn't paginated at all. HTML-entity-encoded `&amp;` separators included. */
 function maxPage (html: string, param: string): number {
     const pattern = new RegExp(`(?:\\?|&(?:amp;)?)${param}=(\\d+)`, 'g')
@@ -231,9 +262,9 @@ export class TacoBellScraper extends SourceScraper {
                         ProteinTCalRatio: protein / calories,
                         CarbToCalRatio: carbs / calories,
                         // Source no longer publishes per-item categories
-                        // (see module docblock) — left undefined rather
-                        // than fabricated.
-                        category: undefined
+                        // (see module docblock) — inferred from the name
+                        // instead, an explicit exception agreed with the user.
+                        category: guessCategory(name)
                     },
                     variant: parseVariant(name)
                 })
