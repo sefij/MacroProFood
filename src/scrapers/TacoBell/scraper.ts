@@ -1,8 +1,8 @@
 import chalk from 'chalk'
 import { RestaurantData, SourceScraper, NutritionData } from '../../types'
 import * as cheerio from 'cheerio'
-import { normalizeCategory } from '../category'
 import { addItem, addVariant } from '../add-item'
+import { Page } from 'playwright'
 
 /**
  * Taco Bell is scraped live — but from nutritionix.com, a **third-party
@@ -26,6 +26,43 @@ import { addItem, addVariant } from '../add-item'
  * so a group never mixes two independent choices into one flat list (same
  * "don't model independent axes" stance spec 10 already took for crust vs.
  * size elsewhere).
+ *
+ * **Pagination (added 2026-08-28)**: the source used to publish the whole
+ * menu as one unpaginated table — confirmed against a live pull, it's since
+ * been split into two separately-paginated tables, 25 rows/page: "Menu
+ * Items" ({@link ITEMS_PARAM}, 7 pages) and a second, misleadingly-named
+ * "Menu Ingredients" table ({@link INGREDIENTS_PARAM}, 16 pages) that in
+ * practice also carries plain items plus meal-deal combos, overlapping
+ * "Menu Items" for some names. Reading only page 1 of the first table (the
+ * old, pre-redesign behaviour) silently produced 15 items instead of ~290 —
+ * caught by a user noticing the drop, not by any scraper-side check, since
+ * 15 > 0 never tripped the "no items scraped" fallback. Both tables' every
+ * page are now crawled ({@link fetchAllRows}); the page count itself is read
+ * from each table's own "Last" pager link rather than hardcoded, so a future
+ * menu-size change doesn't quietly truncate results the same way again. The
+ * two tables' overlap is left to the existing `addItem` duplicate/requalify
+ * handling below — same as any other source with repeated rows.
+ *
+ * **Category loss (same redesign)**: the old page's fine-grained section
+ * headings (Tacos, Burritos, Desserts, Meals, …) are gone — every row now
+ * sits under the flat "Menu Items"/"Menu Ingredients" table label, which
+ * carries no useful grouping info. Rather than surface that as a category
+ * (every item would land in one giant, meaningless bucket) or guess a
+ * category from the item name (this project doesn't fabricate data),
+ * `category` is left `undefined` here; affected items fall back to
+ * whatever the web app already does for uncategorized items.
+ *
+ * **Sauce/drink filtering, updated for the redesign**: the previous filter
+ * checked the (fine-grained) category text for "drink"/"beverage"/"sauce",
+ * which no longer exists to check — that filter was silently dead code as
+ * of the redesign above, the exact "blanket exclusion stops matching
+ * anything" failure mode already seen in a couple of other scrapers'
+ * history here. Replaced with name-based checks verified against this same
+ * live pull: an explicit "sauce"/"sachet" substring and a `"Dip Pot - "`
+ * prefix catch the standalone sauces/dips/condiment sachets; a small brand
+ * keyword list (Pepsi, 7Up, Mountain Dew, Lipton, Red Bull, Robinsons,
+ * Tango, "bottled water", …) catches the drinks, none of which are prefixes
+ * of any real dish name in this menu.
  *
  * **Bugfix alongside the retrofit**: the source litters meal-deal rows with
  * an embedded `"[more info]<long description>"` suffix glued directly onto
@@ -81,6 +118,52 @@ interface ParsedRow {
     variant: ParsedVariant | null
 }
 
+const BASE_URL = 'https://www.nutritionix.com/taco-bell-uk/menu/premium?type=premium'
+/** Query param that pages the first ("Menu Items") table. */
+const ITEMS_PARAM = 'ip'
+/** Query param that pages the second ("Menu Ingredients") table. */
+const INGREDIENTS_PARAM = 'inp'
+
+/** Brand/drink keywords checked against the lowercased name; none of these are prefixes of a real dish here (verified against a live pull). */
+const DRINK_KEYWORDS = [
+    'shake', 'freeze', 'pepsi', 'water', '7up', 'baja blast', 'mountain dew',
+    'lipton', 'red bull', 'robinsons', 'tango'
+]
+
+/** A raw table row's text cells plus the sub-heading it fell under. */
+interface RawRow {
+    cells: string[]
+    category: string
+}
+
+/** Reads a table's rows (subCategory heading rows update `category`, everything else is data). */
+function parseTableRows ($: cheerio.CheerioAPI, tableIndex: number): RawRow[] {
+    const rows: RawRow[] = []
+    let category = ''
+    $('table.tblCompare').eq(tableIndex).find('tbody tr').each((_, row) => {
+        const $row = $(row)
+        if ($row.hasClass('subCategory')) {
+            category = $row.text().trim()
+            return
+        }
+        const cells = $row.find('td').map((_, c) => $(c).text().trim()).get()
+        if (cells.length < 10) return
+        rows.push({ cells, category })
+    })
+    return rows
+}
+
+/** Reads the highest page number linked for `param` (its pager's "Last" link) — 1 if the table isn't paginated at all. HTML-entity-encoded `&amp;` separators included. */
+function maxPage (html: string, param: string): number {
+    const pattern = new RegExp(`(?:\\?|&(?:amp;)?)${param}=(\\d+)`, 'g')
+    let match: RegExpExecArray | null
+    let max = 1
+    while ((match = pattern.exec(html)) !== null) {
+        max = Math.max(max, Number(match[1]))
+    }
+    return max
+}
+
 export class TacoBellScraper extends SourceScraper {
     icon = '🌮'
     async scrape () {
@@ -95,54 +178,27 @@ export class TacoBellScraper extends SourceScraper {
 
         try {
             await page.setViewportSize({ width: 1366, height: 768 })
-
-            await page.goto(
-                'https://www.nutritionix.com/taco-bell-uk/menu/premium',
-                {
-                    waitUntil: 'networkidle',
-                    timeout: 60000
-                }
-            )
-
-            const content = await page.content()
-            const $ = cheerio.load(content)
-
-            const table = $('table.tblCompare').first()
+            const rawRows = await this.fetchAllRows(page)
 
             // Column order in this table:
             // 0: name, 1: kj, 2: kcal, 3: fat, 4: sat fat,
             // 5: carbs, 6: sugars, 7: fibre, 8: protein, 9: salt
-            let currentCategory = ''
-            let currentCategoryLabel: string | undefined
-
-            table.find('tbody tr').each((_, row) => {
-                const $row = $(row)
-
-                if ($row.hasClass('subCategory')) {
-                    const label = $row.text().trim()
-                    currentCategory = label.toLowerCase()
-                    currentCategoryLabel = label
-                    return
-                }
-
-                const cells = $row.find('td').map((_, c) => $(c).text().trim()).get()
-                if (cells.length < 10) return
-
-                const name = cells[0]
+            for (const raw of rawRows) {
+                const name = raw.cells[0]
                     .replace(/\[more info\].*$/i, '')
                     .trim()
                     .toLowerCase()
-                if (!name) return
+                if (!name) continue
 
                 const parseNum = (s: string) => {
                     const n = Number(s)
                     return Number.isFinite(n) ? n : NaN
                 }
 
-                const calories = parseNum(cells[2])
-                const fat = parseNum(cells[3])
-                const carbs = parseNum(cells[5])
-                const protein = parseNum(cells[8])
+                const calories = parseNum(raw.cells[2])
+                const fat = parseNum(raw.cells[3])
+                const carbs = parseNum(raw.cells[5])
+                const protein = parseNum(raw.cells[8])
 
                 if (
                     !Number.isFinite(calories) ||
@@ -150,21 +206,19 @@ export class TacoBellScraper extends SourceScraper {
                     !Number.isFinite(fat) ||
                     !Number.isFinite(carbs)
                 ) {
-                    return
+                    continue
                 }
 
-                if (calories <= 0 || protein < 1) return
+                if (calories <= 0 || protein < 1) continue
 
                 if (
-                    currentCategory.includes('drink') ||
-                    currentCategory.includes('beverage') ||
-                    currentCategory.includes('sauce') ||
-                    name.includes('shake') ||
-                    name.includes('freeze') ||
-                    name.includes('pepsi') ||
-                    name.includes('water')
+                    name.includes('sauce') ||
+                    name.includes('sachet') ||
+                    name.startsWith('dip pot') ||
+                    name === 'jalapeno honey mustard' ||
+                    DRINK_KEYWORDS.some((keyword) => name.includes(keyword))
                 ) {
-                    return
+                    continue
                 }
 
                 rows.push({
@@ -176,11 +230,14 @@ export class TacoBellScraper extends SourceScraper {
                         carbs,
                         ProteinTCalRatio: protein / calories,
                         CarbToCalRatio: carbs / calories,
-                        category: normalizeCategory(currentCategoryLabel)
+                        // Source no longer publishes per-item categories
+                        // (see module docblock) — left undefined rather
+                        // than fabricated.
+                        category: undefined
                     },
                     variant: parseVariant(name)
                 })
-            })
+            }
         } catch (error) {
             console.error(chalk.red(`Error scraping Taco Bell: ${error}`))
             return {}
@@ -231,5 +288,34 @@ export class TacoBellScraper extends SourceScraper {
             )
         }
         return items
+    }
+
+    /**
+     * Crawls every page of both tables (see module docblock) and returns
+     * their rows combined. Each table's own page count comes off its "Last"
+     * pager link on the first load, rather than being hardcoded, so a future
+     * menu-size change is picked up automatically instead of silently
+     * truncating results.
+     */
+    private async fetchAllRows (page: Page): Promise<RawRow[]> {
+        await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 60000 })
+        const firstHtml = await page.content()
+        const maxItemsPage = maxPage(firstHtml, ITEMS_PARAM)
+        const maxIngredientsPage = maxPage(firstHtml, INGREDIENTS_PARAM)
+
+        const rows: RawRow[] = []
+        rows.push(...parseTableRows(cheerio.load(firstHtml), 0))
+        for (let p = 2; p <= maxItemsPage; p++) {
+            await page.goto(`${BASE_URL}&${ITEMS_PARAM}=${p}`, { waitUntil: 'networkidle', timeout: 60000 })
+            rows.push(...parseTableRows(cheerio.load(await page.content()), 0))
+        }
+
+        rows.push(...parseTableRows(cheerio.load(firstHtml), 1))
+        for (let p = 2; p <= maxIngredientsPage; p++) {
+            await page.goto(`${BASE_URL}&${INGREDIENTS_PARAM}=${p}`, { waitUntil: 'networkidle', timeout: 60000 })
+            rows.push(...parseTableRows(cheerio.load(await page.content()), 1))
+        }
+
+        return rows
     }
 }
