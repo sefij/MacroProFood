@@ -21,33 +21,28 @@ import {
  * is disabled to keep a zero-calorie condiment row (name only, no macros) from
  * gluing onto the previous item.
  *
- * **2026-08 refresh**: the source PDF was replaced (25 June 2025 → 25 March
- * 2026 revision) and every macro column's x-anchor shifted right by ~70-90pt —
- * this revision also inserted a new "Weight (g)" column right after the item
- * name, which is why the gap widened. Anchors below were re-measured directly
- * off this revision's data rows (162 rows sampled, ≤3pt spread per column);
- * the weight column is deliberately left unmapped (no macro use for it) —
- * it's far enough from every mapped anchor that the tight tolerance drops it
- * silently rather than bleeding into `calories`.
+ * **2026-09 refresh**: the 10 September 2026 PDF uses a much wider page layout
+ * than the March revision, shifting the item and nutrient columns. These
+ * anchors were re-measured from its data rows. The weight column remains
+ * deliberately unmapped; it is far enough from every mapped anchor that the
+ * tight tolerance drops it rather than bleeding into `calories`.
  */
 const WENDYS_CONFIG: PdfScraperConfig = {
     name: "Wendy's",
     icon: '🍔',
-    url: 'https://www.wendys.com/sites/default/files/2026-04/United-Kingdom-National-Nutrition-Information---3.25.2026-%28002%29.pdf',
+    url: 'https://www.wendys.com/sites/default/files/2026-09/United-Kingdom-National-Nutrition-Information---9.10.2026.pdf',
     // x-anchors of the item name + macro columns, from the data rows. The
-    // weight column (~x 158) and the allergen columns further right are left
-    // unmapped by the tight tolerance below, and the latter carry no text in
-    // data rows anyway.
+    // weight column (~x 521) and allergen columns are left unmapped.
     fixedColumns: [
-        { role: 'name', x: 52.0 },
-        { role: 'calories', x: 191.2 },
-        { role: 'fat', x: 208.4 },
-        { role: 'satFat', x: 224.9 },
-        { role: 'carbs', x: 241.5 },
-        { role: 'sugar', x: 258.0 },
-        { role: 'fibre', x: 274.7 },
-        { role: 'protein', x: 291.2 },
-        { role: 'salt', x: 307.1 }
+        { role: 'name', x: 169.7 },
+        { role: 'calories', x: 630.1 },
+        { role: 'fat', x: 689.0 },
+        { role: 'satFat', x: 744.5 },
+        { role: 'carbs', x: 799.4 },
+        { role: 'sugar', x: 852.6 },
+        { role: 'fibre', x: 909.0 },
+        { role: 'protein', x: 964.6 },
+        { role: 'salt', x: 1018.6 }
     ],
     columnXTolerance: 6,
     continuationLineGap: 0,
