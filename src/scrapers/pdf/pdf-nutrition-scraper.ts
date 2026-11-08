@@ -110,6 +110,12 @@ export interface PdfScraperConfig {
     accept?: (item: ParsedNutritionItem) => boolean
     /** HTTP timeout for the PDF download. Defaults to 30s. */
     timeoutMs?: number
+    /**
+     * Download with Node's native fetch() instead of axios. Some CDNs (Akamai)
+     * fingerprint the TLS/HTTP client and stall axios and curl while fetch gets
+     * through (see Papa John's, and Subway's media.subway.com).
+     */
+    useNativeFetch?: boolean
 }
 
 const DEFAULT_TIMEOUT_MS = 30000
@@ -192,6 +198,7 @@ export abstract class PdfNutritionScraper extends SourceScraper {
     }
 
     private async download (): Promise<Uint8Array> {
+        if (this.config.useNativeFetch) return this.downloadWithFetch()
         const response = await withRetry(`${this.config.name} nutrition PDF`, () =>
             axios.get<ArrayBuffer>(this.config.url, {
                 headers: REQUEST_HEADERS,
@@ -200,6 +207,17 @@ export abstract class PdfNutritionScraper extends SourceScraper {
             })
         )
         return new Uint8Array(response.data)
+    }
+
+    private async downloadWithFetch (): Promise<Uint8Array> {
+        return withRetry(`${this.config.name} nutrition PDF`, async () => {
+            const response = await fetch(this.config.url, {
+                headers: REQUEST_HEADERS,
+                signal: AbortSignal.timeout(this.config.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+            })
+            if (!response.ok) throw new Error(`Request failed with status code ${response.status}`)
+            return new Uint8Array(await response.arrayBuffer())
+        })
     }
 
     /** Turns one table row into an item, or flags why it was dropped. */
