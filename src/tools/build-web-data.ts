@@ -22,6 +22,7 @@ import { ScrapingOperator } from '../scrapers/scraping-oprerator'
 import { withCache } from '../cache'
 import { fetchIngredients } from '../scrapers/Chipotle/ingredients'
 import { fetchBuildableFormats } from '../scrapers/Chipotle/buildable'
+import { assessScrape, ScrapeVerdict } from './scrape-health'
 import {
     BuildGroup,
     DataIndex,
@@ -265,19 +266,23 @@ async function main (): Promise<void> {
         if (meta.key === 'CHIPOTLE') {
             items.push(...(await chipotleBuildableItems(bypassCache)))
         }
-        if (items.length === 0) {
-            console.log(chalk.yellow(`  ⚠️  ${meta.restaurant}: no items scraped`))
-            if (meta.source === 'live') failed.push(meta.restaurant)
-        }
         const existing = await readExisting(meta.key)
-        const updatedAt = resolveUpdatedAt(meta, items, runTimeIso, existing)
 
-        // For a live restaurant that yielded nothing, keep any previously
-        // committed items rather than overwriting good data with an empty list.
-        const finalItems =
-            items.length === 0 && meta.source === 'live' && existing
-                ? existing.items
-                : items
+        // A live scrape that returned nothing, or collapsed to a fraction of
+        // the previous count, is treated as broken: keep the previous items and
+        // timestamp rather than overwriting good data, and fail the run.
+        const verdict: ScrapeVerdict = meta.source === 'live'
+            ? assessScrape(meta.key, items.length, existing?.items.length, process.env.ALLOW_ITEM_DROP)
+            : { ok: true }
+        if (verdict.ok === false) {
+            console.log(chalk.yellow(`  ⚠️  ${meta.restaurant}: ${verdict.reason}`))
+            failed.push(`${meta.restaurant} (${verdict.reason})`)
+        }
+        const keepExisting = verdict.ok === false && existing !== undefined
+        const updatedAt = keepExisting
+            ? existing.updatedAt
+            : resolveUpdatedAt(meta, items, runTimeIso, existing)
+        const finalItems = keepExisting ? existing.items : items
 
         const snapshot: RestaurantSnapshot = {
             restaurant: meta.restaurant,
@@ -325,7 +330,7 @@ async function main (): Promise<void> {
     // source sits unnoticed behind its old snapshot (Chipotle was stale for six
     // weeks this way).
     if (failed.length > 0) {
-        console.error(chalk.red.bold(`\n❌ ${failed.length} scraper(s) returned no items, serving stale data: ${failed.join(', ')}`))
+        console.error(chalk.red.bold(`\n❌ ${failed.length} scraper(s) failed the health check, serving stale data: ${failed.join(', ')}`))
         process.exitCode = 1
     }
 }
