@@ -40,40 +40,42 @@ const SUBWAY_CONFIG: PdfScraperConfig = {
     name: 'Subway',
     icon: '🥪',
     url:
-        'https://www.subway.com/en-gb/media/emea/europe/uk/nutrition/2026/' +
-        'UKI_IngredientsNutritionalInformationJune2026.pdf',
+        'https://media.subway.com/dam/urn:aaid:aem:c9e92cc1-b7a5-493f-adcd-7acb0641eeba/original/as/' +
+        'UKIBuildsandIngredientsNutritionalInformationSeptember2.pdf',
+    // media.subway.com stalls axios (TLS fingerprinting); native fetch gets through.
+    useNativeFetch: true,
     fixedGrids: [
         // Pages 1–2: menu items.
         [
-            { role: 'name', x: 13.2 },
-            { role: 'serving', x: 179 },
-            { role: 'kj', x: 209.2 },
-            { role: 'calories', x: 232.9 },
-            { role: 'fat', x: 254 },
-            { role: 'satFat', x: 271.7 },
-            { role: 'carbs', x: 289 },
-            { role: 'sugar', x: 310.8 },
-            { role: 'fibre', x: 331 },
-            { role: 'protein', x: 348.7 },
-            { role: 'salt', x: 365 }
+            { role: 'name', x: 13.1 },
+            { role: 'serving', x: 170.5 },
+            { role: 'kj', x: 194.7 },
+            { role: 'calories', x: 220.1 },
+            { role: 'fat', x: 242.6 },
+            { role: 'satFat', x: 260.2 },
+            { role: 'carbs', x: 279.9 },
+            { role: 'sugar', x: 300.1 },
+            { role: 'fibre', x: 321.1 },
+            { role: 'protein', x: 340.5 },
+            { role: 'salt', x: 356.7 }
         ],
         // Page 3: ingredients.
         [
-            { role: 'name', x: 19.9 },
-            { role: 'serving', x: 143.2 },
-            { role: 'kj', x: 159 },
-            { role: 'calories', x: 175.7 },
-            { role: 'fat', x: 191.7 },
-            { role: 'satFat', x: 206.4 },
-            { role: 'carbs', x: 222 },
-            { role: 'sugar', x: 238.5 },
-            { role: 'fibre', x: 253.4 },
-            { role: 'protein', x: 266.9 },
-            { role: 'salt', x: 282.5 }
+            { role: 'name', x: 19.7 },
+            { role: 'serving', x: 131.7 },
+            { role: 'kj', x: 146.8 },
+            { role: 'calories', x: 164.7 },
+            { role: 'fat', x: 178.1 },
+            { role: 'satFat', x: 192 },
+            { role: 'carbs', x: 206.9 },
+            { role: 'sugar', x: 220.6 },
+            { role: 'fibre', x: 234.2 },
+            { role: 'protein', x: 247 },
+            { role: 'salt', x: 261.2 }
         ]
     ],
     ignoreTitles: /^(Nutrition Information|UK and ROI|Subway Nutrition)/,
-    headingMinHeight: 6.4,
+    headingMinHeight: 5.7,
     columnXTolerance: 5,
     // Names never wrap; merging could only glue stray boilerplate onto a row.
     continuationLineGap: 0,
