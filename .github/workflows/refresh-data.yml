@@ -30,6 +30,7 @@ on:
       - 'src/types.ts'
       - 'src/core/types.ts'
       - 'src/tools/build-web-data.ts'
+      - 'src/tools/scrape-health.ts'
       - 'package.json'
       - 'yarn.lock'
   workflow_dispatch:
@@ -38,6 +39,10 @@ on:
         description: 'Re-scrape everything, ignoring the cache'
         type: boolean
         default: false
+      allow_item_drop:
+        description: 'Accept a genuine item-count drop (>50%) for these restaurant keys, comma-separated, or "all" (e.g. SUBWAY)'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -110,6 +115,8 @@ jobs:
       - name: Build nutrition data
         id: build
         continue-on-error: true
+        env:
+          ALLOW_ITEM_DROP: ${{ inputs.allow_item_drop }}
         run: >-
           xvfb-run -a yarn ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bypass_cache))
           && 'build:data:fresh' || 'build:data' }}
