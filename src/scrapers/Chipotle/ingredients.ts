@@ -33,9 +33,20 @@
 import axios from 'axios'
 import { extractPdfLines, PdfLine } from '../pdf/pdf-lines'
 import { withRetry } from '../http-retry'
+import { INGREDIENT_SNAPSHOT, SNAPSHOT_SOURCE } from './ingredients-snapshot'
 
-const PDF_URL =
-    'https://www.chipotle.co.uk/content/dam/chipotle/menu/nutrition/2026/january/Allergen%20UK160126.pdf'
+const SITE_ORIGIN = 'https://www.chipotle.co.uk'
+// /nutrition 404s; the homepage footer links the current PDF.
+const NUTRITION_PAGE_URL = `${SITE_ORIGIN}/`
+
+// Last known good URL. Chipotle publishes a new dated file for each revision
+// and deletes the old one (404), so this is only a fallback for when the
+// nutrition page can't be read; the live link is discovered on every run.
+const FALLBACK_PDF_URL =
+    `${SITE_ORIGIN}/content/dam/chipotle/menu/nutrition/2026/eu/Allergen-UK270726.pdf`
+
+/** Matches the allergen/nutrition PDF link, not the handheld menu PDF also on the page. */
+const PDF_LINK_PATTERN = /\/content\/dam\/chipotle\/menu\/nutrition\/[^"'\s]*Allergen[^"'\s]*\.pdf/i
 
 const REQUEST_HEADERS = {
     'User-Agent':
@@ -145,9 +156,26 @@ export function parseIngredientRows (lines: PdfLine[]): Map<string, IngredientNu
     return table
 }
 
-async function download (): Promise<Uint8Array> {
+/** Finds the current PDF URL on the nutrition page, or null if it can't be found. */
+async function discoverPdfUrl (): Promise<string | null> {
+    try {
+        const page = await withRetry('Chipotle nutrition page', () =>
+            axios.get<string>(NUTRITION_PAGE_URL, {
+                headers: { ...REQUEST_HEADERS, Accept: 'text/html,*/*' },
+                timeout: HTTP_TIMEOUT_MS,
+                responseType: 'text'
+            })
+        )
+        const match = PDF_LINK_PATTERN.exec(page.data)
+        return match ? SITE_ORIGIN + match[0] : null
+    } catch {
+        return null
+    }
+}
+
+async function download (pdfUrl: string): Promise<Uint8Array> {
     const response = await withRetry('Chipotle nutrition PDF', () =>
-        axios.get<ArrayBuffer>(PDF_URL, {
+        axios.get<ArrayBuffer>(pdfUrl, {
             headers: REQUEST_HEADERS,
             timeout: HTTP_TIMEOUT_MS,
             responseType: 'arraybuffer'
@@ -156,9 +184,21 @@ async function download (): Promise<Uint8Array> {
     return new Uint8Array(response.data)
 }
 
-/** Fetches and parses Chipotle's ingredient nutrition PDF. */
+/**
+ * Fetches and parses Chipotle's ingredient nutrition PDF. If the PDF has no
+ * extractable text (the UK270726 edition is outlined vector art), falls back
+ * to the committed transcription in `ingredients-snapshot.ts`.
+ */
 export async function fetchIngredients (): Promise<Map<string, IngredientNutrition>> {
-    const pdf = await download()
-    const lines = await extractPdfLines(pdf)
-    return parseIngredientRows(lines)
+    const pdfUrl = (await discoverPdfUrl()) ?? FALLBACK_PDF_URL
+    const pdf = await download(pdfUrl)
+    const parsed = parseIngredientRows(await extractPdfLines(pdf))
+    if (parsed.size > 0) return parsed
+
+    const revision = decodeURIComponent(pdfUrl.split('/').pop() ?? pdfUrl)
+    const drift = revision === SNAPSHOT_SOURCE
+        ? ''
+        : ` - the PDF is now ${revision}, a newer revision than the snapshot, so figures may be out of date; re-transcribe it`
+    console.warn(`  ⚠ Chipotle PDF has no extractable text; using the committed snapshot of ${SNAPSHOT_SOURCE}${drift}`)
+    return new Map(Object.entries(INGREDIENT_SNAPSHOT))
 }
