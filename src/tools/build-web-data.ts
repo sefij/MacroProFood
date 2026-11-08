@@ -258,6 +258,7 @@ async function main (): Promise<void> {
 
     const runTimeIso = new Date().toISOString()
     const indexEntries: RestaurantIndexEntry[] = []
+    const failed: string[] = []
 
     for (const meta of REGISTRY) {
         const items = toSnapshotItems(scraped[meta.scrapeKey])
@@ -266,6 +267,7 @@ async function main (): Promise<void> {
         }
         if (items.length === 0) {
             console.log(chalk.yellow(`  ⚠️  ${meta.restaurant}: no items scraped`))
+            if (meta.source === 'live') failed.push(meta.restaurant)
         }
         const existing = await readExisting(meta.key)
         const updatedAt = resolveUpdatedAt(meta, items, runTimeIso, existing)
@@ -316,6 +318,16 @@ async function main (): Promise<void> {
     )
 
     console.log(chalk.magenta.bold(`\n✅ Wrote ${indexEntries.length} restaurants → ${OUTPUT_DIR}`))
+
+    // Everything above is still written (a stale restaurant keeps its last good
+    // items and timestamp) so the workflow can upload what did refresh, but a
+    // scraper that yielded nothing must turn the run red. Otherwise a broken
+    // source sits unnoticed behind its old snapshot (Chipotle was stale for six
+    // weeks this way).
+    if (failed.length > 0) {
+        console.error(chalk.red.bold(`\n❌ ${failed.length} scraper(s) returned no items, serving stale data: ${failed.join(', ')}`))
+        process.exitCode = 1
+    }
 }
 
 main()
@@ -323,4 +335,4 @@ main()
         console.error(chalk.red(`Fatal error: ${error}`))
         process.exit(1)
     })
-    .then(() => process.exit(0))
+    .then(() => process.exit(process.exitCode ?? 0))

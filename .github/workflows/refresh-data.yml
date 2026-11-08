@@ -105,7 +105,11 @@ jobs:
       # scheduled runs use the cache. `build:data:fresh` passes --no-cache.
       # xvfb-run gives McDonald's headed browser a virtual display (see the
       # "Install Xvfb" step above for why it needs one at all).
+      # continue-on-error so the upload below still publishes the restaurants
+      # that did refresh; the final step fails the job if this one failed.
       - name: Build nutrition data
+        id: build
+        continue-on-error: true
         run: >-
           xvfb-run -a yarn ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bypass_cache))
           && 'build:data:fresh' || 'build:data' }}
@@ -121,3 +125,9 @@ jobs:
               --content-type "application/json" \
               --remote
           done
+
+      - name: Fail if any scraper failed
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "::error::Build nutrition data failed or a scraper returned no items - stale data was kept. See that step's log."
+          exit 1
